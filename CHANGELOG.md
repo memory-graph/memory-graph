@@ -14,6 +14,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory effectiveness tracking
 - Performance optimization
 
+## [0.2.0] - 2025-11-27
+
+### Added - Phase 2.5: Technical Debt Resolution
+- Custom exception hierarchy with detailed error information
+- Comprehensive error handling across all modules
+- AsyncIO refactoring for all database operations
+- Full MCP protocol compliance with isError flags
+- 62 comprehensive unit tests across all modules:
+  - 28 database tests (Neo4j connection, CRUD, relationships, statistics)
+  - 19 server tests (MCP handlers, validation, error handling)
+  - 8 exception tests (custom exceptions, error hierarchy)
+  - 7 model tests (Pydantic validation, serialization)
+
+### Fixed
+- All async database operations now properly use AsyncIO
+- Server handlers correctly set isError=True for error responses
+- Comprehensive exception handling in all handler methods
+- Mock return values aligned with actual implementation
+- API parameter names standardized (depth → max_depth, memory_type → type)
+
+### Improved
+- Test coverage increased from 67% to 76%:
+  - database.py: 65% → 71%
+  - server.py: 38% → 63%
+  - models.py: 97%
+- All 62 tests passing (100% pass rate)
+- Better error messages with context and validation details
+- Consistent exception handling patterns
+
+### Technical Debt Paid
+- ✅ Async refactoring complete
+- ✅ Custom exceptions implemented
+- ✅ Test infrastructure created
+- ✅ Error handling standardized
+- ✅ MCP protocol compliance verified
+
 ## [0.1.0] - 2025-06-28
 
 ### Added
