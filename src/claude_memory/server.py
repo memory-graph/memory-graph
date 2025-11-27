@@ -39,6 +39,7 @@ from .models import (
     ValidationError as MemoryValidationError,
     DatabaseConnectionError,
 )
+from .advanced_tools import ADVANCED_RELATIONSHIP_TOOLS, AdvancedRelationshipHandlers
 
 
 # Configure logging
@@ -57,11 +58,12 @@ class ClaudeMemoryServer:
         self.server = Server("claude-memory")
         self.db_connection: Optional[Neo4jConnection] = None
         self.memory_db: Optional[MemoryDatabase] = None
-        
+        self.advanced_handlers: Optional[AdvancedRelationshipHandlers] = None
+
         # Register MCP handlers
         self._register_handlers()
-        
-        # Define available tools
+
+        # Define available tools (basic + advanced)
         self.tools = [
             Tool(
                 name="store_memory",
@@ -280,7 +282,7 @@ class ClaudeMemoryServer:
                     "properties": {}
                 }
             )
-        ]
+        ] + ADVANCED_RELATIONSHIP_TOOLS
     
     def _register_handlers(self):
         """Register MCP protocol handlers."""
@@ -319,6 +321,21 @@ class ClaudeMemoryServer:
                     return await self._handle_get_related_memories(request.arguments)
                 elif request.name == "get_memory_statistics":
                     return await self._handle_get_memory_statistics(request.arguments)
+                # Advanced relationship tools
+                elif request.name == "find_memory_path":
+                    return await self.advanced_handlers.handle_find_memory_path(request.arguments)
+                elif request.name == "analyze_memory_clusters":
+                    return await self.advanced_handlers.handle_analyze_memory_clusters(request.arguments)
+                elif request.name == "find_bridge_memories":
+                    return await self.advanced_handlers.handle_find_bridge_memories(request.arguments)
+                elif request.name == "suggest_relationship_type":
+                    return await self.advanced_handlers.handle_suggest_relationship_type(request.arguments)
+                elif request.name == "reinforce_relationship":
+                    return await self.advanced_handlers.handle_reinforce_relationship(request.arguments)
+                elif request.name == "get_relationship_types_by_category":
+                    return await self.advanced_handlers.handle_get_relationship_types_by_category(request.arguments)
+                elif request.name == "analyze_graph_metrics":
+                    return await self.advanced_handlers.handle_analyze_graph_metrics(request.arguments)
                 else:
                     return CallToolResult(
                         content=[TextContent(
@@ -349,7 +366,10 @@ class ClaudeMemoryServer:
             self.memory_db = MemoryDatabase(self.db_connection)
             await self.memory_db.initialize_schema()
 
-            logger.info("Claude Memory Server initialized successfully")
+            # Initialize advanced relationship handlers
+            self.advanced_handlers = AdvancedRelationshipHandlers(self.memory_db)
+
+            logger.info("Claude Memory Server initialized successfully with advanced relationship features")
 
         except Exception as e:
             logger.error(f"Failed to initialize server: {e}")
