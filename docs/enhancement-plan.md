@@ -1,5 +1,18 @@
 # Claude Code Memory Server - Unified Enhancement Plan
 
+> **IMPORTANT NOTE**: This document is now **ARCHIVED** for historical reference only.
+>
+> **Active Development Tracking**:
+> - Current work: See [WORKPLAN.md](WORKPLAN.md) for Phase 8 tasks
+> - Completed phases: See [archive/completed_phases.md](archive/completed_phases.md) for Phases 0-7
+>
+> **Last Active**: November 28, 2025
+> **Status**: Phases 0-7 complete, Phase 8 in progress
+
+---
+
+## Historical Document - Enhancement Plan
+
 > **Purpose**: Comprehensive implementation roadmap merging original implementation plan with enhancement features. Optimized for execution by a coding agent.
 >
 > **Repository**: https://github.com/ViralV00d00/claude-code-memory
