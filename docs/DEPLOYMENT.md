@@ -85,6 +85,107 @@ pip install -e .
 pip install -e ".[all,dev]"
 ```
 
+### Method 4: uvx (Ephemeral / Testing)
+
+**Use Cases**:
+- Quick testing without installation
+- CI/CD pipelines and automation
+- Version testing and comparison
+- One-time operations
+- Trying before installing
+
+**Installation**:
+```bash
+# Install uv (one time only)
+pip install uv
+
+# or via curl
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Usage**:
+```bash
+# Check version
+uvx claude-code-memory --version
+
+# Show configuration
+uvx claude-code-memory --show-config
+
+# Health check
+uvx claude-code-memory --health
+
+# Run server (ephemeral)
+uvx claude-code-memory --backend sqlite --profile standard
+
+# Test specific version
+uvx claude-code-memory@1.0.0 --version
+```
+
+**Limitations**:
+- ⚠️ **First run slower** - Downloads and caches package from PyPI (~5-10 seconds)
+- ⚠️ **Not recommended for persistent MCP servers** - Better to use pip install
+- ⚠️ **Requires explicit database path** for data persistence:
+  ```bash
+  MEMORY_SQLITE_PATH=~/.claude-memory/memory.db uvx claude-code-memory
+  ```
+- ⚠️ **Environment variables** must be set per invocation (no persistent config)
+
+**CI/CD Example** (GitHub Actions):
+```yaml
+name: Test Memory Server
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install uv
+        run: pip install uv
+
+      - name: Test memory server
+        run: |
+          uvx claude-code-memory --version
+          uvx claude-code-memory --show-config
+
+      - name: Test specific version
+        run: uvx claude-code-memory@1.0.0 --health
+```
+
+**GitLab CI Example**:
+```yaml
+test_memory:
+  stage: test
+  script:
+    - pip install uv
+    - uvx claude-code-memory --version
+    - uvx claude-code-memory --health
+```
+
+**Docker Build Example**:
+```dockerfile
+FROM python:3.11-slim
+
+# Install uv
+RUN pip install uv
+
+# Use uvx to run one-time operations without installing
+RUN uvx claude-code-memory --show-config
+
+# For persistent server, use pip install instead
+RUN pip install claude-code-memory
+```
+
+**When to Use uvx vs pip install**:
+
+| Scenario | Use uvx | Use pip install |
+|----------|---------|-----------------|
+| Quick testing | ✅ Yes | ❌ Overkill |
+| MCP server (daily use) | ❌ No | ✅ Yes |
+| CI/CD automation | ✅ Yes | Either works |
+| Version comparison | ✅ Yes | Manual switching |
+| Production deployment | ❌ No | ✅ Yes |
+
 ---
 
 ## Configuration

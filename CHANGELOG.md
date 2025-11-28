@@ -60,10 +60,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Quick Start section (30-second setup)
   - "Choose Your Mode" comparison table
   - Feature badges (Zero Config, 3 Backends, etc.)
+  - MCP specification introduction explaining open standard architecture
+  - Multiple example MCP configurations (8 examples covering all modes)
   - FULL_MODE.md: Advanced features guide
   - DEPLOYMENT.md: Complete deployment guide
   - CLAUDE_CODE_SETUP.md: Step-by-step integration
   - TOOL_PROFILES.md: Complete tool reference
+
+- **uvx Support** (Documentation):
+  - Package works with `uvx claude-code-memory` out of the box
+  - Option 3 in installation methods for quick testing
+  - Installation method comparison table
+  - CI/CD integration examples (GitHub Actions, GitLab CI)
+  - Clear guidance: uvx for testing, pip for production
+  - Warning against using uvx for persistent MCP servers
 
 - **Package Configuration**:
   - Version: 1.0.0
@@ -105,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 1. **pip install** (recommended): `pip install claude-code-memory`
 2. **Docker**: `docker compose up -d`
 3. **From source**: `git clone && pip install -e .`
+4. **uvx** (testing/CI): `uvx claude-code-memory`
 
 #### Performance
 - SQLite: <100ms queries for 10k memories

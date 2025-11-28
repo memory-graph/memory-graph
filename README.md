@@ -7,6 +7,299 @@
 
 A graph-based Model Context Protocol (MCP) server that gives Claude Code persistent memory. Store development patterns, track relationships, and retrieve contextual knowledge across sessions and projects.
 
+# Understanding Memory Options for Claude Code
+
+## Overview
+
+Claude Code offers multiple ways to maintain persistent context across sessions. This guide explains the available options and helps you choose the right approach for your needs.
+
+---
+
+## Memory Option Comparison
+
+| Feature | CLAUDE.md Files | Anthropic Memory Tool (API) | MCP Memory Servers |
+|---------|----------------|----------------------------|-------------------|
+| **Setup** | Zero config | API integration required | MCP server config |
+| **Storage** | Markdown files | Your implementation | Server's backend |
+| **Automatic** | ✅ Always loaded | ✅ Claude checks automatically | ⚡ On-demand via tools |
+| **Relationships** | ❌ Flat text | ❌ Flat files | ✅ Depends on server |
+| **Searchable** | ❌ No search | ✅ File-based | ✅ Semantic/graph search |
+| **Best For** | Instructions, preferences | Long-running agents | Knowledge graphs, patterns |
+
+---
+
+## Option 1: CLAUDE.md Files (Built-in)
+
+**What it is**: Claude Code's native memory system using hierarchical Markdown files.
+
+**How it works**:
+- Files are automatically loaded into context when Claude Code launches
+- Hierarchical: Enterprise → Project → User → Local
+- You manage the content manually or via `#` quick-add
+
+**File Locations**:
+```
+~/.claude/CLAUDE.md              # User-level (global preferences)
+./CLAUDE.md                      # Project-level (team shared)
+./CLAUDE.local.md                # Local (personal, gitignored)
+/Library/.../ClaudeCode/CLAUDE.md  # Enterprise (org-wide)
+```
+
+**Best For**:
+- Coding conventions and style guides
+- Project architecture documentation
+- Team-shared instructions
+- Personal preferences
+
+**Limitations**:
+- Everything loads into context (token cost)
+- No search or retrieval - Claude sees all or nothing
+- No relationships between concepts
+- Manual maintenance required
+
+**Example**:
+```markdown
+# Project Guidelines
+- Use TypeScript strict mode
+- All API endpoints require authentication
+- Run `npm test` before committing
+
+# Architecture
+- Backend: FastAPI + PostgreSQL
+- Frontend: Next.js 14 with App Router
+```
+
+---
+
+## Option 2: Anthropic Memory Tool (API Beta)
+
+**What it is**: A beta feature in the Anthropic API for building custom memory backends.
+
+**How it works**:
+- Claude makes tool calls to read/write files in a `/memories` directory
+- You implement the storage backend (file system, database, cloud)
+- Uses `BetaAbstractMemoryTool` (Python) or `betaMemoryTool` (TypeScript)
+
+**Requirements**:
+- Beta header: `context-management-2025-06-27`
+- Custom application using Anthropic API directly
+- You implement file operations (view, create, str_replace, insert, delete, rename)
+
+**Best For**:
+- Custom applications calling Anthropic API
+- Long-running agentic workflows
+- Workflows that need context editing (auto-clearing old tool results)
+
+**Not For**:
+- Claude Code users (different architecture)
+- MCP server implementations
+
+**Example Flow**:
+```
+User Request → Claude checks /memories → Reads relevant files → Works → Updates memories
+```
+
+---
+
+## Option 3: MCP Memory Servers
+
+**What it is**: External servers that provide memory tools via Model Context Protocol.
+
+**How it works**:
+- Claude Code connects to MCP server via stdio/HTTP
+- Server exposes tools like `store_memory`, `search_memories`, `get_related`
+- Storage backend varies by implementation (SQLite, Neo4j, vector stores)
+
+**Popular Implementations**:
+
+| Server | Storage | Key Feature |
+|--------|---------|-------------|
+| mcp-memory-keeper | SQLite | Channels, checkpoints, git integration |
+| mcp-memory-service | SQLite + Cloudflare | Hybrid sync, semantic search |
+| **claude-code-memory** | Neo4j/Memgraph/SQLite | **Graph relationships, pattern recognition** |
+
+**Best For**:
+- Searching past solutions and patterns
+- Tracking relationships between concepts
+- Cross-project knowledge sharing
+- Structured memory with categories and priorities
+
+---
+
+## Claude Code Memory: Our Approach
+
+### What Makes It Different
+
+**claude-code-memory** is an MCP memory server that uses **graph database relationships** to capture how concepts connect - something flat file systems and vector stores cannot do.
+
+### Design Philosophy
+
+We follow principles aligned with Anthropic's memory tool guidelines while extending them for graph-based intelligence:
+
+| Anthropic Guideline | Our Implementation |
+|--------------------|-------------------|
+| "Store facts about the user and their preferences" | ✅ Store memories with categories (task, decision, progress, note) and priorities |
+| "Keep memories up-to-date - remove outdated info" | ✅ Temporal versioning via PREVIOUS relationships; track what changed and when |
+| "Check memory to adjust technical depth and response style" | ✅ Context-aware retrieval ranks memories by relevance to current work |
+| "Learn from past interactions, decisions, and feedback" | ✅ Pattern recognition identifies successful approaches; outcome tracking learns what works |
+| "Build knowledge bases over time" | ✅ Graph accumulates entities, relationships, and patterns across sessions |
+
+### Why Graph Relationships Matter
+
+**Flat storage** (CLAUDE.md, vector stores):
+```
+Memory 1: "Fixed timeout by adding retry logic"
+Memory 2: "Retry logic caused memory leak"  
+Memory 3: "Fixed memory leak with connection pooling"
+```
+No connection between these - search finds them separately.
+
+**Graph storage** (claude-code-memory):
+```
+[timeout_fix] --CAUSES--> [memory_leak] --SOLVED_BY--> [connection_pooling]
+     |                                                        |
+     +------------------SUPERSEDED_BY------------------------+
+```
+Query: "What happened with retry logic?" → Returns the full causal chain.
+
+### Relationship Categories
+
+We track seven categories of relationships that CLAUDE.md files cannot represent:
+
+1. **Causal**: CAUSES, TRIGGERS, LEADS_TO, PREVENTS
+2. **Solution**: SOLVES, ADDRESSES, ALTERNATIVE_TO, IMPROVES
+3. **Context**: OCCURS_IN, APPLIES_TO, WORKS_WITH, REQUIRES
+4. **Learning**: BUILDS_ON, CONTRADICTS, CONFIRMS
+5. **Similarity**: SIMILAR_TO, VARIANT_OF, RELATED_TO
+6. **Workflow**: FOLLOWS, DEPENDS_ON, ENABLES, BLOCKS
+7. **Quality**: EFFECTIVE_FOR, PREFERRED_OVER, DEPRECATED_BY
+
+### When to Use What
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Decision Guide                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  "I need Claude to follow project conventions"                   │
+│       → Use CLAUDE.md files                                      │
+│                                                                  │
+│  "I need Claude to remember what we discussed"                   │
+│       → Use MCP memory server (any)                              │
+│                                                                  │
+│  "I need Claude to understand WHY a solution worked"             │
+│       → Use claude-code-memory (graph relationships)             │
+│                                                                  │
+│  "I need Claude to find similar past problems"                   │
+│       → Use claude-code-memory (pattern recognition)             │
+│                                                                  │
+│  "I'm building a custom app with Anthropic API"                  │
+│       → Use Anthropic Memory Tool (BetaAbstractMemoryTool)       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Complementary Usage
+
+**claude-code-memory complements CLAUDE.md files** - it doesn't replace them:
+
+| Use CLAUDE.md For | Use claude-code-memory For |
+|-------------------|---------------------------|
+| "Always use 2-space indentation" | "Last time we used 4-space, it broke the linter" |
+| "Run tests before committing" | "The auth tests failed because of X, fixed by Y" |
+| "API uses JWT authentication" | "JWT refresh logic caused issues; switched to session tokens" |
+| Static instructions | Dynamic learnings |
+| What to do | What happened and why |
+
+---
+
+## Quick Start: claude-code-memory
+
+### Installation (Zero Config)
+
+```bash
+# Install from PyPI
+pip install claude-code-memory
+
+# Add to Claude Code
+claude mcp add memory claude-memory
+```
+
+That's it. SQLite backend auto-created at `~/.claude-memory/memory.db`.
+
+### Basic Usage
+
+Once configured, Claude Code can use these tools:
+
+```javascript
+// Store a memory
+store_memory({
+  content: "Fixed race condition by adding mutex locks",
+  type: "solution",
+  context: { project: "auth-service", file: "session.py" }
+})
+
+// Search for relevant memories
+search_memories({ query: "race condition" })
+
+// Find related memories via graph traversal
+get_related_memories({ 
+  memory_id: "mem_123",
+  relationship_types: ["SOLVES", "SIMILAR_TO"]
+})
+```
+
+### Upgrade to Graph Power
+
+When you need relationship intelligence:
+
+```bash
+# Start Memgraph (lightweight graph DB)
+docker run -d -p 7687:7687 memgraph/memgraph
+
+# Configure backend
+export MEMORY_BACKEND=memgraph
+export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
+```
+
+---
+
+## Summary
+
+| If You Need | Use This |
+|-------------|----------|
+| Project instructions always in context | CLAUDE.md |
+| Searchable memory across sessions | Any MCP memory server |
+| Understanding relationships and causality | claude-code-memory |
+| Custom API application memory | Anthropic Memory Tool |
+
+**claude-code-memory** is the only MCP memory server that captures **graph relationships** between your development knowledge - enabling queries like "what solved problems similar to this?" and "what did we learn from that approach?"
+
+Start simple with SQLite. Upgrade to graph when you need relationship intelligence.
+
+## What is This?
+
+**Claude Code Memory** is a reference implementation of a persistent memory system for Claude Code, built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
+
+### Understanding the Architecture
+
+- **MCP** is an open specification that allows AI assistants to connect to external data sources and tools
+- **This project** is an MCP server implementation that provides memory capabilities via graph database backends
+- **Claude Code** is an MCP client that can connect to any MCP-compliant server
+
+Think of it this way:
+- **MCP Specification** = HTTP specification
+- **This Memory Server** = A web server (like nginx or Apache)
+- **Claude Code** = A web browser that can connect to any HTTP server
+
+This implementation is **not** the only way to provide memory to Claude Code. Anyone can build their own MCP server with different memory approaches. This project offers:
+- Graph-based knowledge representation
+- Multiple backend options (SQLite, Neo4j, Memgraph)
+- Progressive complexity model (lite → standard → full)
+- 44 specialized memory tools
+
+**Why build on MCP?** It's an open standard. Your memory data isn't locked into proprietary formats. You can migrate to other MCP servers, build your own, or integrate multiple memory systems simultaneously.
+
 ## Quick Start (30 seconds)
 
 ```bash
@@ -21,7 +314,9 @@ That's it! Memory is stored in `~/.claude-memory/memory.db`. Zero configuration 
 
 ### Claude Code Integration
 
-Add to your `.claude/mcp.json`:
+Add to your `.claude/mcp.json` or `~/.config/claude/mcp_settings.json`:
+
+#### Basic Configuration (Lite Mode - Default)
 
 ```json
 {
@@ -33,10 +328,148 @@ Add to your `.claude/mcp.json`:
 }
 ```
 
-Start using it immediately:
+#### Standard Mode (Pattern Recognition)
+
+```json
+{
+  "mcpServers": {
+    "claude-memory": {
+      "command": "claude-memory",
+      "args": ["--profile", "standard"]
+    }
+  }
+}
+```
+
+#### Full Mode with SQLite
+
+```json
+{
+  "mcpServers": {
+    "claude-memory": {
+      "command": "claude-memory",
+      "args": ["--profile", "full"],
+      "env": {
+        "MEMORY_TOOL_PROFILE": "full",
+        "MEMORY_SQLITE_PATH": "/Users/yourname/.claude-memory/memory.db"
+      }
+    }
+  }
+}
+```
+
+#### Full Mode with Neo4j
+
+```json
+{
+  "mcpServers": {
+    "claude-memory": {
+      "command": "claude-memory",
+      "args": ["--backend", "neo4j", "--profile", "full"],
+      "env": {
+        "MEMORY_BACKEND": "neo4j",
+        "MEMORY_NEO4J_URI": "bolt://localhost:7687",
+        "MEMORY_NEO4J_USER": "neo4j",
+        "MEMORY_NEO4J_PASSWORD": "your-password",
+        "MEMORY_TOOL_PROFILE": "full"
+      }
+    }
+  }
+}
+```
+
+#### Full Mode with Memgraph
+
+```json
+{
+  "mcpServers": {
+    "claude-memory": {
+      "command": "claude-memory",
+      "args": ["--backend", "memgraph", "--profile", "full"],
+      "env": {
+        "MEMORY_BACKEND": "memgraph",
+        "MEMORY_MEMGRAPH_URI": "bolt://localhost:7687",
+        "MEMORY_MEMGRAPH_USER": "memgraph",
+        "MEMORY_MEMGRAPH_PASSWORD": "memgraph",
+        "MEMORY_TOOL_PROFILE": "full"
+      }
+    }
+  }
+}
+```
+
+#### Docker-based Configuration
+
+```json
+{
+  "mcpServers": {
+    "claude-memory": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "claude-memory-server",
+        "python",
+        "-m",
+        "claude_memory.server"
+      ],
+      "env": {
+        "MEMORY_BACKEND": "neo4j",
+        "MEMORY_NEO4J_URI": "bolt://neo4j:7687",
+        "MEMORY_NEO4J_USER": "neo4j",
+        "MEMORY_NEO4J_PASSWORD": "your-password"
+      }
+    }
+  }
+}
+```
+
+#### Custom Database Path
+
+```json
+{
+  "mcpServers": {
+    "claude-memory": {
+      "command": "claude-memory",
+      "args": ["--profile", "standard"],
+      "env": {
+        "MEMORY_SQLITE_PATH": "/path/to/your/project/.memory/memory.db",
+        "MEMORY_LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}
+```
+
+#### Multiple Memory Servers (Project-Specific)
+
+```json
+{
+  "mcpServers": {
+    "memory-personal": {
+      "command": "claude-memory",
+      "env": {
+        "MEMORY_SQLITE_PATH": "/Users/yourname/.claude-memory/personal.db"
+      }
+    },
+    "memory-work": {
+      "command": "claude-memory",
+      "args": ["--profile", "full", "--backend", "neo4j"],
+      "env": {
+        "MEMORY_NEO4J_URI": "bolt://work-server:7687",
+        "MEMORY_NEO4J_USER": "neo4j",
+        "MEMORY_NEO4J_PASSWORD": "work-password"
+      }
+    }
+  }
+}
+```
+
+**Start using it immediately:**
 - "Store this pattern for later"
 - "What similar problems have we solved?"
 - "Remember this approach works well for authentication"
+- "Show me all memories related to database migrations"
 
 See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for detailed integration guide.
 
@@ -143,6 +576,36 @@ docker compose up -d
 # Neo4j mode (full power)
 docker compose -f docker-compose.neo4j.yml up -d
 ```
+
+### Option 3: uvx (Quick Test / No Install)
+
+Try claude-code-memory without installation using uvx:
+
+```bash
+# Install uv (if not already installed)
+pip install uv
+# or: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Run directly from PyPI
+uvx claude-code-memory --version
+uvx claude-code-memory --show-config
+
+# Run as MCP server (ephemeral)
+uvx claude-code-memory --backend sqlite --profile lite
+```
+
+**Note**: uvx is great for quick testing and CI/CD, but **pip install is recommended** for daily use as a persistent MCP server. See [DEPLOYMENT.md](docs/DEPLOYMENT.md#method-4-uvx-ephemeral--testing) for limitations and use cases.
+
+### Installation Method Comparison
+
+| Method | Setup Time | Use Case | Persistence | Recommended For |
+|--------|-----------|----------|-------------|-----------------|
+| **pip install** | 30 sec | Daily use, MCP server | Yes | Most users |
+| **Docker** | 5 min | Team/production | Yes | Power users, teams |
+| **uvx** | 10 sec* | Quick test, CI/CD | No** | Testing, automation |
+
+\* First run slower (downloads package), subsequent runs cached
+\*\* Requires explicit database path for persistent data (`MEMORY_SQLITE_PATH`)
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 

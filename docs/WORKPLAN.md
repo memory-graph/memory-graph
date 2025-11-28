@@ -303,6 +303,65 @@
   - Section 6: Troubleshooting MCP issues
   - ✅ COMPLETE: Step-by-step guide with examples and best practices
 
+### 8.5.5 Document uvx Support (NEW)
+
+**Goal**: Communicate uvx compatibility as an alternative installation method
+
+**Priority**: LOW (documentation-only, no code changes needed)
+
+**Context**: Package already works with uvx via existing entry point. This is purely about documenting the capability.
+
+- [ ] Update README.md with uvx option
+  - File: `README.md`
+  - Section: "Installation" (add as Option 3)
+  - Title: "Option 3: uvx (Quick Test / No Install)"
+  - Add note in comparison: "uvx is great for testing, but pip install is recommended for daily use"
+
+- [ ] Add installation method comparison table to README.md
+  - File: `README.md`
+  - Location: After installation options
+  - Table columns: Method, Setup Time, Use Case, Persistence, Recommended For
+  - Rows: pip install, Docker, from source, uvx
+
+- [ ] Update DEPLOYMENT.md with uvx use cases
+  - File: `docs/DEPLOYMENT.md`
+  - Section: Add new "Method 4: uvx (Ephemeral / Testing)"
+  - Location: After "Method 3: From Source"
+  - Content: Use cases, installation, usage examples, limitations, CI/CD examples
+
+- [ ] Update CLAUDE_CODE_SETUP.md with uvx MCP config
+  - File: `docs/CLAUDE_CODE_SETUP.md`
+  - Section: Add to "Installation" section
+  - Location: After pip installation examples
+  - Warning: "Not recommended for MCP servers" with explanation
+  - Show uvx mcp.json config example (if users insist)
+
+- [ ] Update CHANGELOG.md
+  - File: `CHANGELOG.md`
+  - Version: 1.0.0 (or 1.0.1 if post-release)
+  - Note: "Documented uvx compatibility for ephemeral usage and CI/CD integration"
+
+- [ ] Test uvx execution locally
+  - Verify: `uvx claude-code-memory --version` works
+  - Verify: `uvx claude-code-memory --show-config` works
+  - Verify: Server starts with `uvx claude-code-memory`
+  - Verify: Database persistence with explicit path
+  - Document: Any gotchas or edge cases
+
+**Success Criteria**:
+- [ ] README mentions uvx as Option 3 with clear positioning
+- [ ] Installation comparison table helps users choose method
+- [ ] DEPLOYMENT.md has comprehensive uvx section
+- [ ] CLAUDE_CODE_SETUP.md warns against uvx for MCP servers
+- [ ] CHANGELOG documents uvx support
+- [ ] Tested locally: `uvx claude-code-memory --version` works
+
+**Estimated Effort**: 1-2 hours (documentation only)
+
+**Dependencies**: 8.7 PyPI publication must complete first for uvx to work
+
+**Note**: This is purely documentation work. The package already supports uvx via the existing `pyproject.toml` entry point configuration.
+
 ---
 
 ## 8.6 Docker Support (Priority: MEDIUM) ✅

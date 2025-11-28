@@ -83,6 +83,33 @@ claude-memory --show-config
 # Should show default settings
 ```
 
+### Alternative: uvx (Not Recommended for MCP)
+
+You can run via uvx for quick testing, though this is **not recommended for MCP servers**:
+
+```bash
+# Install uv
+pip install uv
+
+# Test without installing
+uvx claude-code-memory --version
+uvx claude-code-memory --show-config
+```
+
+**Why not recommended for MCP servers**:
+- ⚠️ Adds latency to every MCP connection (package download/cache check)
+- ⚠️ Harder to configure persistent environment variables
+- ⚠️ Database path must be explicitly set every time
+- ⚠️ MCP servers run continuously - installation overhead isn't worth it
+
+**When uvx makes sense**: Quick testing, CI/CD, version comparison
+
+**If you still want to use uvx for MCP** (not recommended):
+
+See the uvx MCP configuration example in the [MCP Configuration](#uvx-configuration-advanced---not-recommended) section below.
+
+**Better approach**: Use `pip install claude-code-memory` for MCP servers, use uvx for quick testing only.
+
 ---
 
 ## MCP Configuration
@@ -161,6 +188,52 @@ This enables:
 - All 44 tools
 - Graph analytics
 - Advanced features
+
+#### uvx Configuration (Advanced - Not Recommended)
+
+**⚠️ Warning**: This configuration is **not recommended** for production MCP servers. Use `pip install claude-code-memory` instead.
+
+If you insist on using uvx (for testing purposes only):
+
+```json
+{
+  "mcpServers": {
+    "claude-memory": {
+      "command": "uvx",
+      "args": ["claude-code-memory"],
+      "env": {
+        "MEMORY_SQLITE_PATH": "/Users/yourname/.claude-memory/memory.db",
+        "MEMORY_TOOL_PROFILE": "lite"
+      }
+    }
+  }
+}
+```
+
+**Limitations of uvx with MCP**:
+- ❌ Slower startup (package download/cache check on every connection)
+- ❌ Environment variables must be explicitly set in mcp.json
+- ❌ Database path required (no default)
+- ❌ Harder to debug connection issues
+- ❌ Not suitable for production use
+
+**Why this exists**: Useful for quickly testing different versions without reinstalling:
+```json
+{
+  "mcpServers": {
+    "memory-test-v1": {
+      "command": "uvx",
+      "args": ["claude-code-memory@1.0.0"]
+    },
+    "memory-test-v2": {
+      "command": "uvx",
+      "args": ["claude-code-memory@1.1.0"]
+    }
+  }
+}
+```
+
+**Recommendation**: For daily use, install via pip and use the standard configurations above.
 
 ### Step 3: Save and Restart
 
