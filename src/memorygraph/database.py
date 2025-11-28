@@ -534,7 +534,7 @@ class MemoryDatabase:
                 properties = RelationshipProperties()
 
             # Convert properties to dict for Neo4j
-            props_dict = properties.dict()
+            props_dict = properties.model_dump()
             props_dict['id'] = relationship_id
             props_dict['created_at'] = props_dict['created_at'].isoformat()
             props_dict['last_validated'] = props_dict['last_validated'].isoformat()

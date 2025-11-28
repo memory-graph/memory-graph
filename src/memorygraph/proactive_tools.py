@@ -588,7 +588,7 @@ async def handle_get_graph_visualization(
         return CallToolResult(
             content=[TextContent(
                 type="text",
-                text=json.dumps(viz_data.dict(), indent=2)
+                text=json.dumps(viz_data.model_dump(), indent=2)
             )]
         )
 

@@ -8,7 +8,7 @@ including memory types, relationships, and validation schemas.
 from enum import Enum
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class MemoryType(str, Enum):
@@ -83,7 +83,7 @@ class RelationshipType(str, Enum):
 
 class MemoryContext(BaseModel):
     """Context information for a memory."""
-    
+
     project_path: Optional[str] = None
     files_involved: List[str] = Field(default_factory=list)
     languages: List[str] = Field(default_factory=list)
@@ -97,15 +97,10 @@ class MemoryContext(BaseModel):
     user_id: Optional[str] = None
     additional_metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class Memory(BaseModel):
     """Core memory data structure."""
-    
+
     id: Optional[str] = None
     type: MemoryType
     title: str = Field(..., min_length=1, max_length=200)
@@ -120,26 +115,23 @@ class Memory(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     last_accessed: Optional[datetime] = None
-    
-    @validator('tags')
+
+    @field_validator('tags')
+    @classmethod
     def validate_tags(cls, v):
         """Ensure tags are lowercase and non-empty."""
         return [tag.lower().strip() for tag in v if tag.strip()]
-    
-    @validator('title', 'content')
+
+    @field_validator('title', 'content')
+    @classmethod
     def validate_text_fields(cls, v):
         """Ensure text fields are properly formatted."""
         return v.strip()
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class RelationshipProperties(BaseModel):
     """Properties for relationships between memories."""
-    
+
     strength: float = Field(default=0.5, ge=0.0, le=1.0)
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
     context: Optional[str] = None
@@ -149,16 +141,11 @@ class RelationshipProperties(BaseModel):
     last_validated: datetime = Field(default_factory=datetime.utcnow)
     validation_count: int = Field(default=0, ge=0)
     counter_evidence_count: int = Field(default=0, ge=0)
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 
 class Relationship(BaseModel):
     """Relationship between two memories."""
-    
+
     id: Optional[str] = None
     from_memory_id: str
     to_memory_id: str
@@ -166,8 +153,9 @@ class Relationship(BaseModel):
     properties: RelationshipProperties = Field(default_factory=RelationshipProperties)
     description: Optional[str] = None
     bidirectional: bool = Field(default=False)
-    
-    @validator('from_memory_id', 'to_memory_id')
+
+    @field_validator('from_memory_id', 'to_memory_id')
+    @classmethod
     def validate_memory_ids(cls, v):
         """Ensure memory IDs are non-empty."""
         if not v or not v.strip():
@@ -208,7 +196,7 @@ class MemoryNode(BaseModel):
         # Add context information if present
         if self.memory.context:
             import json
-            context_data = self.memory.context.dict()
+            context_data = self.memory.context.model_dump()
             for key, value in context_data.items():
                 if value is not None:
                     if isinstance(value, datetime):
@@ -231,7 +219,7 @@ class MemoryNode(BaseModel):
 
 class SearchQuery(BaseModel):
     """Search query parameters for memory retrieval."""
-    
+
     query: Optional[str] = None
     memory_types: List[MemoryType] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
@@ -245,11 +233,6 @@ class SearchQuery(BaseModel):
     created_before: Optional[datetime] = None
     limit: int = Field(default=20, ge=1, le=100)
     include_relationships: bool = Field(default=True)
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 
 class MemoryGraph(BaseModel):
@@ -279,11 +262,6 @@ class AnalysisResult(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # Custom Exception Hierarchy

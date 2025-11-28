@@ -17,7 +17,7 @@ from typing import List, Dict, Optional, Any, Tuple
 import logging
 from collections import defaultdict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from ..backends.base import GraphBackend
 from ..models import Memory, MemoryType, RelationshipType
@@ -39,15 +39,15 @@ class GraphNode(BaseModel):
 class GraphEdge(BaseModel):
     """Edge in visualization graph."""
 
+    model_config = ConfigDict(
+        populate_by_name=True
+    )
+
     from_: str = Field(..., alias="from")
     to: str
     type: str
     value: float = 1.0  # Edge width/weight
     title: Optional[str] = None  # Hover text
-
-    class Config:
-        populate_by_name = True  # Pydantic V2: allows using Python field names
-        allow_population_by_field_name = True  # Pydantic V1 compatibility
 
 
 class GraphVisualizationData(BaseModel):

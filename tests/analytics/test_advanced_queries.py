@@ -328,8 +328,8 @@ class TestVisualizationModels:
             value=0.8,
         )
 
-        # Use dict() to access the field using the alias
-        edge_dict = edge.dict(by_alias=True)
+        # Use model_dump() to access the field using the alias
+        edge_dict = edge.model_dump(by_alias=True)
         assert edge_dict["from"] == "node_1"
         assert edge_dict["to"] == "node_2"
         assert edge.type == "SOLVES"
