@@ -11,19 +11,15 @@ A graph-based Model Context Protocol (MCP) server that gives Claude Code persist
 
 ## Quick Start (30 seconds)
 
-```bash
-# Install
-pip install claude-code-memory
+### Step 1: Install
 
-# Run
-claude-memory
+```bash
+pip install claude-code-memory
 ```
 
-That's it! Memory is stored in `~/.claude-memory/memory.db`. Zero configuration needed.
+### Step 2: Add to Claude Code
 
-### Add to Claude Code
-
-Add to your `.claude/mcp.json` or `~/.config/claude/mcp_settings.json`:
+Edit `.claude/mcp.json` (or `~/.config/claude/mcp_settings.json`):
 
 ```json
 {
@@ -35,13 +31,19 @@ Add to your `.claude/mcp.json` or `~/.config/claude/mcp_settings.json`:
 }
 ```
 
-**Start using it immediately:**
+### Step 3: Restart Claude Code
+
+That's it! Memory is stored in `~/.claude-memory/memory.db`. Zero additional configuration needed.
+
+### Start Using It
+
+Ask Claude in any conversation:
 - "Store this pattern for later"
 - "What similar problems have we solved?"
 - "Remember this approach works well for authentication"
 - "Show me all memories related to database migrations"
 
-See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for detailed integration guide.
+See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for detailed integration guide and advanced configurations.
 
 ---
 
