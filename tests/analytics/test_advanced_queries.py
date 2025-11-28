@@ -12,7 +12,7 @@ import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock
 
-from src.claude_memory.analytics.advanced_queries import (
+from src.memorygraph.analytics.advanced_queries import (
     get_memory_graph_visualization,
     analyze_solution_similarity,
     identify_knowledge_gaps,

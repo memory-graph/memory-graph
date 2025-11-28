@@ -259,27 +259,27 @@ TOTAL                             672    425    37%
 ## Files Modified
 
 ### Core Implementation Files
-1. `/Users/gregorydickson/claude-code-memory/src/claude_memory/database.py` ✅
+1. `/Users/gregorydickson/memorygraph/src/claude_memory/database.py` ✅
    - Converted to fully async
    - Added custom exception handling
    - Fixed relationship metadata bug
    - Fixed context serialization bug
 
-2. `/Users/gregorydickson/claude-code-memory/src/claude_memory/models.py` ✅
+2. `/Users/gregorydickson/memorygraph/src/claude_memory/models.py` ✅
    - Added custom exception hierarchy
    - Fixed context serialization in `to_neo4j_properties()`
    - Exported exceptions
 
-3. `/Users/gregorydickson/claude-code-memory/src/claude_memory/server.py` ✅
+3. `/Users/gregorydickson/memorygraph/src/claude_memory/server.py` ✅
    - Updated all database calls to async with await
    - Added custom exception imports
    - Fixed initialization and cleanup
 
-4. `/Users/gregorydickson/claude-code-memory/src/claude_memory/__init__.py` ✅
+4. `/Users/gregorydickson/memorygraph/src/claude_memory/__init__.py` ✅
    - Exported custom exceptions
 
 ### Test Files
-5. `/Users/gregorydickson/claude-code-memory/tests/test_exceptions.py` ✅ NEW
+5. `/Users/gregorydickson/memorygraph/tests/test_exceptions.py` ✅ NEW
    - 8 comprehensive exception tests
 
 ---
@@ -289,7 +289,7 @@ TOTAL                             672    425    37%
 ### 1. Test Execution ✅
 
 ```bash
-export PYTHONPATH=/Users/gregorydickson/claude-code-memory/src:$PYTHONPATH
+export PYTHONPATH=/Users/gregorydickson/memorygraph/src:$PYTHONPATH
 python3 -m pytest tests/ -v
 ```
 

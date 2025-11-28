@@ -9,7 +9,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 
-from src.claude_memory.proactive.session_briefing import (
+from src.memorygraph.proactive.session_briefing import (
     generate_session_briefing,
     get_session_briefing_resource,
     SessionBriefing,
@@ -18,7 +18,7 @@ from src.claude_memory.proactive.session_briefing import (
     RelevantPattern,
     DeprecationWarning as DepWarn,
 )
-from src.claude_memory.integration.project_analysis import ProjectInfo
+from src.memorygraph.integration.project_analysis import ProjectInfo
 
 
 class TestSessionBriefingModels:
@@ -179,7 +179,7 @@ class TestGenerateSessionBriefing:
         backend = AsyncMock()
 
         # Mock detect_project to return None
-        with patch('src.claude_memory.proactive.session_briefing.detect_project',
+        with patch('src.memorygraph.proactive.session_briefing.detect_project',
                    return_value=None):
             briefing = await generate_session_briefing(
                 backend,
@@ -208,7 +208,7 @@ class TestGenerateSessionBriefing:
             [],  # Deprecations
         ])
 
-        with patch('src.claude_memory.proactive.session_briefing.detect_project',
+        with patch('src.memorygraph.proactive.session_briefing.detect_project',
                    return_value=project):
             briefing = await generate_session_briefing(
                 backend,
@@ -247,7 +247,7 @@ class TestGenerateSessionBriefing:
             [],  # Deprecations
         ])
 
-        with patch('src.claude_memory.proactive.session_briefing.detect_project',
+        with patch('src.memorygraph.proactive.session_briefing.detect_project',
                    return_value=project):
             briefing = await generate_session_briefing(
                 backend,
@@ -286,7 +286,7 @@ class TestGenerateSessionBriefing:
             [],  # Deprecations
         ])
 
-        with patch('src.claude_memory.proactive.session_briefing.detect_project',
+        with patch('src.memorygraph.proactive.session_briefing.detect_project',
                    return_value=project):
             briefing = await generate_session_briefing(
                 backend,
@@ -325,7 +325,7 @@ class TestGenerateSessionBriefing:
             [],  # Deprecations
         ])
 
-        with patch('src.claude_memory.proactive.session_briefing.detect_project',
+        with patch('src.memorygraph.proactive.session_briefing.detect_project',
                    return_value=project):
             briefing = await generate_session_briefing(
                 backend,
@@ -362,7 +362,7 @@ class TestGenerateSessionBriefing:
             ],
         ])
 
-        with patch('src.claude_memory.proactive.session_briefing.detect_project',
+        with patch('src.memorygraph.proactive.session_briefing.detect_project',
                    return_value=project):
             briefing = await generate_session_briefing(
                 backend,

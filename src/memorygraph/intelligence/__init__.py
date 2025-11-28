@@ -8,26 +8,26 @@ This module provides:
 - Context-aware intelligent retrieval
 """
 
-from claude_memory.intelligence.entity_extraction import (
+from memorygraph.intelligence.entity_extraction import (
     EntityType,
     Entity,
     EntityExtractor,
     extract_entities,
     link_entities,
 )
-from claude_memory.intelligence.pattern_recognition import (
+from memorygraph.intelligence.pattern_recognition import (
     PatternRecognizer,
     find_similar_problems,
     extract_patterns,
     suggest_patterns,
 )
-from claude_memory.intelligence.temporal import (
+from memorygraph.intelligence.temporal import (
     TemporalMemory,
     get_memory_history,
     get_state_at,
     track_entity_changes,
 )
-from claude_memory.intelligence.context_retrieval import (
+from memorygraph.intelligence.context_retrieval import (
     ContextRetriever,
     get_context,
     get_project_context,

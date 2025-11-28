@@ -11,9 +11,9 @@ from .factory import BackendFactory
 # Backend classes are imported lazily via the factory to avoid
 # import-time dependencies on optional packages (neo4j, etc.)
 # Import them explicitly when needed:
-#   from claude_memory.backends.neo4j_backend import Neo4jBackend
-#   from claude_memory.backends.memgraph_backend import MemgraphBackend
-#   from claude_memory.backends.sqlite_fallback import SQLiteFallbackBackend
+#   from memorygraph.backends.neo4j_backend import Neo4jBackend
+#   from memorygraph.backends.memgraph_backend import MemgraphBackend
+#   from memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 
 __all__ = [
     "GraphBackend",

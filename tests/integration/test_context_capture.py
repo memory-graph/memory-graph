@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
-from claude_memory.integration.context_capture import (
+from memorygraph.integration.context_capture import (
     TaskContext,
     CommandExecution,
     ErrorPattern,

@@ -5,8 +5,8 @@
 ## TL;DR
 
 ```bash
-pip install claude-code-memory
-claude-memory
+pip install memorygraph
+memorygraph
 ```
 
 That's it. Zero configuration needed. Memory stored locally in SQLite.
@@ -27,7 +27,7 @@ A Model Context Protocol (MCP) server that gives Claude Code persistent memory a
 
 ### Zero-Config Default
 - **SQLite backend** with no setup required
-- Automatic database creation at `~/.claude-memory/memory.db`
+- Automatic database creation at `~/.memorygraph/memory.db`
 - No external dependencies for basic usage
 - Works out of the box on macOS, Linux, Windows (WSL)
 
@@ -51,19 +51,19 @@ All backends support all 44 tools.
 ### Simple CLI
 ```bash
 # Default (lite mode, SQLite)
-claude-memory
+memorygraph
 
 # Standard mode
-claude-memory --profile standard
+memorygraph --profile standard
 
 # Full power with Neo4j
-claude-memory --backend neo4j --profile full
+memorygraph --backend neo4j --profile full
 
 # Show configuration
-claude-memory --show-config
+memorygraph --show-config
 
 # Version
-claude-memory --version
+memorygraph --version
 ```
 
 ### Docker Support
@@ -93,24 +93,24 @@ docker compose -f docker-compose.full.yml up -d
 
 **Lite Mode (Default)**:
 ```bash
-pip install claude-code-memory
+pip install memorygraph
 ```
 
 **Standard Mode (with intelligence)**:
 ```bash
-pip install "claude-code-memory[intelligence]"
+pip install "memorygraph[intelligence]"
 ```
 
 **Full Mode (with Neo4j)**:
 ```bash
-pip install "claude-code-memory[neo4j,intelligence]"
+pip install "memorygraph[neo4j,intelligence]"
 ```
 
 ### Option 2: Docker
 
 ```bash
-git clone https://github.com/gregorydickson/claude-code-memory.git
-cd claude-code-memory
+git clone https://github.com/gregorydickson/memorygraph.git
+cd memorygraph
 docker compose up -d
 ```
 
@@ -123,8 +123,8 @@ Add to `.claude/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory"
+    "memorygraph": {
+      "command": "memorygraph"
     }
   }
 }
@@ -188,7 +188,7 @@ Restart Claude Code and start using memory:
 ### Major Changes
 - **Default backend changed**: Neo4j → SQLite (zero-config)
 - **Tool profiling system**: Choose complexity (lite/standard/full)
-- **CLI implementation**: `claude-memory` command with flags
+- **CLI implementation**: `memorygraph` command with flags
 - **Docker support**: Complete compose files for all backends
 - **Documentation overhaul**: Beginner-friendly guides
 
@@ -205,7 +205,7 @@ export MEMORY_TOOL_PROFILE=full
 ```
 
 **New users**:
-Nothing needed! Just `pip install claude-code-memory`.
+Nothing needed! Just `pip install memorygraph`.
 
 ---
 
@@ -263,20 +263,20 @@ Nothing needed! Just `pip install claude-code-memory`.
 
 ## Getting Help
 
-- **Documentation**: [docs/](https://github.com/gregorydickson/claude-code-memory/tree/main/docs)
-- **Issues**: [GitHub Issues](https://github.com/gregorydickson/claude-code-memory/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/gregorydickson/claude-code-memory/discussions)
+- **Documentation**: [docs/](https://github.com/gregorydickson/memorygraph/tree/main/docs)
+- **Issues**: [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/gregorydickson/memorygraph/discussions)
 
 ---
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](https://github.com/gregorydickson/claude-code-memory/blob/main/CONTRIBUTING.md) for guidelines.
+We welcome contributions! See [CONTRIBUTING.md](https://github.com/gregorydickson/memorygraph/blob/main/CONTRIBUTING.md) for guidelines.
 
 ### Development Setup
 ```bash
-git clone https://github.com/gregorydickson/claude-code-memory.git
-cd claude-code-memory
+git clone https://github.com/gregorydickson/memorygraph.git
+cd memorygraph
 pip install -e ".[dev]"
 pytest tests/
 ```
@@ -294,7 +294,7 @@ pytest tests/
 
 ## License
 
-MIT License - See [LICENSE](https://github.com/gregorydickson/claude-code-memory/blob/main/LICENSE) file for details.
+MIT License - See [LICENSE](https://github.com/gregorydickson/memorygraph/blob/main/LICENSE) file for details.
 
 ---
 
@@ -306,12 +306,12 @@ MIT License - See [LICENSE](https://github.com/gregorydickson/claude-code-memory
 
 ## Quick Links
 
-- [PyPI Package](https://pypi.org/project/claude-code-memory/)
-- [GitHub Repository](https://github.com/gregorydickson/claude-code-memory)
-- [Documentation](https://github.com/gregorydickson/claude-code-memory/blob/main/docs/)
-- [Quick Start Guide](https://github.com/gregorydickson/claude-code-memory/blob/main/docs/CLAUDE_CODE_SETUP.md)
-- [Full Mode Guide](https://github.com/gregorydickson/claude-code-memory/blob/main/docs/FULL_MODE.md)
+- [PyPI Package](https://pypi.org/project/memorygraph/)
+- [GitHub Repository](https://github.com/gregorydickson/memorygraph)
+- [Documentation](https://github.com/gregorydickson/memorygraph/blob/main/docs/)
+- [Quick Start Guide](https://github.com/gregorydickson/memorygraph/blob/main/docs/CLAUDE_CODE_SETUP.md)
+- [Full Mode Guide](https://github.com/gregorydickson/memorygraph/blob/main/docs/FULL_MODE.md)
 
 ---
 
-**Install now**: `pip install claude-code-memory`
+**Install now**: `pip install memorygraph`

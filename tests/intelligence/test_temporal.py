@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime, timedelta
-from claude_memory.intelligence.temporal import (
+from memorygraph.intelligence.temporal import (
     TemporalMemory,
     get_memory_history,
     get_state_at,

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   memgraph:
     image: memgraph/memgraph-platform
-    container_name: claude-memory-memgraph
+    container_name: memorygraph-memgraph
     ports:
       - "7687:7687"  # Bolt protocol
       - "3000:3000"  # Memgraph Lab
@@ -19,11 +19,11 @@ services:
       retries: 5
     restart: unless-stopped
 
-  claude-memory:
+  memorygraph:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: claude-memory-server
+    container_name: memorygraph-server
     depends_on:
       memgraph:
         condition: service_healthy

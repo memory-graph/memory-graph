@@ -6,8 +6,8 @@ The Claude Code Memory Server v1.0.0 has been successfully installed locally and
 
 ### What Was Installed
 
-1. **Package**: `claude-code-memory` v1.0.0 installed in editable mode
-2. **Location**: `/Users/gregorydickson/claude-code-memory`
+1. **Package**: `memorygraph` v1.0.0 installed in editable mode
+2. **Location**: `/Users/gregorydickson/memorygraph`
 3. **Python**: Python 3.12
 4. **Backend**: SQLite (default, zero-config)
 5. **Profile**: Lite (8 essential tools)
@@ -26,13 +26,13 @@ The Claude Code Memory Server v1.0.0 has been successfully installed locally and
   ],
   "env": {
     "MEMORY_BACKEND": "sqlite",
-    "MEMORY_SQLITE_PATH": "/Users/gregorydickson/.claude-memory/memory.db",
+    "MEMORY_SQLITE_PATH": "/Users/gregorydickson/.memorygraph/memory.db",
     "MEMORY_LOG_LEVEL": "INFO"
   }
 }
 ```
 
-**Data Directory**: `/Users/gregorydickson/.claude-memory/`
+**Data Directory**: `/Users/gregorydickson/.memorygraph/`
 
 ### Next Steps
 
@@ -79,11 +79,11 @@ See `docs/FULL_MODE.md` for detailed backend setup instructions.
 **If the server doesn't start:**
 1. Check Claude Code logs for errors
 2. Verify Python 3 is available: `which python3`
-3. Verify package is installed: `python3 -m pip show claude-code-memory`
+3. Verify package is installed: `python3 -m pip show memorygraph`
 4. Test manually: `python3 -m claude_memory.cli --show-config`
 
 **Database location:**
-- SQLite database will be created at: `/Users/gregorydickson/.claude-memory/memory.db`
+- SQLite database will be created at: `/Users/gregorydickson/.memorygraph/memory.db`
 - Check permissions if you get file access errors
 
 ### Documentation

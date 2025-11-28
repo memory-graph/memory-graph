@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from claude_memory.models import (
+from memorygraph.models import (
     Memory, MemoryType, MemoryContext, Relationship, RelationshipType,
     RelationshipProperties, SearchQuery, MemoryNode
 )

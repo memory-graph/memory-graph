@@ -13,9 +13,9 @@ import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from claude_memory.server import ClaudeMemoryServer
-from claude_memory.database import MemoryDatabase, Neo4jConnection
-from claude_memory.models import (
+from memorygraph.server import ClaudeMemoryServer
+from memorygraph.database import MemoryDatabase, Neo4jConnection
+from memorygraph.models import (
     Memory, MemoryType, MemoryContext, Relationship,
     RelationshipType, RelationshipProperties, SearchQuery,
     MemoryNotFoundError, ValidationError
@@ -353,7 +353,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_database_error_handling(self, mcp_server, mock_database):
         """Test handling of database errors."""
-        from claude_memory.models import DatabaseConnectionError
+        from memorygraph.models import DatabaseConnectionError
 
         mock_database.store_memory.side_effect = DatabaseConnectionError("DB connection failed")
 

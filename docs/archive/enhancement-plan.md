@@ -15,7 +15,7 @@
 
 > **Purpose**: Comprehensive implementation roadmap merging original implementation plan with enhancement features. Optimized for execution by a coding agent.
 >
-> **Repository**: https://github.com/ViralV00d00/claude-code-memory
+> **Repository**: https://github.com/ViralV00d00/memorygraph
 >
 > **Goal**: Create the best-in-class graph-based MCP memory server for Claude Code with intelligent relationship tracking, multi-backend support, and proactive context awareness.
 
@@ -472,7 +472,7 @@ This phase creates a database abstraction layer enabling Neo4j, Memgraph, and SQ
   import json
 
   class SQLiteFallbackBackend(GraphBackend):
-      def __init__(self, db_path: str = "~/.claude-memory/memory.db"):
+      def __init__(self, db_path: str = "~/.memorygraph/memory.db"):
           self.db_path = os.path.expanduser(db_path)
           self.conn = sqlite3.connect(self.db_path)
           self.graph = nx.DiGraph()  # In-memory for traversals
@@ -545,7 +545,7 @@ This phase creates a database abstraction layer enabling Neo4j, Memgraph, and SQ
   # MEMORY_NEO4J_USER: Neo4j username (default: "neo4j")
   # MEMORY_NEO4J_PASSWORD: Neo4j password (required for Neo4j)
   # MEMORY_MEMGRAPH_URI: Memgraph URI (default: "bolt://localhost:7687")
-  # MEMORY_SQLITE_PATH: SQLite path (default: "~/.claude-memory/memory.db")
+  # MEMORY_SQLITE_PATH: SQLite path (default: "~/.memorygraph/memory.db")
   # MEMORY_LOG_LEVEL: Logging level (default: "INFO")
   ```
 - [x] Update `src/claude_memory/database.py` to use factory
@@ -1194,7 +1194,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
   COPY pyproject.toml .
   RUN pip install .
   COPY src/ ./src/
-  CMD ["claude-memory", "--backend", "auto"]
+  CMD ["memorygraph", "--backend", "auto"]
   ```
 - [ ] Create `docker/docker-compose.yml` (Neo4j):
   ```yaml
@@ -1281,7 +1281,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
 - [ ] Configure `pyproject.toml` for PyPI publishing:
   ```toml
   [project]
-  name = "claude-code-memory"
+  name = "memorygraph"
   version = "1.0.0"
   description = "Graph-based MCP memory server for Claude Code"
   requires-python = ">=3.9"
@@ -1298,7 +1298,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
   dev = ["pytest", "pytest-asyncio", "pytest-cov", "ruff", "mypy"]
 
   [project.scripts]
-  claude-memory = "claude_memory.cli:main"
+  memorygraph = "claude_memory.cli:main"
   ```
 - [ ] Implement CLI in `src/claude_memory/cli.py`:
   ```python
@@ -1316,19 +1316,19 @@ This phase focuses on deployment, developer experience, documentation, and produ
   ```
 - [ ] Test installation flow:
   ```bash
-  pip install claude-code-memory
-  claude-memory --backend sqlite
+  pip install memorygraph
+  memorygraph --backend sqlite
   ```
 - [ ] Add installation modes:
   ```bash
   # Minimal (SQLite only)
-  pip install claude-code-memory
+  pip install memorygraph
 
   # With intelligence features
-  pip install claude-code-memory[intelligence]
+  pip install memorygraph[intelligence]
 
   # Development
-  pip install claude-code-memory[dev]
+  pip install memorygraph[dev]
   ```
 - [ ] Publish to PyPI
 - [ ] Create GitHub releases with binaries
@@ -1340,8 +1340,8 @@ This phase focuses on deployment, developer experience, documentation, and produ
 - [ ] Document configuration for SQLite mode:
   ```bash
   # Install and configure
-  pip install claude-code-memory
-  claude mcp add memory-graph pip run claude-memory --backend sqlite
+  pip install memorygraph
+  claude mcp add memory-graph pip run memorygraph --backend sqlite
   ```
 - [ ] Document configuration for Docker (Neo4j):
   ```bash
@@ -1502,7 +1502,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
 
 **Phase 8 Success Criteria**:
 - One-command deployment works on all platforms
-- `pip install claude-code-memory` works flawlessly
+- `pip install memorygraph` works flawlessly
 - Claude Code integration takes <5 minutes
 - Performance handles 10,000+ memories smoothly
 - All tests pass in CI/CD
@@ -1735,7 +1735,7 @@ Phase 0: Project Setup ✅ COMPLETED
 ## File Structure Reference
 
 ```
-claude-code-memory/
+memorygraph/
 ├── src/
 │   └── claude_memory/
 │       ├── __init__.py

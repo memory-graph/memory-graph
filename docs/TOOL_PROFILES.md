@@ -169,13 +169,13 @@ export MEMORY_TOOL_PROFILE=full
 
 ```bash
 # Default (lite)
-claude-memory
+memorygraph
 
 # Standard
-claude-memory --profile standard
+memorygraph --profile standard
 
 # Full
-claude-memory --profile full --backend neo4j
+memorygraph --profile full --backend neo4j
 ```
 
 ### MCP Configuration
@@ -183,8 +183,8 @@ claude-memory --profile full --backend neo4j
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--profile", "standard"],
       "env": {
         "MEMORY_BACKEND": "sqlite"

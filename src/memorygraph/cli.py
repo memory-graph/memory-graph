@@ -1,7 +1,7 @@
 """
-Command-line interface for Claude Code Memory Server.
+Command-line interface for MemoryGraph MCP Server.
 
-Provides easy server startup with configuration options.
+Provides easy server startup with configuration options for AI coding agents.
 """
 
 import argparse
@@ -62,26 +62,26 @@ def validate_profile(profile: str) -> None:
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description="Claude Code Memory Server - Graph-based MCP memory for Claude Code",
+        description="MemoryGraph - MCP memory server for AI coding agents",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Start with default settings (SQLite backend, lite profile)
-  claude-memory
+  memorygraph
 
   # Use Neo4j backend with full tool profile
-  claude-memory --backend neo4j --profile full
+  memorygraph --backend neo4j --profile full
 
   # Show current configuration
-  claude-memory --show-config
+  memorygraph --show-config
 
   # Run health check
-  claude-memory --health
+  memorygraph --health
 
 Environment Variables:
   MEMORY_BACKEND         Backend type (sqlite|neo4j|memgraph|auto) [default: sqlite]
   MEMORY_TOOL_PROFILE    Tool profile (lite|standard|full) [default: lite]
-  MEMORY_SQLITE_PATH     SQLite database path [default: ~/.claude-memory/memory.db]
+  MEMORY_SQLITE_PATH     SQLite database path [default: ~/.memorygraph/memory.db]
   MEMORY_LOG_LEVEL       Log level (DEBUG|INFO|WARNING|ERROR) [default: INFO]
 
   Neo4j Configuration:
@@ -97,7 +97,7 @@ Environment Variables:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"claude-code-memory {__version__}"
+        version=f"memorygraph {__version__}"
     )
 
     parser.add_argument(
@@ -155,12 +155,12 @@ Environment Variables:
 
     # Handle special commands
     if args.show_config:
-        print(f"Claude Code Memory Server v{__version__}")
+        print(f"MemoryGraph MCP Server v{__version__}")
         print_config_summary()
         sys.exit(0)
 
     if args.health:
-        print(f"Claude Code Memory Server v{__version__}")
+        print(f"MemoryGraph MCP Server v{__version__}")
         print("\n🏥 Running health check...\n")
         # TODO: Implement proper health check
         print("Health check not yet implemented.")
@@ -168,7 +168,7 @@ Environment Variables:
         sys.exit(0)
 
     # Start the server
-    print(f"🚀 Starting Claude Code Memory Server v{__version__}")
+    print(f"🚀 Starting MemoryGraph MCP Server v{__version__}")
     print(f"Backend: {Config.BACKEND}")
     print(f"Profile: {Config.TOOL_PROFILE}")
     print(f"Log Level: {Config.LOG_LEVEL}")

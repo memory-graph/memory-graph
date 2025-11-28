@@ -219,7 +219,7 @@ class PatternRecognizer:
         Returns:
             List of relevant patterns
         """
-        from claude_memory.intelligence.entity_extraction import extract_entities
+        from memorygraph.intelligence.entity_extraction import extract_entities
 
         # Extract entities from context
         entities = extract_entities(context)

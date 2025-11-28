@@ -8,14 +8,14 @@ weighted properties, validation, and intelligent suggestions.
 import pytest
 from datetime import datetime, timedelta
 
-from src.claude_memory.relationships import (
+from src.memorygraph.relationships import (
     RelationshipManager,
     RelationshipCategory,
     RelationshipTypeMetadata,
     RELATIONSHIP_TYPE_METADATA,
     relationship_manager,
 )
-from src.claude_memory.models import (
+from src.memorygraph.models import (
     RelationshipType,
     RelationshipProperties,
     Relationship,

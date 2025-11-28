@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock
 
-from claude_memory.integration.workflow_tracking import (
+from memorygraph.integration.workflow_tracking import (
     WorkflowAction,
     WorkflowSuggestion,
     Recommendation,

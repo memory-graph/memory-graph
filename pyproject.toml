@@ -3,16 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "claude-code-memory"
-version = "1.0.0"
-description = "Graph-based MCP memory server for Claude Code with intelligent relationship tracking and multi-backend support"
+name = "memorygraph"
+version = "2.0.0"
+description = "Graph-based MCP memory server for AI coding agents with intelligent relationship tracking and multi-backend support"
 authors = [
     {name = "Gregory Dickson", email = "gregory@example.com"}
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
-keywords = ["mcp", "memory", "neo4j", "memgraph", "sqlite", "claude", "ai", "knowledge-graph", "graph-database"]
+keywords = ["mcp", "memory", "neo4j", "memgraph", "sqlite", "ai", "coding-agent", "knowledge-graph", "graph-database", "claude-code"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -62,13 +62,13 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/gregorydickson/claude-code-memory"
-Repository = "https://github.com/gregorydickson/claude-code-memory"
-Issues = "https://github.com/gregorydickson/claude-code-memory/issues"
-Documentation = "https://github.com/gregorydickson/claude-code-memory/blob/main/docs/"
+Homepage = "https://github.com/gregorydickson/memorygraph"
+Repository = "https://github.com/gregorydickson/memorygraph"
+Issues = "https://github.com/gregorydickson/memorygraph/issues"
+Documentation = "https://github.com/gregorydickson/memorygraph/blob/main/docs/"
 
 [project.scripts]
-claude-memory = "claude_memory.cli:main"
+memorygraph = "memorygraph.cli:main"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -78,7 +78,7 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/claude_memory"]
+packages = ["src/memorygraph"]
 
 [tool.black]
 line-length = 88

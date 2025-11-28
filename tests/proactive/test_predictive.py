@@ -10,14 +10,14 @@ Tests verify:
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from src.claude_memory.proactive.predictive import (
+from src.memorygraph.proactive.predictive import (
     predict_needs,
     warn_potential_issues,
     suggest_related_context,
     Suggestion,
     Warning,
 )
-from src.claude_memory.intelligence.entity_extraction import Entity, EntityType
+from src.memorygraph.intelligence.entity_extraction import Entity, EntityType
 
 
 @pytest.mark.asyncio
@@ -28,7 +28,7 @@ class TestPredictNeeds:
         """Test that no suggestions are returned when no entities extracted."""
         backend = AsyncMock()
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=[]):
             suggestions = await predict_needs(
                 backend,
@@ -66,7 +66,7 @@ class TestPredictNeeds:
             }
         ])
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=entities):
             suggestions = await predict_needs(
                 backend,
@@ -104,7 +104,7 @@ class TestPredictNeeds:
             }
         ])
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=entities):
             suggestions = await predict_needs(
                 backend,
@@ -144,7 +144,7 @@ class TestPredictNeeds:
             for i in range(10)
         ])
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=entities):
             suggestions = await predict_needs(
                 backend,
@@ -163,7 +163,7 @@ class TestWarnPotentialIssues:
         """Test no warnings when no entities extracted."""
         backend = AsyncMock()
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=[]):
             warnings = await warn_potential_issues(
                 backend,
@@ -203,7 +203,7 @@ class TestWarnPotentialIssues:
             []
         ])
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=entities):
             warnings = await warn_potential_issues(
                 backend,
@@ -243,7 +243,7 @@ class TestWarnPotentialIssues:
             ]
         ])
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=entities):
             warnings = await warn_potential_issues(
                 backend,
@@ -283,7 +283,7 @@ class TestWarnPotentialIssues:
             ]
         ])
 
-        with patch('src.claude_memory.proactive.predictive.extract_entities',
+        with patch('src.memorygraph.proactive.predictive.extract_entities',
                    return_value=entities):
             # Request only high severity
             warnings = await warn_potential_issues(

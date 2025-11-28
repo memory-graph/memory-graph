@@ -19,7 +19,7 @@
 
 **Target**: December 2025
 **Priority**: CRITICAL - Ship and enable adoption
-**Goal**: Make the server as easy to install as `pip install claude-code-memory` while preserving all advanced features
+**Goal**: Make the server as easy to install as `pip install memorygraph` while preserving all advanced features
 
 ### Strategy Overview
 
@@ -90,7 +90,7 @@
 ### 8.1.3 Configure CLI Entry Point
 - [x] Verify CLI entry point in pyproject.toml
   - Section: `[project.scripts]`
-  - Entry: `claude-memory = "claude_memory.cli:main"`
+  - Entry: `memorygraph = "claude_memory.cli:main"`
   - If missing, add it
   - Note: CLI implementation is in 8.2
   - ✅ COMPLETE: Updated entry point to cli:main (will implement in 8.4)
@@ -129,7 +129,7 @@
 - [x] Set SQLite as default in config.py
   - File: `src/claude_memory/config.py`
   - Variable: Default backend configuration
-  - Ensure: `MEMORY_SQLITE_PATH` defaults to `~/.claude-memory/memory.db`
+  - Ensure: `MEMORY_SQLITE_PATH` defaults to `~/.memorygraph/memory.db`
   - Ensure: Directory creation is automatic
   - ✅ COMPLETE: Config.BACKEND now defaults to "sqlite", added TOOL_PROFILE config
 
@@ -138,7 +138,7 @@
   - Remove all MEMORY_* environment variables
   - Run: `python -m claude_memory.server`
   - Verify: SQLite backend selected automatically
-  - Verify: Database created at `~/.claude-memory/memory.db`
+  - Verify: Database created at `~/.memorygraph/memory.db`
   - Verify: All 8 core tools work
   - ✅ COMPLETE: All SQLite backend tests passing
 
@@ -200,13 +200,13 @@
 
 ## 8.4 CLI Implementation (Priority: HIGH)
 
-**Goal**: Create `claude-memory` command for easy server startup
+**Goal**: Create `memorygraph` command for easy server startup
 
 ### 8.4.1 Create CLI Module
 - [x] Create CLI entry point
   - File: `src/claude_memory/cli.py`
   - Framework: argparse (stdlib, no external dependencies)
-  - Command: `claude-memory`
+  - Command: `memorygraph`
   - Options: --backend, --profile, --log-level, --show-config, --health
   - ✅ COMPLETE: CLI module created with full argument parsing
 
@@ -248,7 +248,7 @@
   - Option 1: pip install (recommended, show one-liner)
   - Option 2: Docker (show docker compose command)
   - Claude Code config: Show .claude/mcp.json snippet
-  - Emphasize: "That's it! Memory stored in ~/.claude-memory/memory.db"
+  - Emphasize: "That's it! Memory stored in ~/.memorygraph/memory.db"
   - ✅ COMPLETE: README completely rewritten with beginner-friendly quick start
 
 - [x] Add "Choose Your Mode" comparison table
@@ -342,9 +342,9 @@
   - Note: "Documented uvx compatibility for ephemeral usage and CI/CD integration"
 
 - [ ] Test uvx execution locally
-  - Verify: `uvx claude-code-memory --version` works
-  - Verify: `uvx claude-code-memory --show-config` works
-  - Verify: Server starts with `uvx claude-code-memory`
+  - Verify: `uvx memorygraph --version` works
+  - Verify: `uvx memorygraph --show-config` works
+  - Verify: Server starts with `uvx memorygraph`
   - Verify: Database persistence with explicit path
   - Document: Any gotchas or edge cases
 
@@ -354,7 +354,7 @@
 - [ ] DEPLOYMENT.md has comprehensive uvx section
 - [ ] CLAUDE_CODE_SETUP.md warns against uvx for MCP servers
 - [ ] CHANGELOG documents uvx support
-- [ ] Tested locally: `uvx claude-code-memory --version` works
+- [ ] Tested locally: `uvx memorygraph --version` works
 
 **Estimated Effort**: 1-2 hours (documentation only)
 
@@ -382,7 +382,7 @@
 ### 8.6.2 Create docker-compose.yml (SQLite mode) ✅
 - [x] Create simple compose file
   - File: `docker-compose.yml` (root directory)
-  - Service: claude-memory
+  - Service: memorygraph
   - Build: From local Dockerfile
   - Environment: MEMORY_BACKEND=sqlite
   - Volume: memory_data:/data
@@ -438,7 +438,7 @@
 
 ## 8.7 PyPI Publishing (Priority: CRITICAL) ⏳
 
-**Goal**: Publish to PyPI for `pip install claude-code-memory`
+**Goal**: Publish to PyPI for `pip install memorygraph`
 
 **Status**: Package built and tested locally. Awaiting user approval for publication.
 
@@ -469,8 +469,8 @@
 - [ ] Test installation from built package
   - Create: Fresh Python virtual environment
   - Install: `pip install dist/claude_code_memory-1.0.0-*.whl`
-  - Test: `claude-memory --version`
-  - Test: `claude-memory --backend sqlite`
+  - Test: `memorygraph --version`
+  - Test: `memorygraph --backend sqlite`
   - Verify: Works without errors
   - **Note**: Deferred to section 8.8 Testing & Validation
 
@@ -479,14 +479,14 @@
   - Command: `twine upload --repository testpypi dist/*`
   - URL: https://test.pypi.org/
   - Verify: Package appears on Test PyPI
-  - Test install: `pip install --index-url https://test.pypi.org/simple/ claude-code-memory`
+  - Test install: `pip install --index-url https://test.pypi.org/simple/ memorygraph`
   - **ACTION REQUIRED**: User needs TestPyPI credentials
 
 ### 8.7.5 Publish to Production PyPI
 - [ ] Upload to production PyPI
   - Command: `twine upload dist/*`
-  - Verify: Package appears at https://pypi.org/project/claude-code-memory/
-  - Test: `pip install claude-code-memory`
+  - Verify: Package appears at https://pypi.org/project/memorygraph/
+  - Test: `pip install memorygraph`
   - Verify: Installation works from PyPI
   - **ACTION REQUIRED**: User needs to approve and provide PyPI credentials
 
@@ -497,7 +497,7 @@
   - **Note**: Ready to execute, awaiting user approval
 
 - [ ] Create GitHub release
-  - URL: https://github.com/gregorydickson/claude-code-memory/releases/new
+  - URL: https://github.com/gregorydickson/memorygraph/releases/new
   - Tag: v1.0.0
   - Title: "v1.0.0 - Production Release"
   - Description: Release notes prepared in CHANGELOG.md
@@ -517,7 +517,7 @@
 ### 8.8.1 Integration Testing
 - [x] Test complete installation flow (pip)
   - Fresh environment: Create new Python 3.9, 3.10, 3.11 venvs
-  - Install: `pip install claude-code-memory`
+  - Install: `pip install memorygraph`
   - Configure: Claude Code MCP config
   - Test: Store, retrieve, search, relationships
   - Verify: All core tools work
@@ -633,7 +633,7 @@
 
 ### 8.9.3 Prepare Demo Materials
 - [ ] Create demo video/GIF
-  - Show: `pip install claude-code-memory`
+  - Show: `pip install memorygraph`
   - Show: Adding to Claude Code config
   - Show: Storing and retrieving memories
   - Show: Relationship queries
@@ -661,7 +661,7 @@
 ## Success Criteria
 
 ### Installation & Setup
-- [ ] `pip install claude-code-memory` works on Python 3.9-3.11
+- [ ] `pip install memorygraph` works on Python 3.9-3.11
 - [ ] SQLite default requires zero configuration
 - [ ] First memory stored in <30 seconds after install
 - [ ] Docker deployment works with one command

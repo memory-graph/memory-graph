@@ -6,7 +6,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from claude_memory.integration.project_analysis import (
+from memorygraph.integration.project_analysis import (
     ProjectInfo,
     CodebaseInfo,
     FileChange,

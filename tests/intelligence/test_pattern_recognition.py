@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from claude_memory.intelligence.pattern_recognition import (
+from memorygraph.intelligence.pattern_recognition import (
     Pattern,
     PatternRecognizer,
     find_similar_problems,

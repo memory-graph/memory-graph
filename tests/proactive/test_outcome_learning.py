@@ -12,7 +12,7 @@ import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock
 
-from src.claude_memory.proactive.outcome_learning import (
+from src.memorygraph.proactive.outcome_learning import (
     record_outcome,
     update_pattern_effectiveness,
     calculate_effectiveness_score,

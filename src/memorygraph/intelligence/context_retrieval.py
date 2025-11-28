@@ -39,7 +39,7 @@ class ContextRetriever:
         Returns:
             Dictionary with formatted context and source memory IDs
         """
-        from claude_memory.intelligence.entity_extraction import extract_entities
+        from memorygraph.intelligence.entity_extraction import extract_entities
 
         # Extract entities from query for matching
         entities = extract_entities(query)

@@ -9,11 +9,11 @@ import pytest
 import os
 from unittest.mock import AsyncMock, patch
 
-from src.claude_memory.backends.factory import BackendFactory
-from src.claude_memory.backends.neo4j_backend import Neo4jBackend
-from src.claude_memory.backends.memgraph_backend import MemgraphBackend
-from src.claude_memory.backends.sqlite_fallback import SQLiteFallbackBackend
-from src.claude_memory.models import DatabaseConnectionError
+from src.memorygraph.backends.factory import BackendFactory
+from src.memorygraph.backends.neo4j_backend import Neo4jBackend
+from src.memorygraph.backends.memgraph_backend import MemgraphBackend
+from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
+from src.memorygraph.models import DatabaseConnectionError
 
 
 class TestBackendFactoryExplicitSelection:

@@ -8,21 +8,21 @@ and graph metrics calculation.
 import pytest
 from typing import List
 
-from src.claude_memory.graph_analytics import (
+from src.memorygraph.graph_analytics import (
     GraphAnalyzer,
     GraphPath,
     MemoryCluster,
     BridgeNode,
     graph_analyzer,
 )
-from src.claude_memory.models import (
+from src.memorygraph.models import (
     Memory,
     MemoryType,
     Relationship,
     RelationshipType,
     RelationshipProperties,
 )
-from src.claude_memory.relationships import RelationshipCategory
+from src.memorygraph.relationships import RelationshipCategory
 
 
 class TestGraphAnalyzerBasics:

@@ -33,21 +33,21 @@ Your fork is **impressively comprehensive** with:
 
 ```bash
 # One-liner install
-pip install claude-code-memory
+pip install memorygraph
 
 # Or with uvx (even simpler)
-uvx claude-code-memory
+uvx memorygraph
 ```
 
 **What this gives them**:
 - SQLite + NetworkX backend (no external DB)
 - Core 8 MCP tools only (not all 30)
-- Auto-creates `~/.claude-memory/memory.db`
+- Auto-creates `~/.memorygraph/memory.db`
 - Works immediately
 
 **Required Changes**:
 
-1. **Publish to PyPI** - Enable `pip install claude-code-memory`
+1. **Publish to PyPI** - Enable `pip install memorygraph`
 
 2. **Default to SQLite** - Change factory.py:
 ```python
@@ -72,8 +72,8 @@ LITE_TOOLS = [
 
 4. **Add `--full` flag** for all 30 tools:
 ```bash
-claude-memory --full  # Enables all tools
-claude-memory         # Lite mode (8 tools)
+memorygraph --full  # Enables all tools
+memorygraph         # Lite mode (8 tools)
 ```
 
 ### Tier 2: "Full Power" Mode (Neo4j/Memgraph)
@@ -86,7 +86,7 @@ docker compose up -d
 
 # Or with Memgraph (lighter)
 docker run -d -p 7687:7687 memgraph/memgraph
-MEMORY_BACKEND=memgraph claude-memory --full
+MEMORY_BACKEND=memgraph memorygraph --full
 ```
 
 ---
@@ -177,7 +177,7 @@ Replace current README installation section with:
 
 ### Option 1: pip (Recommended)
 ```bash
-pip install claude-code-memory
+pip install memorygraph
 ```
 
 Add to your Claude Code config (`~/.claude/mcp.json`):
@@ -185,18 +185,18 @@ Add to your Claude Code config (`~/.claude/mcp.json`):
 {
   "mcpServers": {
     "memory": {
-      "command": "claude-memory"
+      "command": "memorygraph"
     }
   }
 }
 ```
 
-That's it! Memory is stored in `~/.claude-memory/memory.db`.
+That's it! Memory is stored in `~/.memorygraph/memory.db`.
 
 ### Option 2: Docker
 ```bash
-git clone https://github.com/gregorydickson/claude-code-memory
-cd claude-code-memory
+git clone https://github.com/gregorydickson/memorygraph
+cd memorygraph
 docker compose up -d
 ```
 
@@ -253,7 +253,7 @@ claude mcp add memory python -m claude_memory.server
 
 Or for installed package:
 ```bash
-claude mcp add memory claude-memory
+claude mcp add memory memorygraph
 ```
 
 ---
@@ -293,9 +293,9 @@ claude mcp add memory claude-memory
 
 Switch modes:
 ```bash
-claude-memory                           # Lite (default)
-MEMORY_TOOL_PROFILE=standard claude-memory  # Standard
-MEMORY_TOOL_PROFILE=full MEMORY_BACKEND=memgraph claude-memory  # Full
+memorygraph                           # Lite (default)
+MEMORY_TOOL_PROFILE=standard memorygraph  # Standard
+MEMORY_TOOL_PROFILE=full MEMORY_BACKEND=memgraph memorygraph  # Full
 ```
 ```
 
@@ -315,7 +315,7 @@ MEMORY_TOOL_PROFILE=full MEMORY_BACKEND=memgraph claude-memory  # Full
 ## The 30-Second Pitch
 
 > "Claude Code Memory gives your AI persistent memory across sessions. 
-> Install with `pip install claude-code-memory`, add one line to your config, done.
+> Install with `pip install memorygraph`, add one line to your config, done.
 > 
 > Start simple with SQLite. When you need relationship intelligence, 
 > upgrade to graph mode with `docker compose up`."

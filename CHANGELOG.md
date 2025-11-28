@@ -1,18 +1,70 @@
 # Changelog
 
-All notable changes to the Claude Code Memory Server project will be documented in this file.
+All notable changes to MemoryGraph will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Planned (v1.1+)
+### Planned (v2.1+)
 - Data export/import functionality
 - Web visualization dashboard
 - PostgreSQL backend support (pg_graph)
 - Enhanced embedding support
 - Workflow automation templates
+
+## [2.0.0] - 2025-11-28
+
+### BREAKING CHANGES - Project Renamed to MemoryGraph
+
+**Project renamed from `claude-code-memory` to `memorygraph`** to better reflect universal MCP compatibility. Originally built for Claude Code, MemoryGraph now emphasizes its support for any MCP-enabled coding agent (Cursor, Continue, etc.).
+
+#### What Changed
+
+**Package & CLI**:
+- Package name: `claude-code-memory` → `memorygraph`
+- CLI command: `claude-memory` → `memorygraph`
+- Python module: `claude_memory` → `memorygraph`
+- Default database path: `~/.claude-memory/` → `~/.memorygraph/`
+
+**Branding**:
+- Project name: "Claude Code Memory Server" → "MemoryGraph"
+- Subtitle: "MCP Memory Server for AI Coding Agents"
+- Positioning: Generic MCP server, compatible with any MCP-enabled coding agent
+- Documentation: Updated to emphasize MCP standard and universal compatibility
+
+**Repository** (to be updated):
+- GitHub: `gregorydickson/claude-code-memory` → `gregorydickson/memorygraph`
+- PyPI: `claude-code-memory` → `memorygraph`
+
+#### Why This Change?
+
+- **Better Branding**: More descriptive, not Claude-specific
+- **Universal MCP Compatibility**: Works with any MCP-enabled coding agent
+- **Professional Naming**: "MemoryGraph" describes functionality (graph-based memory)
+- **Broader Audience**: Appeals to all MCP client users, not just Claude Code
+
+#### Migration Required
+
+**For Existing Users**: See [MIGRATION.md](MIGRATION.md) for complete upgrade guide.
+
+**Quick Migration**:
+1. `pip uninstall claude-code-memory && pip install memorygraph`
+2. Update MCP config: `"claude-memory"` → `"memorygraph"`
+3. Move database: `mv ~/.claude-memory ~/.memorygraph` (or use `MEMORY_SQLITE_PATH` env var)
+4. Restart your coding agent
+
+#### What Stayed the Same?
+
+- All features and functionality
+- Environment variables (still use `MEMORY_*` prefix)
+- Database schema and compatibility
+- All 44 MCP tools
+- Backend support (SQLite, Neo4j, Memgraph)
+- **Still optimized for Claude Code**, but now explicitly supports all MCP clients
+
+---
 
 ## [1.0.0] - 2025-11-28
 
@@ -23,9 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Three-Tier Complexity Model**: Lite (8 tools) → Standard (15 tools) → Full (44 tools)
 - **Multi-Backend Support**: SQLite (default), Neo4j, and Memgraph
 - **Tool Profiling System**: Choose complexity level via `MEMORY_TOOL_PROFILE` env var
-- **CLI Command**: `claude-memory` with flags for backend, profile, and logging
+- **CLI Command**: `memorygraph` with flags for backend, profile, and logging
 - **Docker Support**: Complete Docker Compose configurations for all backends
-- **PyPI Publication**: Install via `pip install claude-code-memory`
+- **PyPI Publication**: Install via `pip install memorygraph`
 
 #### Added
 - **SQLite Backend as Default**:
@@ -43,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CLI flag: `--profile lite|standard|full`
 
 - **CLI Implementation**:
-  - Entry point: `claude-memory` command
+  - Entry point: `memorygraph` command
   - Flags: `--backend`, `--profile`, `--log-level`
   - Commands: `--version`, `--show-config`, `--health`
   - Helpful error messages and validation
@@ -68,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TOOL_PROFILES.md: Complete tool reference
 
 - **uvx Support** (Documentation):
-  - Package works with `uvx claude-code-memory` out of the box
+  - Package works with `uvx memorygraph` out of the box
   - Option 3 in installation methods for quick testing
   - Installation method comparison table
   - CI/CD integration examples (GitHub Actions, GitLab CI)
@@ -108,14 +160,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Migration Guide
 - Existing users: Set `MEMORY_BACKEND=neo4j` to keep current setup
-- New users: Zero config required, just `pip install claude-code-memory`
+- New users: Zero config required, just `pip install memorygraph`
 - Upgrading profiles: No data migration needed, just change `MEMORY_TOOL_PROFILE`
 
 #### Deployment Options
-1. **pip install** (recommended): `pip install claude-code-memory`
+1. **pip install** (recommended): `pip install memorygraph`
 2. **Docker**: `docker compose up -d`
 3. **From source**: `git clone && pip install -e .`
-4. **uvx** (testing/CI): `uvx claude-code-memory`
+4. **uvx** (testing/CI): `uvx memorygraph`
 
 #### Performance
 - SQLite: <100ms queries for 10k memories

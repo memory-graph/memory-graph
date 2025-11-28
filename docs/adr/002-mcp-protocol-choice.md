@@ -78,7 +78,7 @@ We chose **Model Context Protocol (MCP)** because:
 from mcp.server import Server
 from mcp.types import Tool
 
-server = Server("claude-memory")
+server = Server("memorygraph")
 
 @server.list_tools()
 async def list_tools() -> list[Tool]:

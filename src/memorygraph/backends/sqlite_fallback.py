@@ -1,5 +1,5 @@
 """
-SQLite fallback backend implementation for the Claude Code Memory Server.
+SQLite fallback backend implementation for MemoryGraph.
 
 This module provides a zero-dependency fallback using SQLite for persistence
 and NetworkX for graph operations. This enables the memory server to work
@@ -36,7 +36,7 @@ class SQLiteFallbackBackend(GraphBackend):
         Initialize SQLite fallback backend.
 
         Args:
-            db_path: Path to SQLite database file (defaults to ~/.claude-memory/memory.db)
+            db_path: Path to SQLite database file (defaults to ~/.memorygraph/memory.db)
 
         Raises:
             DatabaseConnectionError: If NetworkX is not installed
@@ -47,7 +47,7 @@ class SQLiteFallbackBackend(GraphBackend):
                 "Install with: pip install networkx"
             )
 
-        default_path = os.path.expanduser("~/.claude-memory/memory.db")
+        default_path = os.path.expanduser("~/.memorygraph/memory.db")
         self.db_path = db_path or os.getenv("MEMORY_SQLITE_PATH", default_path)
         self.conn: Optional[sqlite3.Connection] = None
         self.graph: Optional[nx.DiGraph] = None

@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime, timedelta
-from claude_memory.intelligence.context_retrieval import (
+from memorygraph.intelligence.context_retrieval import (
     ContextRetriever,
     get_context,
     get_project_context,

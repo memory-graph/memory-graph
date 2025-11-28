@@ -1,8 +1,8 @@
 """
-Entry point for running Claude Memory Server as a module.
+Entry point for running MemoryGraph as a module.
 
 Usage:
-    python -m claude_memory
+    python -m memorygraph
 """
 
 import asyncio

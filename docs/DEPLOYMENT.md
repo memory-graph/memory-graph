@@ -22,7 +22,7 @@ Complete guide for deploying Claude Code Memory Server in any environment.
 
 **Lite Mode (Default)**
 ```bash
-pip install claude-code-memory
+pip install memorygraph
 ```
 - SQLite backend
 - 8 core tools
@@ -31,7 +31,7 @@ pip install claude-code-memory
 
 **Standard Mode**
 ```bash
-pip install "claude-code-memory[intelligence]"
+pip install "memorygraph[intelligence]"
 ```
 - SQLite backend
 - 15 tools (core + intelligence)
@@ -40,9 +40,9 @@ pip install "claude-code-memory[intelligence]"
 
 **Full Mode**
 ```bash
-pip install "claude-code-memory[neo4j,intelligence]"
+pip install "memorygraph[neo4j,intelligence]"
 # or
-pip install "claude-code-memory[all]"
+pip install "memorygraph[all]"
 ```
 - Neo4j/Memgraph backend
 - All 44 tools
@@ -54,8 +54,8 @@ pip install "claude-code-memory[all]"
 **SQLite Mode**
 ```bash
 # Clone repository
-git clone https://github.com/gregorydickson/claude-code-memory.git
-cd claude-code-memory
+git clone https://github.com/gregorydickson/memorygraph.git
+cd memorygraph
 
 # Start with Docker Compose
 docker compose up -d
@@ -75,8 +75,8 @@ docker compose -f docker-compose.full.yml up -d
 
 ```bash
 # Clone repository
-git clone https://github.com/gregorydickson/claude-code-memory.git
-cd claude-code-memory
+git clone https://github.com/gregorydickson/memorygraph.git
+cd memorygraph
 
 # Install in development mode
 pip install -e .
@@ -106,19 +106,19 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 **Usage**:
 ```bash
 # Check version
-uvx claude-code-memory --version
+uvx memorygraph --version
 
 # Show configuration
-uvx claude-code-memory --show-config
+uvx memorygraph --show-config
 
 # Health check
-uvx claude-code-memory --health
+uvx memorygraph --health
 
 # Run server (ephemeral)
-uvx claude-code-memory --backend sqlite --profile standard
+uvx memorygraph --backend sqlite --profile standard
 
 # Test specific version
-uvx claude-code-memory@1.0.0 --version
+uvx memorygraph@1.0.0 --version
 ```
 
 **Limitations**:
@@ -126,7 +126,7 @@ uvx claude-code-memory@1.0.0 --version
 - ⚠️ **Not recommended for persistent MCP servers** - Better to use pip install
 - ⚠️ **Requires explicit database path** for data persistence:
   ```bash
-  MEMORY_SQLITE_PATH=~/.claude-memory/memory.db uvx claude-code-memory
+  MEMORY_SQLITE_PATH=~/.memorygraph/memory.db uvx memorygraph
   ```
 - ⚠️ **Environment variables** must be set per invocation (no persistent config)
 
@@ -145,11 +145,11 @@ jobs:
 
       - name: Test memory server
         run: |
-          uvx claude-code-memory --version
-          uvx claude-code-memory --show-config
+          uvx memorygraph --version
+          uvx memorygraph --show-config
 
       - name: Test specific version
-        run: uvx claude-code-memory@1.0.0 --health
+        run: uvx memorygraph@1.0.0 --health
 ```
 
 **GitLab CI Example**:
@@ -158,8 +158,8 @@ test_memory:
   stage: test
   script:
     - pip install uv
-    - uvx claude-code-memory --version
-    - uvx claude-code-memory --health
+    - uvx memorygraph --version
+    - uvx memorygraph --health
 ```
 
 **Docker Build Example**:
@@ -170,10 +170,10 @@ FROM python:3.11-slim
 RUN pip install uv
 
 # Use uvx to run one-time operations without installing
-RUN uvx claude-code-memory --show-config
+RUN uvx memorygraph --show-config
 
 # For persistent server, use pip install instead
-RUN pip install claude-code-memory
+RUN pip install memorygraph
 ```
 
 **When to Use uvx vs pip install**:
@@ -196,8 +196,8 @@ RUN pip install claude-code-memory
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory"
+    "memorygraph": {
+      "command": "memorygraph"
     }
   }
 }
@@ -206,15 +206,15 @@ RUN pip install claude-code-memory
 Uses:
 - SQLite backend
 - Lite profile (8 tools)
-- Default database path: `~/.claude-memory/memory.db`
+- Default database path: `~/.memorygraph/memory.db`
 
 ### Standard Configuration
 
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--profile", "standard"]
     }
   }
@@ -226,8 +226,8 @@ Uses:
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
@@ -255,7 +255,7 @@ Uses:
 **Configuration**:
 ```bash
 export MEMORY_BACKEND=sqlite
-export MEMORY_SQLITE_PATH=~/.claude-memory/memory.db
+export MEMORY_SQLITE_PATH=~/.memorygraph/memory.db
 ```
 
 **Pros**:
@@ -352,9 +352,9 @@ export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
 **Best For**: Getting started, basic memory needs
 
 ```bash
-claude-memory
+memorygraph
 # or explicitly
-claude-memory --profile lite
+memorygraph --profile lite
 ```
 
 **Available Tools**:
@@ -371,7 +371,7 @@ claude-memory --profile lite
 **Best For**: Most users, pattern recognition
 
 ```bash
-claude-memory --profile standard
+memorygraph --profile standard
 ```
 
 **Additional Tools**:
@@ -391,7 +391,7 @@ claude-memory --profile standard
 **Best For**: Power users, advanced analytics
 
 ```bash
-claude-memory --profile full --backend neo4j
+memorygraph --profile full --backend neo4j
 ```
 
 **Additional Tools**:
@@ -422,7 +422,7 @@ export MEMORY_LOG_LEVEL=INFO          # DEBUG | INFO | WARNING | ERROR
 
 ```bash
 # Database file path (optional)
-export MEMORY_SQLITE_PATH=~/.claude-memory/memory.db
+export MEMORY_SQLITE_PATH=~/.memorygraph/memory.db
 
 # WAL mode (optional, default: true)
 export MEMORY_SQLITE_WAL_MODE=true
@@ -486,7 +486,7 @@ export MEMORY_CONTEXT_TOKEN_LIMIT=4000
 version: '3.8'
 
 services:
-  claude-memory:
+  memorygraph:
     build: .
     stdin_open: true
     tty: true
@@ -525,7 +525,7 @@ services:
     volumes:
       - neo4j_data:/data
 
-  claude-memory:
+  memorygraph:
     build: .
     depends_on:
       - neo4j
@@ -564,7 +564,7 @@ services:
     volumes:
       - memgraph_data:/var/lib/memgraph
 
-  claude-memory:
+  memorygraph:
     build: .
     depends_on:
       - memgraph
@@ -598,10 +598,10 @@ open http://localhost:3000
 No migration needed:
 ```bash
 # Before
-claude-memory --profile lite
+memorygraph --profile lite
 
 # After
-claude-memory --profile standard
+memorygraph --profile standard
 ```
 
 #### Standard to Full
@@ -609,7 +609,7 @@ claude-memory --profile standard
 If staying with SQLite:
 ```bash
 # No migration needed
-claude-memory --profile full
+memorygraph --profile full
 ```
 
 If switching to Neo4j/Memgraph:
@@ -621,7 +621,7 @@ See backend migration below.
 
 **1. Export SQLite data** (when implemented):
 ```bash
-claude-memory --backend sqlite --export backup.json
+memorygraph --backend sqlite --export backup.json
 ```
 
 **2. Set up Neo4j**:
@@ -635,13 +635,13 @@ docker run -d \
 
 **3. Import to Neo4j** (when implemented):
 ```bash
-claude-memory --backend neo4j --import backup.json
+memorygraph --backend neo4j --import backup.json
 ```
 
 **4. Update MCP config**:
 ```json
 {
-  "command": "claude-memory",
+  "command": "memorygraph",
   "args": ["--backend", "neo4j", "--profile", "full"],
   "env": {
     "MEMORY_NEO4J_URI": "bolt://localhost:7687",
@@ -674,13 +674,13 @@ Get all relationships from SQLite and recreate with `create_relationship`.
 
 **Check configuration**:
 ```bash
-claude-memory --show-config
+memorygraph --show-config
 ```
 
 **Check backend connection**:
 ```bash
 # SQLite
-ls -lah ~/.claude-memory/
+ls -lah ~/.memorygraph/
 
 # Neo4j
 docker ps | grep neo4j
@@ -693,7 +693,7 @@ docker logs memgraph
 
 **Check logs**:
 ```bash
-claude-memory --log-level DEBUG
+memorygraph --log-level DEBUG
 ```
 
 #### Database Connection Errors
@@ -701,13 +701,13 @@ claude-memory --log-level DEBUG
 **SQLite locked**:
 ```bash
 # Check for running processes
-ps aux | grep claude-memory
+ps aux | grep memorygraph
 
 # Remove lock file (if safe)
-rm ~/.claude-memory/memory.db-lock
+rm ~/.memorygraph/memory.db-lock
 
 # Check permissions
-ls -la ~/.claude-memory/
+ls -la ~/.memorygraph/
 ```
 
 **Neo4j connection refused**:
@@ -719,7 +719,7 @@ docker ps | grep neo4j
 netstat -an | grep 7687
 
 # Verify credentials
-claude-memory --backend neo4j --show-config
+memorygraph --backend neo4j --show-config
 
 # Test connection manually
 cypher-shell -a bolt://localhost:7687 -u neo4j -p password
@@ -742,13 +742,13 @@ docker logs memgraph
 **SQLite slow queries**:
 ```bash
 # Check database size
-ls -lh ~/.claude-memory/memory.db
+ls -lh ~/.memorygraph/memory.db
 
 # Vacuum database
-sqlite3 ~/.claude-memory/memory.db "VACUUM;"
+sqlite3 ~/.memorygraph/memory.db "VACUUM;"
 
 # Consider upgrading to Neo4j
-claude-memory --backend neo4j --profile full
+memorygraph --backend neo4j --profile full
 ```
 
 **Neo4j out of memory**:
@@ -773,23 +773,23 @@ docker run -e MEMGRAPH_MEM_LIMIT=8192 ...
 
 **Check profile**:
 ```bash
-claude-memory --show-config
+memorygraph --show-config
 # Verify tool_profile is correct
 ```
 
 **Upgrade profile**:
 ```bash
 # From lite to standard
-claude-memory --profile standard
+memorygraph --profile standard
 
 # From standard to full
-claude-memory --profile full
+memorygraph --profile full
 ```
 
 **Check tool exists**:
 ```bash
 # List all tools (in server logs)
-claude-memory --log-level DEBUG
+memorygraph --log-level DEBUG
 # Look for "Registered X/44 tools"
 ```
 
@@ -798,29 +798,29 @@ claude-memory --log-level DEBUG
 Enable debug logging:
 ```bash
 export MEMORY_LOG_LEVEL=DEBUG
-claude-memory
+memorygraph
 ```
 
 Or via CLI:
 ```bash
-claude-memory --log-level DEBUG
+memorygraph --log-level DEBUG
 ```
 
 ### Health Checks
 
 **Verify configuration**:
 ```bash
-claude-memory --show-config
+memorygraph --show-config
 ```
 
 **Test backend connection** (when implemented):
 ```bash
-claude-memory --health
+memorygraph --health
 ```
 
 **Check version**:
 ```bash
-claude-memory --version
+memorygraph --version
 ```
 
 ---
@@ -886,16 +886,16 @@ claude-memory --version
 
 **Recommendation**: SQLite, lite profile
 ```bash
-pip install claude-code-memory
-claude-memory
+pip install memorygraph
+memorygraph
 ```
 
 **MCP Config**:
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory"
+    "memorygraph": {
+      "command": "memorygraph"
     }
   }
 }
@@ -912,15 +912,15 @@ docker run -d --name neo4j \
   neo4j:5-community
 
 # Each team member
-pip install "claude-code-memory[neo4j]"
+pip install "memorygraph[neo4j]"
 ```
 
 **MCP Config** (team members):
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://team-server:7687",
@@ -943,15 +943,15 @@ pip install "claude-code-memory[neo4j]"
 
 **2. Install locally**:
 ```bash
-pip install "claude-code-memory[neo4j]"
+pip install "memorygraph[neo4j]"
 ```
 
 **3. MCP Config**:
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_NEO4J_URI": "neo4j+s://your-instance.neo4j.io",
@@ -1006,7 +1006,7 @@ For more help:
 - [FULL_MODE.md](FULL_MODE.md) - Advanced features
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Tool reference
 - [CLAUDE_CODE_SETUP.md](CLAUDE_CODE_SETUP.md) - Claude Code integration
-- [GitHub Issues](https://github.com/gregorydickson/claude-code-memory/issues) - Support
+- [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues) - Support
 
 ---
 

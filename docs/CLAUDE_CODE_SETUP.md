@@ -21,7 +21,7 @@ Get up and running in 3 steps:
 
 ```bash
 # 1. Install
-pip install claude-code-memory
+pip install memorygraph
 
 # 2. Add to Claude Code config
 # Edit ~/.claude/mcp.json (see below)
@@ -49,7 +49,7 @@ pip --version      # Should be installed
 
 **Option 1: Basic (Recommended to Start)**
 ```bash
-pip install claude-code-memory
+pip install memorygraph
 ```
 - SQLite backend
 - 8 core tools
@@ -57,7 +57,7 @@ pip install claude-code-memory
 
 **Option 2: With Intelligence**
 ```bash
-pip install "claude-code-memory[intelligence]"
+pip install "memorygraph[intelligence]"
 ```
 - SQLite backend
 - 15 tools
@@ -65,7 +65,7 @@ pip install "claude-code-memory[intelligence]"
 
 **Option 3: Full Power**
 ```bash
-pip install "claude-code-memory[neo4j,intelligence]"
+pip install "memorygraph[neo4j,intelligence]"
 ```
 - Neo4j backend support
 - All 44 tools
@@ -75,11 +75,11 @@ pip install "claude-code-memory[neo4j,intelligence]"
 
 ```bash
 # Check version
-claude-memory --version
-# Should show: claude-memory v1.0.0
+memorygraph --version
+# Should show: memorygraph v1.0.0
 
 # Check configuration
-claude-memory --show-config
+memorygraph --show-config
 # Should show default settings
 ```
 
@@ -92,8 +92,8 @@ You can run via uvx for quick testing, though this is **not recommended for MCP 
 pip install uv
 
 # Test without installing
-uvx claude-code-memory --version
-uvx claude-code-memory --show-config
+uvx memorygraph --version
+uvx memorygraph --show-config
 ```
 
 **Why not recommended for MCP servers**:
@@ -108,7 +108,7 @@ uvx claude-code-memory --show-config
 
 See the uvx MCP configuration example in the [MCP Configuration](#uvx-configuration-advanced---not-recommended) section below.
 
-**Better approach**: Use `pip install claude-code-memory` for MCP servers, use uvx for quick testing only.
+**Better approach**: Use `pip install memorygraph` for MCP servers, use uvx for quick testing only.
 
 ---
 
@@ -136,8 +136,8 @@ Edit `~/.claude/mcp.json` and add the memory server configuration.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory"
+    "memorygraph": {
+      "command": "memorygraph"
     }
   }
 }
@@ -146,15 +146,15 @@ Edit `~/.claude/mcp.json` and add the memory server configuration.
 This uses:
 - SQLite backend (zero config)
 - Lite profile (8 core tools)
-- Default database path: `~/.claude-memory/memory.db`
+- Default database path: `~/.memorygraph/memory.db`
 
 #### Standard Configuration
 
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--profile", "standard"]
     }
   }
@@ -171,8 +171,8 @@ This adds:
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
@@ -191,18 +191,18 @@ This enables:
 
 #### uvx Configuration (Advanced - Not Recommended)
 
-**⚠️ Warning**: This configuration is **not recommended** for production MCP servers. Use `pip install claude-code-memory` instead.
+**⚠️ Warning**: This configuration is **not recommended** for production MCP servers. Use `pip install memorygraph` instead.
 
 If you insist on using uvx (for testing purposes only):
 
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
+    "memorygraph": {
       "command": "uvx",
-      "args": ["claude-code-memory"],
+      "args": ["memorygraph"],
       "env": {
-        "MEMORY_SQLITE_PATH": "/Users/yourname/.claude-memory/memory.db",
+        "MEMORY_SQLITE_PATH": "/Users/yourname/.memorygraph/memory.db",
         "MEMORY_TOOL_PROFILE": "lite"
       }
     }
@@ -223,11 +223,11 @@ If you insist on using uvx (for testing purposes only):
   "mcpServers": {
     "memory-test-v1": {
       "command": "uvx",
-      "args": ["claude-code-memory@1.0.0"]
+      "args": ["memorygraph@1.0.0"]
     },
     "memory-test-v2": {
       "command": "uvx",
-      "args": ["claude-code-memory@1.1.0"]
+      "args": ["memorygraph@1.1.0"]
     }
   }
 }
@@ -268,8 +268,8 @@ If you set up logging:
 # In MCP config, add:
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--log-level", "INFO"]
     }
   }
@@ -282,7 +282,7 @@ Check logs in Claude Code's output panel.
 
 Run the server directly:
 ```bash
-claude-memory --show-config
+memorygraph --show-config
 ```
 
 Should show:
@@ -291,7 +291,7 @@ Claude Code Memory Server v1.0.0
 Configuration:
   backend: sqlite
   tool_profile: lite
-  sqlite_path: /Users/you/.claude-memory/memory.db
+  sqlite_path: /Users/you/.memorygraph/memory.db
   log_level: INFO
 
 Backend Status: ✓ Connected
@@ -383,7 +383,7 @@ docker run -d \
 
 2. **Install with Neo4j support**:
 ```bash
-pip install "claude-code-memory[neo4j,intelligence]"
+pip install "memorygraph[neo4j,intelligence]"
 ```
 
 ### Update MCP Configuration
@@ -393,8 +393,8 @@ Edit `~/.claude/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
@@ -418,10 +418,10 @@ Edit `~/.claude/mcp.json`:
 If you have existing SQLite data (when migration tools are implemented):
 ```bash
 # Export from SQLite
-claude-memory --backend sqlite --export backup.json
+memorygraph --backend sqlite --export backup.json
 
 # Import to Neo4j
-claude-memory --backend neo4j --import backup.json
+memorygraph --backend neo4j --import backup.json
 ```
 
 ---
@@ -432,18 +432,18 @@ claude-memory --backend neo4j --import backup.json
 
 **Check if command is found**:
 ```bash
-which claude-memory
-# Should show: /path/to/python/bin/claude-memory
+which memorygraph
+# Should show: /path/to/python/bin/memorygraph
 ```
 
 If not found:
 ```bash
 # Reinstall
-pip install --force-reinstall claude-code-memory
+pip install --force-reinstall memorygraph
 
 # Or use full path in mcp.json
 {
-  "command": "/path/to/python/bin/claude-memory"
+  "command": "/path/to/python/bin/memorygraph"
 }
 ```
 
@@ -476,13 +476,13 @@ cat ~/.claude/mcp.json
 **SQLite locked**:
 ```bash
 # Check for running processes
-ps aux | grep claude-memory
+ps aux | grep memorygraph
 
 # Kill if necessary
-pkill -f claude-memory
+pkill -f memorygraph
 
 # Remove lock file (if safe)
-rm ~/.claude-memory/memory.db-lock
+rm ~/.memorygraph/memory.db-lock
 ```
 
 **Neo4j connection refused**:
@@ -500,25 +500,25 @@ docker restart neo4j
 **Permission errors**:
 ```bash
 # Check database directory permissions
-ls -la ~/.claude-memory/
+ls -la ~/.memorygraph/
 
 # Fix permissions if needed
-chmod 755 ~/.claude-memory
-chmod 644 ~/.claude-memory/memory.db
+chmod 755 ~/.memorygraph
+chmod 644 ~/.memorygraph/memory.db
 ```
 
 ### Tools Not Working
 
 **Check profile**:
 ```bash
-claude-memory --show-config
+memorygraph --show-config
 # Verify tool_profile matches your needs
 ```
 
 **Upgrade profile**:
 ```json
 {
-  "command": "claude-memory",
+  "command": "memorygraph",
   "args": ["--profile", "full"]
 }
 ```
@@ -531,7 +531,7 @@ Ask Claude: "Do you have the find_similar_solutions tool?"
 **SQLite slow**:
 ```bash
 # Check database size
-ls -lh ~/.claude-memory/memory.db
+ls -lh ~/.memorygraph/memory.db
 
 # If >100MB, consider upgrading to Neo4j
 ```
@@ -539,7 +539,7 @@ ls -lh ~/.claude-memory/memory.db
 **Memory usage high**:
 ```bash
 # Check Claude Code memory usage
-ps aux | grep claude-memory
+ps aux | grep memorygraph
 
 # Consider using lite profile if not needed
 {
@@ -702,8 +702,8 @@ ps aux | grep claude-memory
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--profile", "standard"]
     }
   }
@@ -714,8 +714,8 @@ ps aux | grep claude-memory
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://team-server:7687",
@@ -731,8 +731,8 @@ ps aux | grep claude-memory
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "memgraph", "--profile", "full"],
       "env": {
         "MEMORY_MEMGRAPH_URI": "bolt://localhost:7687"
@@ -746,8 +746,8 @@ ps aux | grep claude-memory
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--log-level", "DEBUG"]
     }
   }
@@ -783,7 +783,7 @@ For more information:
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Complete tool reference
 - [FULL_MODE.md](FULL_MODE.md) - Advanced features guide
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment options
-- [GitHub Issues](https://github.com/gregorydickson/claude-code-memory/issues) - Support
+- [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues) - Support
 
 ---
 

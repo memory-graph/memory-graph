@@ -267,7 +267,7 @@ export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
 
 # SQLite (auto-fallback)
 export MEMORY_BACKEND=sqlite
-export MEMORY_SQLITE_PATH=~/.claude-memory/memory.db
+export MEMORY_SQLITE_PATH=~/.memorygraph/memory.db
 
 # Auto-select (recommended)
 export MEMORY_BACKEND=auto  # Tries Neo4j → Memgraph → SQLite

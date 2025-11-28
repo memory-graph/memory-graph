@@ -1,7 +1,7 @@
 """Tests for custom exception hierarchy."""
 
 import pytest
-from claude_memory.models import (
+from memorygraph.models import (
     MemoryError,
     MemoryNotFoundError,
     RelationshipError,

@@ -6,7 +6,7 @@ This document outlines the comprehensive 7-phase implementation plan for the Cla
 
 **Goal**: Create a Neo4j-based MCP memory server for Claude Code with intelligent relationship tracking, enabling persistent knowledge across development sessions.
 
-**Repository**: https://github.com/ViralV00d00/claude-code-memory
+**Repository**: https://github.com/ViralV00d00/memorygraph
 **Timeline**: ~22 weeks total (revised from initial 15-20 week estimate)
 **Methodology**: GitHub Issues tracking with milestone-based phases
 **Current Status**: Phase 2 complete, Phase 2.5 (technical debt) in progress

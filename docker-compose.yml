@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  claude-memory:
+  memorygraph:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: claude-memory-sqlite
+    container_name: memorygraph-sqlite
     stdin_open: true  # Required for MCP stdio
     tty: true         # Required for MCP stdio
     environment:

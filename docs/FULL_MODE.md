@@ -124,7 +124,7 @@ export MEMORY_NEO4J_USER=neo4j
 export MEMORY_NEO4J_PASSWORD=your-password
 
 # Start server
-claude-memory --backend neo4j --profile full
+memorygraph --backend neo4j --profile full
 ```
 
 ### MCP Configuration
@@ -132,8 +132,8 @@ claude-memory --backend neo4j --profile full
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
@@ -149,10 +149,10 @@ claude-memory --backend neo4j --profile full
 
 ```bash
 # Check config
-claude-memory --backend neo4j --show-config
+memorygraph --backend neo4j --show-config
 
 # Test connection (if health check implemented)
-claude-memory --backend neo4j --health
+memorygraph --backend neo4j --health
 ```
 
 ---
@@ -191,7 +191,7 @@ export MEMORY_TOOL_PROFILE=full
 export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
 
 # Start server
-claude-memory --backend memgraph --profile full
+memorygraph --backend memgraph --profile full
 ```
 
 ### MCP Configuration
@@ -199,8 +199,8 @@ claude-memory --backend memgraph --profile full
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "memgraph", "--profile", "full"],
       "env": {
         "MEMORY_MEMGRAPH_URI": "bolt://localhost:7687"
@@ -547,7 +547,7 @@ Test: 100,000 memories, 250,000 relationships
 
 1. **Export data** (when implemented):
    ```bash
-   claude-memory --backend sqlite --export backup.json
+   memorygraph --backend sqlite --export backup.json
    ```
 
 2. **Set up Neo4j**:
@@ -560,13 +560,13 @@ Test: 100,000 memories, 250,000 relationships
 
 3. **Import data** (when implemented):
    ```bash
-   claude-memory --backend neo4j --import backup.json
+   memorygraph --backend neo4j --import backup.json
    ```
 
 4. **Update MCP config**:
    ```json
    {
-     "command": "claude-memory",
+     "command": "memorygraph",
      "args": ["--backend", "neo4j", "--profile", "full"]
    }
    ```
@@ -639,7 +639,7 @@ SHOW STORAGE INFO;
 **Tools not available**
 ```bash
 # Verify full profile is active
-claude-memory --show-config
+memorygraph --show-config
 
 # Should show: tool_profile: full
 ```
@@ -694,7 +694,7 @@ claude-memory --show-config
 For more help:
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Complete tool reference
-- [GitHub Issues](https://github.com/gregorydickson/claude-code-memory/issues) - Get support
+- [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues) - Get support
 
 ---
 

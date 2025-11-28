@@ -15,8 +15,8 @@ This guide helps you set up the Claude Code Memory Server for development.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ViralV00d00/claude-code-memory.git
-cd claude-code-memory
+git clone https://github.com/ViralV00d00/memorygraph.git
+cd memorygraph
 
 # Install in development mode
 pip install -e ".[dev]"
@@ -28,7 +28,7 @@ pip install -e ".[dev]"
 ```bash
 # Start Neo4j with Docker
 docker run \
-    --name claude-memory-neo4j \
+    --name memorygraph-neo4j \
     -p 7474:7474 -p 7687:7687 \
     -d \
     -e NEO4J_AUTH=neo4j/memory123 \
@@ -68,7 +68,7 @@ python -m claude_memory
 
 ### Project Structure
 ```
-claude-code-memory/
+memorygraph/
 ├── src/claude_memory/       # Main source code
 │   ├── __init__.py
 │   ├── models.py           # Data models
@@ -134,7 +134,7 @@ Add to your Claude Code MCP configuration file:
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
+    "memorygraph": {
       "command": "python",
       "args": ["-m", "claude_memory"],
       "env": {
@@ -190,7 +190,7 @@ asyncio.run(init_schema())
 ### Database Backup
 ```bash
 # Backup Neo4j database
-docker exec claude-memory-neo4j neo4j-admin dump --database=neo4j --to=/backups/
+docker exec memorygraph-neo4j neo4j-admin dump --database=neo4j --to=/backups/
 ```
 
 ### Viewing Data
@@ -279,6 +279,6 @@ class RelationshipType(str, Enum):
 
 ## Getting Help
 
-- **Issues**: https://github.com/ViralV00d00/claude-code-memory/issues
-- **Discussions**: https://github.com/ViralV00d00/claude-code-memory/discussions
+- **Issues**: https://github.com/ViralV00d00/memorygraph/issues
+- **Discussions**: https://github.com/ViralV00d00/memorygraph/discussions
 - **Documentation**: `/docs` folder in repository

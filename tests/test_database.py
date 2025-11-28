@@ -15,8 +15,8 @@ import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from claude_memory.database import Neo4jConnection, MemoryDatabase
-from claude_memory.models import (
+from memorygraph.database import Neo4jConnection, MemoryDatabase
+from memorygraph.models import (
     Memory, MemoryType, MemoryContext, Relationship,
     RelationshipType, RelationshipProperties, SearchQuery,
     MemoryNotFoundError, DatabaseConnectionError, SchemaError,

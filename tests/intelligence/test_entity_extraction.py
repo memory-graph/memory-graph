@@ -1,7 +1,7 @@
 """Tests for entity extraction functionality."""
 
 import pytest
-from claude_memory.intelligence.entity_extraction import (
+from memorygraph.intelligence.entity_extraction import (
     EntityType,
     Entity,
     EntityExtractor,
@@ -344,7 +344,7 @@ async def test_link_entities_integration():
             self.queries.append((query, params))
             return [{"entity_id": f"entity-{len(self.queries)}"}]
 
-    from claude_memory.intelligence.entity_extraction import link_entities
+    from memorygraph.intelligence.entity_extraction import link_entities
 
     # Create mock backend
     backend = MockBackend()

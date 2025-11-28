@@ -1,11 +1,13 @@
-# Claude Code Memory Server
+# MemoryGraph
 
-[![PyPI](https://img.shields.io/badge/pip-install-blue)](https://pypi.org/project/claude-code-memory/)
+## MCP Memory Server for AI Coding Agents
+
+[![PyPI](https://img.shields.io/badge/pip-install-blue)](https://pypi.org/project/memorygraph/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![Zero Config](https://img.shields.io/badge/setup-zero--config-green)](docs/DEPLOYMENT.md)
 [![3 Backends](https://img.shields.io/badge/backends-SQLite%20%7C%20Neo4j%20%7C%20Memgraph-purple)](docs/FULL_MODE.md)
 
-A graph-based Model Context Protocol (MCP) server that gives Claude Code persistent memory. Store development patterns, track relationships, and retrieve contextual knowledge across sessions and projects.
+A graph-based Model Context Protocol (MCP) server that gives **AI coding agents** persistent memory. Originally built for Claude Code, MemoryGraph works with any MCP-enabled coding agent. Store development patterns, track relationships, and retrieve contextual knowledge across sessions and projects.
 
 ---
 
@@ -14,55 +16,57 @@ A graph-based Model Context Protocol (MCP) server that gives Claude Code persist
 ### Step 1: Install
 
 ```bash
-pip install claude-code-memory
+pip install memorygraph
 ```
 
-### Step 2: Add to Claude Code
+### Step 2: Add to Your MCP Client
 
-Edit `.claude/mcp.json` (or `~/.config/claude/mcp_settings.json`):
+**For Claude Code**, edit `.claude/mcp.json` (or `~/.config/claude/mcp_settings.json`):
 
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory"
+    "memorygraph": {
+      "command": "memorygraph"
     }
   }
 }
 ```
 
-### Step 3: Restart Claude Code
+**For other MCP clients** (Cursor, Continue, etc.), follow their MCP server configuration docs.
 
-That's it! Memory is stored in `~/.claude-memory/memory.db`. Zero additional configuration needed.
+### Step 3: Restart Your Coding Agent
+
+That's it! Memory is stored in `~/.memorygraph/memory.db`. Zero additional configuration needed.
 
 ### Start Using It
 
-Ask Claude in any conversation:
+Ask your AI coding agent in any conversation:
 - "Store this pattern for later"
 - "What similar problems have we solved?"
 - "Remember this approach works well for authentication"
 - "Show me all memories related to database migrations"
 
-See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for detailed integration guide and advanced configurations.
+See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for Claude Code integration guide and advanced configurations.
 
 ---
 
 ## What is This?
 
-**Claude Code Memory** is a reference implementation of a persistent memory system for Claude Code, built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
+**MemoryGraph** is a universal MCP server implementation that provides persistent memory for AI coding agents, built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
 
 ### Understanding the Architecture
 
 - **MCP** is an open specification that allows AI assistants to connect to external data sources and tools
-- **This project** is an MCP server implementation that provides memory capabilities via graph database backends
-- **Claude Code** is an MCP client that can connect to any MCP-compliant server
+- **MemoryGraph** is an MCP server implementation that provides memory capabilities via graph database backends
+- **AI coding agents** (Claude Code, Cursor, Continue, etc.) are MCP clients that can connect to any MCP-compliant server
 
 Think of it this way:
 - **MCP Specification** = HTTP specification
-- **This Memory Server** = A web server (like nginx or Apache)
-- **Claude Code** = A web browser that can connect to any HTTP server
+- **MemoryGraph** = A web server (like nginx or Apache)
+- **Coding Agents** = Web browsers that can connect to any HTTP server
 
-This implementation is **not** the only way to provide memory to Claude Code. Anyone can build their own MCP server with different memory approaches. This project offers:
+This implementation is **not** the only way to provide memory to coding agents. Anyone can build their own MCP server with different memory approaches. MemoryGraph offers:
 - Graph-based knowledge representation
 - Multiple backend options (SQLite, Neo4j, Memgraph)
 - Progressive complexity model (lite → standard → full)
@@ -70,11 +74,13 @@ This implementation is **not** the only way to provide memory to Claude Code. An
 
 **Why build on MCP?** It's an open standard. Your memory data isn't locked into proprietary formats. You can migrate to other MCP servers, build your own, or integrate multiple memory systems simultaneously.
 
+**Originally Built For Claude Code**: While MemoryGraph works with any MCP client, it was specifically designed and optimized for Claude Code workflows.
+
 ---
 
-## Understanding Memory Options for Claude Code
+## Understanding Memory Options
 
-Claude Code offers multiple ways to maintain persistent context across sessions. Here's how they compare:
+Most AI coding agents offer multiple ways to maintain persistent context across sessions. Here's how they compare (using Claude Code as example):
 
 ### Memory Option Comparison
 
@@ -141,15 +147,15 @@ Claude Code offers multiple ways to maintain persistent context across sessions.
 |--------|---------|-------------|
 | mcp-memory-keeper | SQLite | Channels, checkpoints, git integration |
 | mcp-memory-service | SQLite + Cloudflare | Hybrid sync, semantic search |
-| **claude-code-memory** | Neo4j/Memgraph/SQLite | **Graph relationships, pattern recognition** |
+| **memorygraph** | Neo4j/Memgraph/SQLite | **Graph relationships, pattern recognition** |
 
 ---
 
-## Why claude-code-memory?
+## Why memorygraph?
 
 ### Graph Relationships Make the Difference
 
-**claude-code-memory** uses **graph database relationships** to capture how concepts connect - something flat file systems and vector stores cannot do.
+**memorygraph** uses **graph database relationships** to capture how concepts connect - something flat file systems and vector stores cannot do.
 
 **Flat storage** (CLAUDE.md, vector stores):
 ```
@@ -159,7 +165,7 @@ Memory 3: "Fixed memory leak with connection pooling"
 ```
 No connection between these - search finds them separately.
 
-**Graph storage** (claude-code-memory):
+**Graph storage** (memorygraph):
 ```
 [timeout_fix] --CAUSES--> [memory_leak] --SOLVED_BY--> [connection_pooling]
      |                                                        |
@@ -181,9 +187,9 @@ We track seven categories of relationships that CLAUDE.md files cannot represent
 
 ### Complementary Usage
 
-**claude-code-memory complements CLAUDE.md files** - it doesn't replace them:
+**memorygraph complements CLAUDE.md files** - it doesn't replace them:
 
-| Use CLAUDE.md For | Use claude-code-memory For |
+| Use CLAUDE.md For | Use memorygraph For |
 |-------------------|---------------------------|
 | "Always use 2-space indentation" | "Last time we used 4-space, it broke the linter" |
 | "Run tests before committing" | "The auth tests failed because of X, fixed by Y" |
@@ -205,10 +211,10 @@ We track seven categories of relationships that CLAUDE.md files cannot represent
 │       → Use MCP memory server (any)                              │
 │                                                                  │
 │  "I need Claude to understand WHY a solution worked"             │
-│       → Use claude-code-memory (graph relationships)             │
+│       → Use memorygraph (graph relationships)             │
 │                                                                  │
 │  "I need Claude to find similar past problems"                   │
-│       → Use claude-code-memory (pattern recognition)             │
+│       → Use memorygraph (pattern recognition)             │
 │                                                                  │
 │  "I'm building a custom app with Anthropic API"                  │
 │       → Use Anthropic Memory Tool (BetaAbstractMemoryTool)       │
@@ -237,13 +243,13 @@ Start simple, upgrade when needed:
 
 ```bash
 # Default (lite mode)
-claude-memory
+memorygraph
 
 # Standard mode (pattern recognition)
-claude-memory --profile standard
+memorygraph --profile standard
 
 # Full power (all 44 tools)
-claude-memory --profile full --backend neo4j
+memorygraph --profile full --backend neo4j
 ```
 
 ---
@@ -278,13 +284,13 @@ See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list.
 
 ```bash
 # Basic installation (SQLite, lite mode)
-pip install claude-code-memory
+pip install memorygraph
 
 # With intelligence features (standard mode)
-pip install "claude-code-memory[intelligence]"
+pip install "memorygraph[intelligence]"
 
 # Full power with Neo4j
-pip install "claude-code-memory[neo4j,intelligence]"
+pip install "memorygraph[neo4j,intelligence]"
 ```
 
 ### Option 2: Docker
@@ -299,7 +305,7 @@ docker compose -f docker-compose.neo4j.yml up -d
 
 ### Option 3: uvx (Quick Test / No Install)
 
-Try claude-code-memory without installation using uvx:
+Try memorygraph without installation using uvx:
 
 ```bash
 # Install uv (if not already installed)
@@ -307,11 +313,11 @@ pip install uv
 # or: curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Run directly from PyPI
-uvx claude-code-memory --version
-uvx claude-code-memory --show-config
+uvx memorygraph --version
+uvx memorygraph --show-config
 
 # Run as MCP server (ephemeral)
-uvx claude-code-memory --backend sqlite --profile lite
+uvx memorygraph --backend sqlite --profile lite
 ```
 
 **Note**: uvx is great for quick testing and CI/CD, but **pip install is recommended** for daily use as a persistent MCP server. See [DEPLOYMENT.md](docs/DEPLOYMENT.md#method-4-uvx-ephemeral--testing) for limitations and use cases.
@@ -338,8 +344,8 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory"
+    "memorygraph": {
+      "command": "memorygraph"
     }
   }
 }
@@ -350,8 +356,8 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--profile", "standard"]
     }
   }
@@ -363,12 +369,12 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--profile", "full"],
       "env": {
         "MEMORY_TOOL_PROFILE": "full",
-        "MEMORY_SQLITE_PATH": "/Users/yourname/.claude-memory/memory.db"
+        "MEMORY_SQLITE_PATH": "/Users/yourname/.memorygraph/memory.db"
       }
     }
   }
@@ -380,8 +386,8 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "neo4j", "--profile", "full"],
       "env": {
         "MEMORY_BACKEND": "neo4j",
@@ -400,8 +406,8 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--backend", "memgraph", "--profile", "full"],
       "env": {
         "MEMORY_BACKEND": "memgraph",
@@ -420,12 +426,12 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
+    "memorygraph": {
       "command": "docker",
       "args": [
         "exec",
         "-i",
-        "claude-memory-server",
+        "memorygraph-server",
         "python",
         "-m",
         "claude_memory.server"
@@ -446,8 +452,8 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 ```json
 {
   "mcpServers": {
-    "claude-memory": {
-      "command": "claude-memory",
+    "memorygraph": {
+      "command": "memorygraph",
       "args": ["--profile", "standard"],
       "env": {
         "MEMORY_SQLITE_PATH": "/path/to/your/project/.memory/memory.db",
@@ -464,13 +470,13 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 {
   "mcpServers": {
     "memory-personal": {
-      "command": "claude-memory",
+      "command": "memorygraph",
       "env": {
-        "MEMORY_SQLITE_PATH": "/Users/yourname/.claude-memory/personal.db"
+        "MEMORY_SQLITE_PATH": "/Users/yourname/.memorygraph/personal.db"
       }
     },
     "memory-work": {
-      "command": "claude-memory",
+      "command": "memorygraph",
       "args": ["--profile", "full", "--backend", "neo4j"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://work-server:7687",
@@ -593,7 +599,7 @@ export MEMORY_BACKEND=sqlite          # sqlite (default) | neo4j | memgraph
 export MEMORY_TOOL_PROFILE=lite       # lite (default) | standard | full
 
 # SQLite configuration (default backend)
-export MEMORY_SQLITE_PATH=~/.claude-memory/memory.db
+export MEMORY_SQLITE_PATH=~/.memorygraph/memory.db
 
 # Neo4j configuration (if using neo4j backend)
 export MEMORY_NEO4J_URI=bolt://localhost:7687
@@ -613,16 +619,16 @@ export MEMORY_LOG_LEVEL=INFO          # DEBUG | INFO | WARNING | ERROR
 
 ```bash
 # Show help
-claude-memory --help
+memorygraph --help
 
 # Show current configuration
-claude-memory --show-config
+memorygraph --show-config
 
 # Show version
-claude-memory --version
+memorygraph --version
 
 # Run with custom settings
-claude-memory --backend neo4j --profile full --log-level DEBUG
+memorygraph --backend neo4j --profile full --log-level DEBUG
 ```
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete configuration reference.
@@ -633,7 +639,7 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete configuration reference.
 
 ### Project Structure
 ```
-claude-code-memory/
+memorygraph/
 ├── src/claude_memory/          # Main source code
 │   ├── server.py               # MCP server (44 tools)
 │   ├── backends/               # SQLite, Neo4j, Memgraph
@@ -649,8 +655,8 @@ claude-code-memory/
 
 ```bash
 # Clone repository
-git clone https://github.com/gregorydickson/claude-code-memory.git
-cd claude-code-memory
+git clone https://github.com/gregorydickson/memorygraph.git
+cd memorygraph
 
 # Install with dev dependencies
 pip install -e ".[dev]"
@@ -691,13 +697,13 @@ pytest tests/integration/
 ### From Lite to Standard
 No changes needed - just add the flag:
 ```bash
-claude-memory --profile standard
+memorygraph --profile standard
 ```
 
 ### From SQLite to Neo4j
-1. Export SQLite data: `claude-memory --export backup.json`
+1. Export SQLite data: `memorygraph --export backup.json`
 2. Set up Neo4j (see [FULL_MODE.md](docs/FULL_MODE.md))
-3. Import data: `claude-memory --backend neo4j --import backup.json`
+3. Import data: `memorygraph --backend neo4j --import backup.json`
 4. Update MCP config to use `--backend neo4j`
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed migration guide.
@@ -711,19 +717,19 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed migration guide.
 **Server won't start**
 ```bash
 # Check configuration
-claude-memory --show-config
+memorygraph --show-config
 
 # Verify database connection
-claude-memory --health
+memorygraph --health
 ```
 
 **SQLite database locked**
 ```bash
 # Check for running processes
-ps aux | grep claude-memory
+ps aux | grep memorygraph
 
 # Remove lock file (if safe)
-rm ~/.claude-memory/memory.db-lock
+rm ~/.memorygraph/memory.db-lock
 ```
 
 **Neo4j connection refused**
@@ -732,7 +738,7 @@ rm ~/.claude-memory/memory.db-lock
 docker ps | grep neo4j
 
 # Check credentials
-claude-memory --backend neo4j --show-config
+memorygraph --backend neo4j --show-config
 ```
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md#troubleshooting) for more solutions.
@@ -744,7 +750,7 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md#troubleshooting) for more solutions.
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Development Workflow
-1. Check [GitHub Issues](https://github.com/gregorydickson/claude-code-memory/issues)
+1. Check [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues)
 2. Fork the repository and create a feature branch
 3. Make changes following our coding standards (Black, Ruff, mypy)
 4. Add tests for new functionality (maintain 90%+ coverage)
@@ -758,7 +764,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - ✅ SQLite default backend
 - ✅ Three-tier complexity (lite/standard/full)
 - ✅ 44 MCP tools
-- ✅ CLI with `claude-memory` command
+- ✅ CLI with `memorygraph` command
 - ✅ PyPI publication
 - ✅ Docker support
 
@@ -803,8 +809,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - [Documentation](docs/) - Guides, references, examples
-- [GitHub Issues](https://github.com/gregorydickson/claude-code-memory/issues) - Bug reports and feature requests
-- [GitHub Discussions](https://github.com/gregorydickson/claude-code-memory/discussions) - Questions and community support
+- [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues) - Bug reports and feature requests
+- [GitHub Discussions](https://github.com/gregorydickson/memorygraph/discussions) - Questions and community support
 
 ---
 

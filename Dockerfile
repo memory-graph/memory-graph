@@ -1,4 +1,4 @@
-# Dockerfile for Claude Code Memory Server
+# Dockerfile for MemoryGraph MCP Server
 FROM python:3.11-slim
 
 # Set working directory
@@ -31,4 +31,4 @@ EXPOSE 8000
 
 # Run the memory server
 # Note: MCP uses stdio transport, so stdin_open and tty are required in docker-compose
-CMD ["python", "-m", "claude_memory.server"]
+CMD ["python", "-m", "memorygraph.server"]

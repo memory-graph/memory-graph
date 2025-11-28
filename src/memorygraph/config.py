@@ -1,5 +1,5 @@
 """
-Configuration management for Claude Code Memory Server.
+Configuration management for MemoryGraph.
 
 This module centralizes all configuration options and environment variable handling
 for the multi-backend memory server.
@@ -73,7 +73,7 @@ class Config:
             MEMORY_MEMGRAPH_PASSWORD: Password [default: ""]
 
         SQLite Configuration:
-            MEMORY_SQLITE_PATH: Database file path [default: ~/.claude-memory/memory.db]
+            MEMORY_SQLITE_PATH: Database file path [default: ~/.memorygraph/memory.db]
 
         Tool Profile Configuration:
             MEMORY_TOOL_PROFILE: Tool profile (lite|standard|full) [default: lite]
@@ -97,7 +97,7 @@ class Config:
     MEMGRAPH_PASSWORD: str = os.getenv("MEMORY_MEMGRAPH_PASSWORD", "")
 
     # SQLite Configuration
-    SQLITE_PATH: str = os.getenv("MEMORY_SQLITE_PATH", os.path.expanduser("~/.claude-memory/memory.db"))
+    SQLITE_PATH: str = os.getenv("MEMORY_SQLITE_PATH", os.path.expanduser("~/.memorygraph/memory.db"))
 
     # Tool Profile Configuration
     TOOL_PROFILE: str = os.getenv("MEMORY_TOOL_PROFILE", "lite")

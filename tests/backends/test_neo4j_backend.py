@@ -9,8 +9,8 @@ import pytest
 import os
 from unittest.mock import AsyncMock, Mock, patch
 
-from src.claude_memory.backends.neo4j_backend import Neo4jBackend
-from src.claude_memory.models import DatabaseConnectionError, SchemaError
+from src.memorygraph.backends.neo4j_backend import Neo4jBackend
+from src.memorygraph.models import DatabaseConnectionError, SchemaError
 
 
 class TestNeo4jBackendInitialization:
@@ -94,7 +94,7 @@ class TestNeo4jBackendConnection:
     @pytest.mark.asyncio
     async def test_connect_success(self):
         """Test successful connection to Neo4j."""
-        with patch('src.claude_memory.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
+        with patch('src.memorygraph.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
             mock_driver.verify_connectivity = AsyncMock()
             mock_db.driver.return_value = mock_driver
@@ -112,7 +112,7 @@ class TestNeo4jBackendConnection:
         """Test connection failure when service is unavailable."""
         from neo4j.exceptions import ServiceUnavailable
 
-        with patch('src.claude_memory.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
+        with patch('src.memorygraph.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
             mock_db.driver.side_effect = ServiceUnavailable("Service unavailable")
 
             backend = Neo4jBackend(uri="bolt://test:7687", password="test")
@@ -127,7 +127,7 @@ class TestNeo4jBackendConnection:
         """Test connection failure with authentication error."""
         from neo4j.exceptions import AuthError
 
-        with patch('src.claude_memory.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
+        with patch('src.memorygraph.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
             mock_db.driver.side_effect = AuthError("Authentication failed")
 
             backend = Neo4jBackend(uri="bolt://test:7687", password="test")
@@ -138,7 +138,7 @@ class TestNeo4jBackendConnection:
     @pytest.mark.asyncio
     async def test_disconnect(self):
         """Test disconnecting from Neo4j."""
-        with patch('src.claude_memory.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
+        with patch('src.memorygraph.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
             mock_driver.verify_connectivity = AsyncMock()
             mock_driver.close = AsyncMock()
@@ -155,7 +155,7 @@ class TestNeo4jBackendConnection:
     @pytest.mark.asyncio
     async def test_context_manager(self):
         """Test using backend as async context manager."""
-        with patch('src.claude_memory.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
+        with patch('src.memorygraph.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
             mock_driver.verify_connectivity = AsyncMock()
             mock_driver.close = AsyncMock()
@@ -250,7 +250,7 @@ class TestNeo4jBackendSchema:
     @pytest.mark.asyncio
     async def test_health_check_connected(self):
         """Test health check when connected."""
-        with patch('src.claude_memory.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
+        with patch('src.memorygraph.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
             mock_driver.verify_connectivity = AsyncMock()
             mock_db.driver.return_value = mock_driver
@@ -285,7 +285,7 @@ class TestNeo4jBackendSchema:
     @pytest.mark.asyncio
     async def test_factory_create_method(self):
         """Test the factory create method."""
-        with patch('src.claude_memory.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
+        with patch('src.memorygraph.backends.neo4j_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
             mock_driver.verify_connectivity = AsyncMock()
             mock_db.driver.return_value = mock_driver

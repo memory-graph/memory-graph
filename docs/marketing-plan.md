@@ -102,18 +102,18 @@
 
 **PyPI (Python)**
 - [ ] Publish to PyPI
-  - Package name: `claude-code-memory` or `mcp-memory-graph`
-  - Enables: `pip install claude-code-memory`
+  - Package name: `memorygraph` or `mcp-memory-graph`
+  - Enables: `pip install memorygraph`
   - Include in README: `pip install` one-liner
 
 **npm (if Node.js wrapper)**
 - [ ] Publish to npm
-  - Enables: `npx claude-code-memory`
+  - Enables: `npx memorygraph`
   - Required for Smithery integration
 
 **Docker Hub**
 - [ ] Publish Docker images
-  - `docker pull yourusername/claude-code-memory`
+  - `docker pull yourusername/memorygraph`
   - Tag with versions and `latest`
 
 ### 7.4 Documentation & SEO
@@ -156,7 +156,7 @@
 Use this template when submitting PRs:
 
 ```markdown
-## Add claude-code-memory to Memory section
+## Add memorygraph to Memory section
 
 ### Description
 Claude Code Memory is a graph-based MCP memory server that uses Neo4j/Memgraph 
@@ -176,7 +176,7 @@ Unlike vector-based memory servers, this uses graph relationships to understand
 similar problems?" and "what decisions led to this outcome?"
 
 ### Links
-- Repository: https://github.com/yourusername/claude-code-memory
+- Repository: https://github.com/yourusername/memorygraph
 - Documentation: [link]
 - Demo: [link]
 ```
