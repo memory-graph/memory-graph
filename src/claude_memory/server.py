@@ -25,7 +25,7 @@ from mcp.types import (
 )
 from pydantic import ValidationError
 
-from .database import Neo4jConnection, MemoryDatabase
+from .database import MemoryDatabase
 from .models import (
     Memory,
     MemoryType,
@@ -60,7 +60,7 @@ class ClaudeMemoryServer:
     def __init__(self):
         """Initialize the memory server."""
         self.server = Server("claude-memory")
-        self.db_connection: Optional[Neo4jConnection] = None
+        self.db_connection = None  # GraphBackend instance
         self.memory_db: Optional[MemoryDatabase] = None
         self.advanced_handlers: Optional[AdvancedRelationshipHandlers] = None
 

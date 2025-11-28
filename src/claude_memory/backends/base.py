@@ -128,3 +128,52 @@ class GraphBackend(ABC):
         """Async context manager exit."""
         await self.disconnect()
         return False
+
+    # Compatibility methods for legacy MemoryDatabase interface
+    async def execute_write_query(
+        self,
+        query: str,
+        parameters: Optional[dict[str, Any]] = None
+    ) -> list[dict[str, Any]]:
+        """
+        Execute a write query (compatibility wrapper for execute_query).
+
+        This method provides compatibility with the legacy Neo4jConnection interface
+        used by MemoryDatabase.
+
+        Args:
+            query: The Cypher query string
+            parameters: Query parameters for parameterized queries
+
+        Returns:
+            List of result records as dictionaries
+        """
+        return await self.execute_query(query, parameters, write=True)
+
+    async def execute_read_query(
+        self,
+        query: str,
+        parameters: Optional[dict[str, Any]] = None
+    ) -> list[dict[str, Any]]:
+        """
+        Execute a read query (compatibility wrapper for execute_query).
+
+        This method provides compatibility with the legacy Neo4jConnection interface
+        used by MemoryDatabase.
+
+        Args:
+            query: The Cypher query string
+            parameters: Query parameters for parameterized queries
+
+        Returns:
+            List of result records as dictionaries
+        """
+        return await self.execute_query(query, parameters, write=False)
+
+    async def close(self) -> None:
+        """
+        Close the connection (compatibility wrapper for disconnect).
+
+        This method provides compatibility with the legacy Neo4jConnection interface.
+        """
+        await self.disconnect()

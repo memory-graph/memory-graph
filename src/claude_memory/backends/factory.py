@@ -10,9 +10,6 @@ import os
 from typing import Optional
 
 from .base import GraphBackend
-from .neo4j_backend import Neo4jBackend
-from .memgraph_backend import MemgraphBackend
-from .sqlite_fallback import SQLiteFallbackBackend
 from ..models import DatabaseConnectionError
 
 logger = logging.getLogger(__name__)
@@ -117,7 +114,7 @@ class BackendFactory:
             )
 
     @staticmethod
-    async def _create_neo4j() -> Neo4jBackend:
+    async def _create_neo4j() -> GraphBackend:
         """
         Create and connect to Neo4j backend.
 
@@ -127,6 +124,9 @@ class BackendFactory:
         Raises:
             DatabaseConnectionError: If connection fails
         """
+        # Lazy import - only load neo4j backend when needed
+        from .neo4j_backend import Neo4jBackend
+
         uri = os.getenv("MEMORY_NEO4J_URI") or os.getenv("NEO4J_URI")
         user = os.getenv("MEMORY_NEO4J_USER") or os.getenv("NEO4J_USER")
         password = os.getenv("MEMORY_NEO4J_PASSWORD") or os.getenv("NEO4J_PASSWORD")
@@ -142,7 +142,7 @@ class BackendFactory:
         return backend
 
     @staticmethod
-    async def _create_memgraph() -> MemgraphBackend:
+    async def _create_memgraph() -> GraphBackend:
         """
         Create and connect to Memgraph backend.
 
@@ -152,6 +152,9 @@ class BackendFactory:
         Raises:
             DatabaseConnectionError: If connection fails
         """
+        # Lazy import - only load memgraph backend when needed
+        from .memgraph_backend import MemgraphBackend
+
         uri = os.getenv("MEMORY_MEMGRAPH_URI")
         user = os.getenv("MEMORY_MEMGRAPH_USER", "")
         password = os.getenv("MEMORY_MEMGRAPH_PASSWORD", "")
@@ -161,7 +164,7 @@ class BackendFactory:
         return backend
 
     @staticmethod
-    async def _create_sqlite() -> SQLiteFallbackBackend:
+    async def _create_sqlite() -> GraphBackend:
         """
         Create and connect to SQLite fallback backend.
 
@@ -171,6 +174,9 @@ class BackendFactory:
         Raises:
             DatabaseConnectionError: If connection fails
         """
+        # Lazy import - only load sqlite backend when needed
+        from .sqlite_fallback import SQLiteFallbackBackend
+
         db_path = os.getenv("MEMORY_SQLITE_PATH")
         backend = SQLiteFallbackBackend(db_path=db_path)
         await backend.connect()

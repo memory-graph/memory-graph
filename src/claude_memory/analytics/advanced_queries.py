@@ -46,7 +46,8 @@ class GraphEdge(BaseModel):
     title: Optional[str] = None  # Hover text
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True  # Pydantic V2: allows using Python field names
+        allow_population_by_field_name = True  # Pydantic V1 compatibility
 
 
 class GraphVisualizationData(BaseModel):
@@ -135,6 +136,15 @@ async def get_memory_graph_visualization(
 
     visualization = GraphVisualizationData()
 
+    # Set metadata early so it's available even if query fails
+    visualization.metadata = {
+        "node_count": 0,
+        "edge_count": 0,
+        "center_id": center_memory_id,
+        "depth": depth,
+        "generated_at": datetime.now().isoformat(),
+    }
+
     if center_memory_id:
         # Get subgraph around center
         query = """
@@ -202,23 +212,20 @@ async def get_memory_graph_visualization(
 
         # Create edges
         for rel in relationships:
-            edge = GraphEdge(
-                from_=rel["from_id"],
-                to=rel["to_id"],
-                type=rel.get("type", "RELATED_TO"),
-                value=rel.get("strength", 0.5) * 5,
-                title=f"{rel.get('type', 'RELATED_TO')} (strength: {rel.get('strength', 0.5):.2f})",
-            )
+            edge = GraphEdge(**{
+                "from": rel["from_id"],
+                "to": rel["to_id"],
+                "type": rel.get("type", "RELATED_TO"),
+                "value": rel.get("strength", 0.5) * 5,
+                "title": f"{rel.get('type', 'RELATED_TO')} (strength: {rel.get('strength', 0.5):.2f})",
+            })
             visualization.edges.append(edge)
 
-        # Add metadata
-        visualization.metadata = {
+        # Update metadata with actual counts
+        visualization.metadata.update({
             "node_count": len(visualization.nodes),
             "edge_count": len(visualization.edges),
-            "center_id": center_memory_id,
-            "depth": depth,
-            "generated_at": datetime.now().isoformat(),
-        }
+        })
 
         logger.info(f"Generated visualization: {len(visualization.nodes)} nodes, {len(visualization.edges)} edges")
 
@@ -533,7 +540,7 @@ async def recommend_learning_paths(
 async def identify_knowledge_gaps(
     backend: GraphBackend,
     project: Optional[str] = None,
-    min_gap_severity: str = "medium",
+    min_gap_severity: str = "low",
 ) -> List[KnowledgeGap]:
     """
     Identify knowledge gaps in the memory graph.
