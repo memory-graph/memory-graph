@@ -161,7 +161,7 @@ intelligence/
 
 ## References
 
-- [Phase 5 Enhancement Plan](/docs/enhancement-plan.md#phase-5-intelligence-layer)
+- [Phase 5 Completion Documentation](/docs/archive/completed_phases.md#phase-5-intelligence-layer)
 - [Entity Extraction Module](/src/claude_memory/intelligence/entity_extraction.py)
 - [Pattern Recognition Module](/src/claude_memory/intelligence/pattern_recognition.py)
 - [Temporal Memory Module](/src/claude_memory/intelligence/temporal.py)

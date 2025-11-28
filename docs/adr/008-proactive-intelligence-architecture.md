@@ -299,4 +299,4 @@ src/claude_memory/
 - Phase 7 implementation: `src/claude_memory/proactive/`
 - Tests: `tests/proactive/`, `tests/analytics/`
 - MCP tools: `src/claude_memory/proactive_tools.py`
-- Enhancement plan: `docs/enhancement-plan.md` (Phase 7)
+- Phase 7 completion: `docs/archive/completed_phases.md#phase-7-proactive-features--advanced-analytics`

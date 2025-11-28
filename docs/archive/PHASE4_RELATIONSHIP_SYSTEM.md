@@ -381,7 +381,7 @@ Phase 4 is fully backward compatible. Existing relationships created in earlier 
 
 ## References
 
-- **Enhancement Plan**: `/docs/enhancement-plan.md` (Phase 4 section)
+- **Phase 4 Completion**: `/docs/archive/completed_phases.md#phase-4-advanced-relationship-system`
 - **Relationship Schema**: `/docs/relationship-schema.md`
 - **API Documentation**: `/docs/api.md`
 - **Source Code**:
