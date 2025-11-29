@@ -29,7 +29,7 @@ jobs:
         pip install -e ".[dev,neo4j]"
 
     - name: Run tests
-      run: pytest tests/ -v --cov=memorygraph --cov-report=term-missing
+      run: pytest tests/ -v --cov=src/memorygraph --cov-report=term-missing
 
     - name: Check coverage
       run: |
