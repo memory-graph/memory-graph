@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "memorygraph"
+name = "memorygraphMCP"
 version = "2.0.0"
 description = "Graph-based MCP memory server for AI coding agents with intelligent relationship tracking and multi-backend support"
 authors = [
@@ -62,10 +62,10 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/gregorydickson/memorygraph"
-Repository = "https://github.com/gregorydickson/memorygraph"
-Issues = "https://github.com/gregorydickson/memorygraph/issues"
-Documentation = "https://github.com/gregorydickson/memorygraph/blob/main/docs/"
+Homepage = "https://github.com/gregorydickson/memory-graph"
+Repository = "https://github.com/gregorydickson/memory-graph"
+Issues = "https://github.com/gregorydickson/memory-graph/issues"
+Documentation = "https://github.com/gregorydickson/memory-graph/blob/main/docs/"
 
 [project.scripts]
 memorygraph = "memorygraph.cli:main"
