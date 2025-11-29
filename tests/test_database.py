@@ -171,6 +171,34 @@ class TestNeo4jConnection:
             assert "Authentication failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
+    async def test_connect_unexpected_error(self):
+        """Test connection failure with unexpected error."""
+        conn = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", password="password")
+
+        # Patch neo4j module at import time inside connect()
+        with patch('neo4j.AsyncGraphDatabase') as mock_graph_db:
+            mock_driver = AsyncMock()
+            mock_driver.verify_connectivity = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+            mock_graph_db.driver.return_value = mock_driver
+
+            with pytest.raises(DatabaseConnectionError) as exc_info:
+                await conn.connect()
+
+            assert "Unexpected error" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_connect_neo4j_import_error(self):
+        """Test connection failure when neo4j package is not installed."""
+        conn = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", password="password")
+
+        # Simulate neo4j not being installed
+        with patch('builtins.__import__', side_effect=ImportError("No module named 'neo4j'")):
+            with pytest.raises(DatabaseConnectionError) as exc_info:
+                await conn.connect()
+
+            assert "neo4j package is required" in str(exc_info.value)
+
+    @pytest.mark.asyncio
     async def test_close_connection(self, connection, mock_driver):
         """Test closing database connection."""
         await connection.close()
@@ -240,6 +268,38 @@ class TestNeo4jConnection:
         assert len(result) == 1
         assert result[0]["name"] == "test"
 
+    @pytest.mark.asyncio
+    async def test_execute_write_query_neo4j_error(self, connection, mock_driver, mock_session):
+        """Test write query failure with Neo4jError."""
+        from neo4j.exceptions import Neo4jError
+
+        async def mock_execute_write_error(func, *args):
+            raise Neo4jError("Transaction failed")
+
+        mock_session.execute_write = mock_execute_write_error
+        mock_driver.session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(DatabaseConnectionError) as exc_info:
+            await connection.execute_write_query("CREATE (n:Test)", {})
+
+        assert "Write query failed" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_execute_read_query_neo4j_error(self, connection, mock_driver, mock_session):
+        """Test read query failure with Neo4jError."""
+        from neo4j.exceptions import Neo4jError
+
+        async def mock_execute_read_error(func, *args):
+            raise Neo4jError("Query failed")
+
+        mock_session.execute_read = mock_execute_read_error
+        mock_driver.session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(DatabaseConnectionError) as exc_info:
+            await connection.execute_read_query("MATCH (n) RETURN n", {})
+
+        assert "Read query failed" in str(exc_info.value)
+
 
 class TestMemoryDatabase:
     """Test MemoryDatabase operations."""
@@ -256,6 +316,54 @@ class TestMemoryDatabase:
         assert True
 
     @pytest.mark.asyncio
+    async def test_initialize_schema_constraint_exists(self, database, connection, mock_driver, mock_session):
+        """Test schema initialization when constraints already exist."""
+        call_count = 0
+
+        async def mock_execute_with_exists(func, *args):
+            nonlocal call_count
+            call_count += 1
+            # Simulate "already exists" error for some calls
+            if call_count <= 3:  # First few constraint calls
+                raise Exception("Constraint already exists")
+            mock_tx = AsyncMock()
+            mock_result = AsyncMock()
+            mock_result.data = AsyncMock(return_value=[])
+            mock_tx.run = AsyncMock(return_value=mock_result)
+            return await func(mock_tx, *args)
+
+        mock_session.execute_write = mock_execute_with_exists
+        mock_driver.session = MagicMock(return_value=mock_session)
+
+        # Should complete without raising error (errors are logged)
+        await database.initialize_schema()
+        assert True
+
+    @pytest.mark.asyncio
+    async def test_initialize_schema_other_error(self, database, connection, mock_driver, mock_session):
+        """Test schema initialization with non-exists errors."""
+        call_count = 0
+
+        async def mock_execute_with_error(func, *args):
+            nonlocal call_count
+            call_count += 1
+            # Simulate a different error for first call
+            if call_count == 1:
+                raise Exception("Permission denied")
+            mock_tx = AsyncMock()
+            mock_result = AsyncMock()
+            mock_result.data = AsyncMock(return_value=[])
+            mock_tx.run = AsyncMock(return_value=mock_result)
+            return await func(mock_tx, *args)
+
+        mock_session.execute_write = mock_execute_with_error
+        mock_driver.session = MagicMock(return_value=mock_session)
+
+        # Should complete without raising error (errors are logged as warnings)
+        await database.initialize_schema()
+        assert True
+
+    @pytest.mark.asyncio
     async def test_store_memory_basic(self, database, connection, sample_memory, mock_driver, mock_session):
         """Test storing a basic memory."""
         mock_session.execute_write = create_mock_execute([{"id": sample_memory.id}])
@@ -264,6 +372,54 @@ class TestMemoryDatabase:
         memory_id = await database.store_memory(sample_memory)
 
         assert memory_id == sample_memory.id
+
+    @pytest.mark.asyncio
+    async def test_store_memory_generates_id(self, database, connection, sample_memory, mock_driver, mock_session):
+        """Test that store_memory generates ID if not provided."""
+        sample_memory.id = None  # Remove ID
+        generated_id = str(uuid.uuid4())
+
+        async def mock_execute_with_id(func, *args):
+            mock_tx = AsyncMock()
+            mock_result = AsyncMock()
+            # Return a generated ID
+            mock_result.data = AsyncMock(return_value=[{"id": generated_id}])
+            mock_tx.run = AsyncMock(return_value=mock_result)
+            return await func(mock_tx, *args)
+
+        mock_session.execute_write = mock_execute_with_id
+        mock_driver.session = MagicMock(return_value=mock_session)
+
+        memory_id = await database.store_memory(sample_memory)
+
+        # Should have generated and returned an ID
+        assert memory_id == generated_id
+        assert sample_memory.id is not None
+
+    @pytest.mark.asyncio
+    async def test_store_memory_no_result(self, database, connection, sample_memory, mock_driver, mock_session):
+        """Test store_memory when query returns no result."""
+        mock_session.execute_write = create_mock_execute([])  # Empty result
+        mock_driver.session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(DatabaseConnectionError) as exc_info:
+            await database.store_memory(sample_memory)
+
+        assert "Failed to store memory" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_store_memory_unexpected_error(self, database, connection, sample_memory, mock_driver, mock_session):
+        """Test store_memory with unexpected error."""
+        async def mock_execute_error(func, *args):
+            raise RuntimeError("Unexpected database error")
+
+        mock_session.execute_write = mock_execute_error
+        mock_driver.session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(DatabaseConnectionError) as exc_info:
+            await database.store_memory(sample_memory)
+
+        assert "Failed to store memory" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_memory_existing(self, database, connection, sample_memory, mock_driver, mock_session):
