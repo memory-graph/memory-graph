@@ -34,12 +34,12 @@
 
 **All tasks are unblocked and ready to execute:**
 
-### 1. Create GitHub Release (15 minutes)
+### 1. Create GitHub Release (15 minutes) ✅ COMPLETE
 - [x] Tag release: `git tag -a v0.5.2 -m "Release v0.5.2: PyPI publication"`
 - [x] Push tag: `git push origin v0.5.2`
 - [x] Create GitHub release with changelog
 - [x] Attach wheel and source distribution from `dist/`
-- **Files ready**: Release notes in `docs/RELEASE_NOTES_v1.0.0.md`
+- [x] Release published: https://github.com/gregorydickson/memory-graph/releases/tag/v0.5.2
 
 ### 2. Submit to Smithery (15 minutes)
 - [ ] Go to https://smithery.ai/new
