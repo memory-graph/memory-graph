@@ -35,10 +35,10 @@
 **All tasks are unblocked and ready to execute:**
 
 ### 1. Create GitHub Release (15 minutes)
-- [ ] Tag release: `git tag -a v0.5.2 -m "Release v0.5.2: PyPI publication"`
-- [ ] Push tag: `git push origin v0.5.2`
-- [ ] Create GitHub release with changelog
-- [ ] Attach wheel and source distribution from `dist/`
+- [x] Tag release: `git tag -a v0.5.2 -m "Release v0.5.2: PyPI publication"`
+- [x] Push tag: `git push origin v0.5.2`
+- [x] Create GitHub release with changelog
+- [x] Attach wheel and source distribution from `dist/`
 - **Files ready**: Release notes in `docs/RELEASE_NOTES_v1.0.0.md`
 
 ### 2. Submit to Smithery (15 minutes)
@@ -71,10 +71,10 @@
   - Focus on technical advantages (graph vs vector)
   - Cross-reference with other memory servers
 
-### 6. Create GitHub Discussions Announcement (15 minutes)
-- [ ] Create launch announcement in GitHub Discussions
-- [ ] Pin the announcement
-- [ ] Adapt content from `docs/RELEASE_NOTES_v1.0.0.md`
+### 6. Create GitHub Discussions Announcement (15 minutes) ✅ COMPLETE
+- [x] Create launch announcement in GitHub Discussions
+- [x] Pin the announcement
+- [x] Content created in `docs/github-discussions-announcement.md`
 
 **Total time for critical launch**: ~3 hours
 
@@ -121,7 +121,6 @@
 **GitHub Discussions** - Status: ⏳ Ready to post
 - [ ] Create launch announcement
   - Pin the announcement
-  - Content ready in `docs/RELEASE_NOTES_v1.0.0.md`
   - Estimated time: 15 minutes
 
 **Twitter/X (Optional)** - Status: ⏳ Optional
