@@ -1,6 +1,6 @@
-# Claude Code Memory Database Schema
+# MemoryGraph Database Schema
 
-This document describes the Neo4j database schema used by the Claude Code Memory Server.
+This document describes the Neo4j database schema used by MemoryGraph.
 
 ## Node Types
 

@@ -1,6 +1,6 @@
 # Tool Profiles Reference
 
-This document provides a complete inventory of all 44 MCP tools in the Claude Code Memory Server, organized by profile tier.
+This document provides a complete inventory of all 44 MCP tools in MemoryGraph, organized by profile tier.
 
 ## Profile Overview
 

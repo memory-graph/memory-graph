@@ -1,4 +1,4 @@
-# Frictionless Deployment Strategy for Claude Code Memory
+# Frictionless Deployment Strategy for MemoryGraph
 
 ## Current State Assessment
 
@@ -195,7 +195,7 @@ That's it! Memory is stored in `~/.memorygraph/memory.db`.
 
 ### Option 2: Docker
 ```bash
-git clone https://github.com/gregorydickson/memorygraph
+git clone https://github.com/gregorydickson/memory-graph
 cd memorygraph
 docker compose up -d
 ```

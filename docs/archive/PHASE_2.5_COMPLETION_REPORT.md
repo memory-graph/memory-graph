@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Phase 2.5 addressed critical technical debt in the Claude Code Memory Server, focusing on the async/sync architecture mismatch, custom exception hierarchy, and critical bug fixes. The core architectural improvements are complete and tested.
+Phase 2.5 addressed critical technical debt in MemoryGraph, focusing on the async/sync architecture mismatch, custom exception hierarchy, and critical bug fixes. The core architectural improvements are complete and tested.
 
 ### Key Achievements
 

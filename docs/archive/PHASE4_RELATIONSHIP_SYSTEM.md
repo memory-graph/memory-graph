@@ -5,7 +5,7 @@
 
 ## Overview
 
-Phase 4 implements the complete 35-relationship type system with weighted relationships, graph analytics, and intelligent relationship evolution. This is the core differentiator that makes Claude Code Memory Server superior to vector-only memory systems.
+Phase 4 implements the complete 35-relationship type system with weighted relationships, graph analytics, and intelligent relationship evolution. This is the core differentiator that makes MemoryGraph superior to vector-only memory systems.
 
 ## Features Implemented
 

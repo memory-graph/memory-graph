@@ -4,7 +4,7 @@ This document outlines the Cypher dialect differences between supported graph da
 
 ## Overview
 
-The Claude Code Memory Server uses Cypher as its query language across all graph-based backends. While Neo4j and Memgraph both support Cypher, there are some dialect differences that need to be considered.
+MemoryGraph uses Cypher as its query language across all graph-based backends. While Neo4j and Memgraph both support Cypher, there are some dialect differences that need to be considered.
 
 ## Backend Comparison
 

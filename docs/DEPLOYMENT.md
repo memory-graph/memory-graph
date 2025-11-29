@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Complete guide for deploying Claude Code Memory Server in any environment.
+Complete guide for deploying MemoryGraph in any environment.
 
 ## Table of Contents
 
@@ -54,8 +54,8 @@ pip install "memorygraph[all]"
 **SQLite Mode**
 ```bash
 # Clone repository
-git clone https://github.com/gregorydickson/memorygraph.git
-cd memorygraph
+git clone https://github.com/gregorydickson/memory-graph.git
+cd memory-graph
 
 # Start with Docker Compose
 docker compose up -d
@@ -75,8 +75,8 @@ docker compose -f docker-compose.full.yml up -d
 
 ```bash
 # Clone repository
-git clone https://github.com/gregorydickson/memorygraph.git
-cd memorygraph
+git clone https://github.com/gregorydickson/memory-graph.git
+cd memory-graph
 
 # Install in development mode
 pip install -e .
@@ -1006,7 +1006,7 @@ For more help:
 - [FULL_MODE.md](FULL_MODE.md) - Advanced features
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Tool reference
 - [CLAUDE_CODE_SETUP.md](CLAUDE_CODE_SETUP.md) - Claude Code integration
-- [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues) - Support
+- [GitHub Issues](https://github.com/gregorydickson/memory-graph/issues) - Support
 
 ---
 

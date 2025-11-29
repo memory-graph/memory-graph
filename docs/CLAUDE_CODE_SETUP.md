@@ -1,6 +1,6 @@
 # Claude Code Setup Guide
 
-Step-by-step guide to integrate Claude Code Memory Server with Claude Code.
+Step-by-step guide to integrate MemoryGraph with Claude Code.
 
 ## Table of Contents
 
@@ -287,7 +287,7 @@ memorygraph --show-config
 
 Should show:
 ```
-Claude Code Memory Server v1.0.0
+MemoryGraph v1.0.0
 Configuration:
   backend: sqlite
   tool_profile: lite
@@ -783,7 +783,7 @@ For more information:
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Complete tool reference
 - [FULL_MODE.md](FULL_MODE.md) - Advanced features guide
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment options
-- [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues) - Support
+- [GitHub Issues](https://github.com/gregorydickson/memory-graph/issues) - Support
 
 ---
 

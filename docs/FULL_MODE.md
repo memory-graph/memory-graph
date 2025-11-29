@@ -1,6 +1,6 @@
 # Full Mode Guide
 
-This guide covers everything you need to unlock all 44 tools and advanced features of the Claude Code Memory Server.
+This guide covers everything you need to unlock all 44 tools and advanced features of MemoryGraph.
 
 ## Table of Contents
 
@@ -694,7 +694,7 @@ memorygraph --show-config
 For more help:
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Complete tool reference
-- [GitHub Issues](https://github.com/gregorydickson/memorygraph/issues) - Get support
+- [GitHub Issues](https://github.com/gregorydickson/memory-graph/issues) - Get support
 
 ---
 

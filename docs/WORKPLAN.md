@@ -1,4 +1,4 @@
-# Claude Code Memory Server - Active Workplan
+# MemoryGraph - Active Workplan
 
 > **Status**: Phase 8 (Deployment & Production Readiness) - Ready to Execute
 > **Previous Phases**: See [archive/completed_phases.md](archive/completed_phases.md)
@@ -497,7 +497,7 @@
   - **Note**: Ready to execute, awaiting user approval
 
 - [ ] Create GitHub release
-  - URL: https://github.com/gregorydickson/memorygraph/releases/new
+  - URL: https://github.com/gregorydickson/memory-graph/releases/new
   - Tag: v1.0.0
   - Title: "v1.0.0 - Production Release"
   - Description: Release notes prepared in CHANGELOG.md

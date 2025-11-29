@@ -1,6 +1,6 @@
 # Development Setup Guide
 
-This guide helps you set up the Claude Code Memory Server for development.
+This guide helps you set up MemoryGraph for development.
 
 ## Prerequisites
 
@@ -15,8 +15,8 @@ This guide helps you set up the Claude Code Memory Server for development.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ViralV00d00/memorygraph.git
-cd memorygraph
+git clone https://github.com/gregorydickson/memory-graph.git
+cd memory-graph
 
 # Install in development mode
 pip install -e ".[dev]"
@@ -68,7 +68,7 @@ python -m claude_memory
 
 ### Project Structure
 ```
-memorygraph/
+memory-graph/
 ├── src/claude_memory/       # Main source code
 │   ├── __init__.py
 │   ├── models.py           # Data models
@@ -279,6 +279,6 @@ class RelationshipType(str, Enum):
 
 ## Getting Help
 
-- **Issues**: https://github.com/ViralV00d00/memorygraph/issues
-- **Discussions**: https://github.com/ViralV00d00/memorygraph/discussions
+- **Issues**: https://github.com/gregorydickson/memory-graph/issues
+- **Discussions**: https://github.com/gregorydickson/memory-graph/discussions
 - **Documentation**: `/docs` folder in repository

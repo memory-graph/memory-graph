@@ -1,4 +1,4 @@
-# Claude Code Memory Server - Unified Enhancement Plan
+# MemoryGraph - Unified Enhancement Plan
 
 > **IMPORTANT NOTE**: This document is now **ARCHIVED** for historical reference only.
 >
@@ -15,7 +15,7 @@
 
 > **Purpose**: Comprehensive implementation roadmap merging original implementation plan with enhancement features. Optimized for execution by a coding agent.
 >
-> **Repository**: https://github.com/ViralV00d00/memorygraph
+> **Repository**: https://github.com/gregorydickson/memory-graph
 >
 > **Goal**: Create the best-in-class graph-based MCP memory server for Claude Code with intelligent relationship tracking, multi-backend support, and proactive context awareness.
 
