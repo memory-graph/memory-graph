@@ -168,6 +168,10 @@ class TestBackendFactoryHelpers:
         """Test checking if SQLite is configured (always True)."""
         assert BackendFactory.is_backend_configured("sqlite") is True
 
+    def test_is_backend_configured_invalid(self):
+        """Test checking if invalid backend type returns False."""
+        assert BackendFactory.is_backend_configured("invalid_type") is False
+
 
 class TestBackendFactoryPrivateMethods:
     """Test private factory methods for creating specific backends."""
