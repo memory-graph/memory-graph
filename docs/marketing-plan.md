@@ -1,7 +1,9 @@
 # Marketing & Distribution Plan - Claude Code Memory
 
 > **Last Updated**: November 29, 2025
-> **Package Status**: v1.0.0 built and ready for PyPI publication
+> **Package Status**: v0.5.2 published to PyPI
+> **PyPI URL**: https://pypi.org/project/memorygraphMCP/
+> **Installation**: `pip install memorygraphMCP`
 > **Reorganization**: Prioritized by impact on adoption
 
 ---
@@ -11,18 +13,19 @@
 This plan is organized by priority: **Must Do** tasks that block adoption and drive initial users, and **Nice to Have** tasks that support growth over time.
 
 ### Current Status
-- ✅ Package built (v1.0.0) and validated
+- ✅ Package published to PyPI (v0.5.2)
+- ✅ PyPI URL: https://pypi.org/project/memorygraphMCP/
 - ✅ Documentation complete (README, DEPLOYMENT, FULL_MODE, CLAUDE_CODE_SETUP)
 - ✅ CLI working (`memorygraph` command)
 - ✅ Docker deployment files ready
-- ⏳ PyPI publication pending (blocker for most distribution)
-- ⏳ Marketing materials ready, awaiting publication
+- ✅ Installation working: `pip install memorygraphMCP`
+- ⏳ Marketing materials ready for launch announcements
 
 ### Critical Path to Launch
-1. Publish to PyPI (enables pip install)
-2. Submit to Smithery (largest MCP registry)
-3. Submit to key awesome lists (GitHub visibility)
-4. Post launch announcement (Reddit, GitHub Discussions)
+1. ✅ Publish to PyPI (enables pip install) - COMPLETE
+2. Submit to Smithery (largest MCP registry) - READY
+3. Submit to key awesome lists (GitHub visibility) - READY
+4. Post launch announcement (Reddit, GitHub Discussions) - READY
 5. Monitor and respond to early users
 
 ---
@@ -31,16 +34,16 @@ This plan is organized by priority: **Must Do** tasks that block adoption and dr
 
 These tasks directly block adoption or provide maximum ROI for effort invested.
 
-### 1. Package Distribution (BLOCKER)
+### 1. Package Distribution
 
-**PyPI Publication** - Status: ⏳ Ready, awaiting approval
-- [ ] Publish to PyPI
-  - Package name: `claude-code-memory`
-  - Enables: `pip install memorygraphMCP` or `uvx memorygraph`
-  - **BLOCKER**: Nothing else works until this is done
-  - Package built: `claude_code_memory-1.0.0-py3-none-any.whl` (112KB)
-  - Twine validation: PASSED
-  - Action required: User needs PyPI credentials
+**PyPI Publication** - Status: ✅ Complete
+- [x] Published to PyPI
+  - Package name: `memorygraphMCP`
+  - PyPI URL: https://pypi.org/project/memorygraphMCP/
+  - Version published: v0.5.2
+  - Published date: November 29, 2025
+  - Installation: `pip install memorygraphMCP`
+  - uvx support: `uvx memorygraph` (works automatically)
 
 **GitHub Release** - Status: ⏳ Ready
 - [ ] Tag and release v1.0.0
@@ -62,35 +65,38 @@ These tasks directly block adoption or provide maximum ROI for effort invested.
 
 ### 2. Primary Discovery (Maximum Visibility)
 
-**Smithery (Primary Registry)** - Status: ⏳ Blocked by PyPI
+**Smithery (Primary Registry)** - Status: ✅ Ready to submit
 - [ ] Publish to **Smithery** at https://smithery.ai/new
   - **Why critical**: Largest MCP registry (2000+ servers), one-click install
-  - **Dependency**: Must publish to PyPI first
+  - **Dependency**: ✅ PyPI publication complete
   - **Python servers**: Smithery auto-generates uvx commands from PyPI
   - Steps:
-    1. ✅ Ensure package published to PyPI
+    1. ✅ Package published to PyPI (memorygraphMCP v0.5.2)
     2. Go to https://smithery.ai/new
     3. Connect GitHub account
     4. Select repository: `gregorydickson/claude-code-memory`
     5. Configure (Smithery detects Python package automatically)
     6. Publish (generates uvx installation for users)
   - Estimated time: 15 minutes
+  - **READY TO EXECUTE**: No blockers
 
-**Official MCP Repository** - Status: ⏳ Not started
+**Official MCP Repository** - Status: ✅ Ready to submit
 - [ ] Submit PR to **modelcontextprotocol/servers**
   - URL: https://github.com/modelcontextprotocol/servers
   - **Why critical**: Official Anthropic repository, highest trust
   - Add to community servers section in README
   - Use PR template (section 7.6 below)
   - Estimated time: 30 minutes
+  - **READY TO EXECUTE**: PyPI published
 
-**Top Awesome List** - Status: ⏳ Not started
+**Top Awesome List** - Status: ✅ Ready to submit
 - [ ] Submit PR to **appcypher/awesome-mcp-servers**
   - URL: https://github.com/appcypher/awesome-mcp-servers
   - **Why critical**: Most starred (7000+), highest visibility
   - Add under "Memory" or "Knowledge Graph" section
   - Use PR template (section 7.6 below)
   - Estimated time: 20 minutes
+  - **READY TO EXECUTE**: PyPI published
 
 ---
 
@@ -112,34 +118,38 @@ These tasks directly block adoption or provide maximum ROI for effort invested.
 
 ### 4. Launch Announcement (First Week)
 
-**Reddit (Targeted Communities)** - Status: ⏳ Not started
+**Reddit (Targeted Communities)** - Status: ✅ Ready to post
 - [ ] Post to **r/ClaudeAI**
   - **Why critical**: Direct audience of Claude users
   - Title: "I built a graph-based memory server for Claude Code (zero-config SQLite)"
-  - Include: Quick start, demo GIF, GitHub link
-  - Emphasize: One-line install, works in 30 seconds
+  - Include: Quick start, PyPI link, GitHub link
+  - Emphasize: One-line install (`pip install memorygraphMCP`), works in 30 seconds
   - Best time: Tuesday-Thursday, 9am-12pm EST
   - Estimated time: 1 hour (write post, respond to comments)
+  - **READY TO EXECUTE**: Package live on PyPI
 
 - [ ] Post to **r/mcp**
   - Dedicated MCP subreddit
   - Focus on technical advantages (graph vs vector)
   - Cross-reference with other memory servers
   - Estimated time: 30 minutes
+  - **READY TO EXECUTE**: Package live on PyPI
 
-**GitHub Discussions** - Status: ⏳ Not started
+**GitHub Discussions** - Status: ✅ Ready to post
 - [ ] Create launch announcement in Discussions
   - Pin the announcement
-  - Content ready: `docs/RELEASE_NOTES_v1.0.0.md`
+  - Content ready: `docs/RELEASE_NOTES_v1.0.0.md` (adapt for v0.5.2)
   - Enable discussion for questions
   - Estimated time: 15 minutes
+  - **READY TO EXECUTE**: Package live on PyPI
 
-**Twitter/X (Optional)** - Status: ⏳ Not started
+**Twitter/X (Optional)** - Status: ✅ Ready to post
 - [ ] Create announcement thread (if you use Twitter)
   - Tag @AnthropicAI (maybe)
   - Hashtags: #MCP #ClaudeCode #AIAgents #GraphDatabase
   - Include demo GIF or screenshot
   - Estimated time: 30 minutes
+  - **READY TO EXECUTE**: Package live on PyPI
 
 ---
 
@@ -374,37 +384,39 @@ Perfect for developers using Claude Code who want persistent, intelligent memory
 
 ## Quick Action Checklist (Next Steps)
 
-Before you can do ANYTHING else:
+PyPI publication is complete! Ready to execute:
 
-1. [ ] **BLOCKER**: Publish package to PyPI
-   - Requires: PyPI account + API token
-   - Time: 30 minutes
-   - Impact: Unblocks everything
+1. [x] **COMPLETE**: Package published to PyPI (memorygraphMCP v0.5.2)
+   - URL: https://pypi.org/project/memorygraphMCP/
+   - Installation: `pip install memorygraphMCP`
+   - uvx: `uvx memorygraph`
 
-After PyPI publication:
+Immediate next actions (all unblocked):
 
-2. [ ] Submit to Smithery (15 min)
-3. [ ] Submit to official MCP repo (30 min)
-4. [ ] Submit to top awesome list (20 min)
-5. [ ] Post to r/ClaudeAI (1 hour)
-6. [ ] Create GitHub release (15 min)
+2. [ ] Submit to Smithery (15 min) - **READY**
+3. [ ] Submit to official MCP repo (30 min) - **READY**
+4. [ ] Submit to top awesome list (20 min) - **READY**
+5. [ ] Post to r/ClaudeAI (1 hour) - **READY**
+6. [ ] Post to r/mcp (30 min) - **READY**
+7. [ ] Create GitHub release for v0.5.2 (15 min) - **READY**
 
-**Total time for critical launch tasks**: ~3 hours after PyPI
+**Total time for critical launch tasks**: ~3 hours (no blockers)
 
 ---
 
 ## Notes
 
 ### PyPI Package Name
-- Current: `claude-code-memory`
-- Alternative: `memorygraphMCP` or `mcp-memory-graph`
-- Verify availability before publishing
+- ✅ Published as: `memorygraphMCP`
+- URL: https://pypi.org/project/memorygraphMCP/
+- Version: 0.5.2
 
 ### uvx Support
-- ✅ Package already supports uvx (no additional work needed)
-- ✅ Existing CLI entry point works with uvx
-- ⏳ Works once published to PyPI
-- Smithery will auto-generate uvx commands
+- ✅ Package supports uvx (works automatically)
+- ✅ CLI entry point working
+- ✅ Published to PyPI
+- ✅ Command: `uvx memorygraph`
+- Smithery will auto-generate uvx commands from PyPI package
 
 ### Docker Publishing
 - Optional but recommended for full-mode users
