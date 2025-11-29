@@ -41,13 +41,14 @@
 - [x] Attach wheel and source distribution from `dist/`
 - [x] Release published: https://github.com/gregorydickson/memory-graph/releases/tag/v0.5.2
 
-### 2. Submit to Smithery (15 minutes)
-- [ ] Go to https://smithery.ai/new
-- [ ] Connect GitHub account
-- [ ] Select repository: `gregorydickson/claude-code-memory`
-- [ ] Publish (auto-detects Python package from PyPI)
-- **Why critical**: Largest MCP registry (2000+ servers), one-click install
-- **Dependency**: ✅ PyPI published (complete)
+### 2. Submit to Smithery (15 minutes) ⏸️ BLOCKED
+- [x] Attempted submission at https://smithery.ai/new
+- [x] Connected GitHub account: `gregorydickson/memory-graph`
+- ❌ **Blocked**: Smithery hosted deployments require HTTP transport, not stdio
+- **Issue**: MemoryGraph uses stdio (standard for Python MCP servers)
+- **Workaround**: Users can install manually via `uvx memorygraphMCP`
+- **Action**: Monitor Smithery for stdio support or implement HTTP transport in future version
+- **Status**: Deferred to post-launch (not critical - PyPI + GitHub covers distribution)
 
 ### 3. Submit to Official MCP Repository (30 minutes)
 - [ ] Submit PR to https://github.com/modelcontextprotocol/servers
