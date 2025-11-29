@@ -1,85 +1,63 @@
 # Smithery configuration for MemoryGraph MCP Server
-# https://smithery.ai/docs/build/project-config/smithery-yaml
-
-runtime: "container"
-
-build:
-  dockerfile: "Dockerfile"
-  dockerBuildPath: "."
+# https://smithery.ai/docs/config#smitheryyaml
 
 startCommand:
-  type: "stdio"
+  type: stdio
   configSchema:
-    type: "object"
+    type: object
     properties:
       backend:
-        type: "string"
+        type: string
         enum: ["sqlite", "neo4j", "memgraph"]
-        default: "sqlite"
-        description: "Database backend to use (sqlite, neo4j, or memgraph)"
+        default: sqlite
+        description: Database backend to use (sqlite, neo4j, or memgraph)
       toolProfile:
-        type: "string"
+        type: string
         enum: ["lite", "standard", "full"]
-        default: "lite"
+        default: lite
         description: "Tool profile: lite (8 tools), standard (15 tools), or full (44 tools)"
       neo4jUri:
-        type: "string"
-        description: "Neo4j connection URI (required if backend is neo4j)"
+        type: string
+        description: Neo4j connection URI (required if backend is neo4j)
       neo4jUser:
-        type: "string"
-        description: "Neo4j username (required if backend is neo4j)"
+        type: string
+        description: Neo4j username (required if backend is neo4j)
       neo4jPassword:
-        type: "string"
-        description: "Neo4j password (required if backend is neo4j)"
+        type: string
+        description: Neo4j password (required if backend is neo4j)
       memgraphUri:
-        type: "string"
-        description: "Memgraph connection URI (required if backend is memgraph)"
+        type: string
+        description: Memgraph connection URI (required if backend is memgraph)
       sqlitePath:
-        type: "string"
-        description: "SQLite database file path (optional, defaults to ~/.memorygraph/memory.db)"
+        type: string
+        description: SQLite database file path (optional, defaults to ~/.memorygraph/memory.db)
       logLevel:
-        type: "string"
+        type: string
         enum: ["DEBUG", "INFO", "WARNING", "ERROR"]
-        default: "INFO"
-        description: "Logging level"
-    required: []
+        default: INFO
+        description: Logging level
+  commandFunction: |-
+    config => {
+      const args = [];
 
-  exampleConfig:
-    backend: "sqlite"
-    toolProfile: "lite"
-    logLevel: "INFO"
+      if (config.backend) {
+        args.push('--backend', config.backend);
+      }
 
-commandFunction: |-
-  (config) => {
-    const args = [];
+      if (config.toolProfile) {
+        args.push('--profile', config.toolProfile);
+      }
 
-    // Add backend
-    if (config.backend) {
-      args.push('--backend', config.backend);
+      if (config.logLevel) {
+        args.push('--log-level', config.logLevel);
+      }
+
+      const env = {};
+      if (config.neo4jUri) env.MEMORY_NEO4J_URI = config.neo4jUri;
+      if (config.neo4jUser) env.MEMORY_NEO4J_USER = config.neo4jUser;
+      if (config.neo4jPassword) env.MEMORY_NEO4J_PASSWORD = config.neo4jPassword;
+      if (config.memgraphUri) env.MEMORY_MEMGRAPH_URI = config.memgraphUri;
+      if (config.sqlitePath) env.MEMORY_SQLITE_PATH = config.sqlitePath;
+
+      return { command: 'uvx', args: ['memorygraphMCP', ...args], env: env };
     }
-
-    // Add tool profile
-    if (config.toolProfile) {
-      args.push('--profile', config.toolProfile);
-    }
-
-    // Add log level
-    if (config.logLevel) {
-      args.push('--log-level', config.logLevel);
-    }
-
-    // Build environment variables
-    const env = {};
-
-    if (config.neo4jUri) env.MEMORY_NEO4J_URI = config.neo4jUri;
-    if (config.neo4jUser) env.MEMORY_NEO4J_USER = config.neo4jUser;
-    if (config.neo4jPassword) env.MEMORY_NEO4J_PASSWORD = config.neo4jPassword;
-    if (config.memgraphUri) env.MEMORY_MEMGRAPH_URI = config.memgraphUri;
-    if (config.sqlitePath) env.MEMORY_SQLITE_PATH = config.sqlitePath;
-
-    return {
-      command: 'memorygraph',
-      args: args,
-      env: env
-    };
-  }
