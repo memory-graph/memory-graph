@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- Consolidated workplan documents into single unified WORKPLAN.md
+- Archived completed Phase 8 tasks to docs/archive/completed-tasks-2025-01.md
+- Removed duplicate marketing documentation (marketing-plan.md, MARKETING_EXECUTIVE_SUMMARY.md)
+- Centralized all active tasks in WORKPLAN.md for easier tracking
+
 ### Planned (v2.1+)
 - Data export/import functionality
 - Web visualization dashboard
