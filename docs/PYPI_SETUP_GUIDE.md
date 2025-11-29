@@ -138,7 +138,7 @@ This is the standard way to publish new versions:
      ## What's New
 
      - Package renamed from `claude-code-memory` to `memorygraph`
-     - Simpler installation: `pip install memorygraph`
+     - Simpler installation: `pip install memorygraphMCP`
      - Command renamed: `memorygraph` (was `claude-code-memory`)
      - Zero-config SQLite backend by default
      - Optional Neo4j/Memgraph for advanced use cases

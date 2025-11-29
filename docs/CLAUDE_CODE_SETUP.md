@@ -21,7 +21,7 @@ Get up and running in 3 steps:
 
 ```bash
 # 1. Install
-pip install memorygraph
+pip install memorygraphMCP
 
 # 2. Add to Claude Code config
 # Edit ~/.claude/mcp.json (see below)
@@ -49,7 +49,7 @@ pip --version      # Should be installed
 
 **Option 1: Basic (Recommended to Start)**
 ```bash
-pip install memorygraph
+pip install memorygraphMCP
 ```
 - SQLite backend
 - 8 core tools
@@ -108,7 +108,7 @@ uvx memorygraph --show-config
 
 See the uvx MCP configuration example in the [MCP Configuration](#uvx-configuration-advanced---not-recommended) section below.
 
-**Better approach**: Use `pip install memorygraph` for MCP servers, use uvx for quick testing only.
+**Better approach**: Use `pip install memorygraphMCP` for MCP servers, use uvx for quick testing only.
 
 ---
 
@@ -191,7 +191,7 @@ This enables:
 
 #### uvx Configuration (Advanced - Not Recommended)
 
-**⚠️ Warning**: This configuration is **not recommended** for production MCP servers. Use `pip install memorygraph` instead.
+**⚠️ Warning**: This configuration is **not recommended** for production MCP servers. Use `pip install memorygraphMCP` instead.
 
 If you insist on using uvx (for testing purposes only):
 

@@ -22,7 +22,7 @@ Complete guide for deploying Claude Code Memory Server in any environment.
 
 **Lite Mode (Default)**
 ```bash
-pip install memorygraph
+pip install memorygraphMCP
 ```
 - SQLite backend
 - 8 core tools
@@ -173,7 +173,7 @@ RUN pip install uv
 RUN uvx memorygraph --show-config
 
 # For persistent server, use pip install instead
-RUN pip install memorygraph
+RUN pip install memorygraphMCP
 ```
 
 **When to Use uvx vs pip install**:
@@ -886,7 +886,7 @@ memorygraph --version
 
 **Recommendation**: SQLite, lite profile
 ```bash
-pip install memorygraph
+pip install memorygraphMCP
 memorygraph
 ```
 

@@ -103,7 +103,7 @@
 **PyPI (Python)**
 - [ ] Publish to PyPI
   - Package name: `memorygraph` or `mcp-memory-graph`
-  - Enables: `pip install memorygraph`
+  - Enables: `pip install memorygraphMCP`
   - Include in README: `pip install` one-liner
 
 **npm (if Node.js wrapper)**

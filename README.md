@@ -17,7 +17,7 @@ A graph-based Model Context Protocol (MCP) server that gives **AI coding agents*
 ### Step 1: Install
 
 ```bash
-pip install memorygraph
+pip install memorygraphMCP
 ```
 
 ### Step 2: Add to Your MCP Client
@@ -285,13 +285,13 @@ See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list.
 
 ```bash
 # Basic installation (SQLite, lite mode)
-pip install memorygraph
+pip install memorygraphMCP
 
 # With intelligence features (standard mode)
-pip install "memorygraph[intelligence]"
+pip install "memorygraphMCP[intelligence]"
 
 # Full power with Neo4j
-pip install "memorygraph[neo4j,intelligence]"
+pip install "memorygraphMCP[neo4j,intelligence]"
 ```
 
 ### Option 2: Docker

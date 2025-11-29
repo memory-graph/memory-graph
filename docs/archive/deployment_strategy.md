@@ -47,7 +47,7 @@ uvx memorygraph
 
 **Required Changes**:
 
-1. **Publish to PyPI** - Enable `pip install memorygraph`
+1. **Publish to PyPI** - Enable `pip install memorygraphMCP`
 
 2. **Default to SQLite** - Change factory.py:
 ```python
@@ -315,7 +315,7 @@ MEMORY_TOOL_PROFILE=full MEMORY_BACKEND=memgraph memorygraph  # Full
 ## The 30-Second Pitch
 
 > "Claude Code Memory gives your AI persistent memory across sessions. 
-> Install with `pip install memorygraph`, add one line to your config, done.
+> Install with `pip install memorygraphMCP`, add one line to your config, done.
 > 
 > Start simple with SQLite. When you need relationship intelligence, 
 > upgrade to graph mode with `docker compose up`."

@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **For Existing Users**: See [MIGRATION.md](MIGRATION.md) for complete upgrade guide.
 
 **Quick Migration**:
-1. `pip uninstall claude-code-memory && pip install memorygraph`
+1. `pip uninstall claude-code-memory && pip install memorygraphMCP`
 2. Update MCP config: `"claude-memory"` → `"memorygraph"`
 3. Move database: `mv ~/.claude-memory ~/.memorygraph` (or use `MEMORY_SQLITE_PATH` env var)
 4. Restart your coding agent
@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tool Profiling System**: Choose complexity level via `MEMORY_TOOL_PROFILE` env var
 - **CLI Command**: `memorygraph` with flags for backend, profile, and logging
 - **Docker Support**: Complete Docker Compose configurations for all backends
-- **PyPI Publication**: Install via `pip install memorygraph`
+- **PyPI Publication**: Install via `pip install memorygraphMCP`
 
 #### Added
 - **SQLite Backend as Default**:
@@ -160,11 +160,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Migration Guide
 - Existing users: Set `MEMORY_BACKEND=neo4j` to keep current setup
-- New users: Zero config required, just `pip install memorygraph`
+- New users: Zero config required, just `pip install memorygraphMCP`
 - Upgrading profiles: No data migration needed, just change `MEMORY_TOOL_PROFILE`
 
 #### Deployment Options
-1. **pip install** (recommended): `pip install memorygraph`
+1. **pip install** (recommended): `pip install memorygraphMCP`
 2. **Docker**: `docker compose up -d`
 3. **From source**: `git clone && pip install -e .`
 4. **uvx** (testing/CI): `uvx memorygraph`

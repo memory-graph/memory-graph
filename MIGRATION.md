@@ -55,12 +55,12 @@ uv pip uninstall claude-code-memory
 #### 2. Install New Package
 
 ```bash
-pip install memorygraph
+pip install memorygraphMCP
 ```
 
 Or with `uv`:
 ```bash
-uv pip install memorygraph
+uv pip install memorygraphMCP
 ```
 
 #### 3. Update MCP Configuration
@@ -222,7 +222,7 @@ pip list | grep claude-code-memory
 pip uninstall claude-code-memory
 
 # Reinstall new package
-pip install memorygraph
+pip install memorygraphMCP
 
 # Verify
 which memorygraph

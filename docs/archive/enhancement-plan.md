@@ -1325,10 +1325,10 @@ This phase focuses on deployment, developer experience, documentation, and produ
   pip install memorygraph
 
   # With intelligence features
-  pip install memorygraph[intelligence]
+  pip install memorygraphMCP[intelligence]
 
   # Development
-  pip install memorygraph[dev]
+  pip install memorygraphMCP[dev]
   ```
 - [ ] Publish to PyPI
 - [ ] Create GitHub releases with binaries
@@ -1502,7 +1502,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
 
 **Phase 8 Success Criteria**:
 - One-command deployment works on all platforms
-- `pip install memorygraph` works flawlessly
+- `pip install memorygraphMCP` works flawlessly
 - Claude Code integration takes <5 minutes
 - Performance handles 10,000+ memories smoothly
 - All tests pass in CI/CD

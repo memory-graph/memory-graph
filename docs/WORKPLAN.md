@@ -19,7 +19,7 @@
 
 **Target**: December 2025
 **Priority**: CRITICAL - Ship and enable adoption
-**Goal**: Make the server as easy to install as `pip install memorygraph` while preserving all advanced features
+**Goal**: Make the server as easy to install as `pip install memorygraphMCP` while preserving all advanced features
 
 ### Strategy Overview
 
@@ -438,7 +438,7 @@
 
 ## 8.7 PyPI Publishing (Priority: CRITICAL) ⏳
 
-**Goal**: Publish to PyPI for `pip install memorygraph`
+**Goal**: Publish to PyPI for `pip install memorygraphMCP`
 
 **Status**: Package built and tested locally. Awaiting user approval for publication.
 
@@ -486,7 +486,7 @@
 - [ ] Upload to production PyPI
   - Command: `twine upload dist/*`
   - Verify: Package appears at https://pypi.org/project/memorygraph/
-  - Test: `pip install memorygraph`
+  - Test: `pip install memorygraphMCP`
   - Verify: Installation works from PyPI
   - **ACTION REQUIRED**: User needs to approve and provide PyPI credentials
 
@@ -517,7 +517,7 @@
 ### 8.8.1 Integration Testing
 - [x] Test complete installation flow (pip)
   - Fresh environment: Create new Python 3.9, 3.10, 3.11 venvs
-  - Install: `pip install memorygraph`
+  - Install: `pip install memorygraphMCP`
   - Configure: Claude Code MCP config
   - Test: Store, retrieve, search, relationships
   - Verify: All core tools work
@@ -633,7 +633,7 @@
 
 ### 8.9.3 Prepare Demo Materials
 - [ ] Create demo video/GIF
-  - Show: `pip install memorygraph`
+  - Show: `pip install memorygraphMCP`
   - Show: Adding to Claude Code config
   - Show: Storing and retrieving memories
   - Show: Relationship queries
@@ -661,7 +661,7 @@
 ## Success Criteria
 
 ### Installation & Setup
-- [ ] `pip install memorygraph` works on Python 3.9-3.11
+- [ ] `pip install memorygraphMCP` works on Python 3.9-3.11
 - [ ] SQLite default requires zero configuration
 - [ ] First memory stored in <30 seconds after install
 - [ ] Docker deployment works with one command

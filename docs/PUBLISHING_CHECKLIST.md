@@ -52,7 +52,7 @@ Quick reference for publishing MemoryGraph to PyPI.
 ## After Publishing
 
 - [ ] Check package on PyPI: https://pypi.org/project/memorygraph/
-- [ ] Test installation: `pip install memorygraph`
+- [ ] Test installation: `pip install memorygraphMCP`
 - [ ] Verify version: `memorygraph --version`
 - [ ] Test CLI: `memorygraph --help`
 - [ ] Check README badges: https://github.com/gregorydickson/memory-graph

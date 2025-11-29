@@ -5,7 +5,7 @@
 ## TL;DR
 
 ```bash
-pip install memorygraph
+pip install memorygraphMCP
 memorygraph
 ```
 
@@ -93,7 +93,7 @@ docker compose -f docker-compose.full.yml up -d
 
 **Lite Mode (Default)**:
 ```bash
-pip install memorygraph
+pip install memorygraphMCP
 ```
 
 **Standard Mode (with intelligence)**:
@@ -205,7 +205,7 @@ export MEMORY_TOOL_PROFILE=full
 ```
 
 **New users**:
-Nothing needed! Just `pip install memorygraph`.
+Nothing needed! Just `pip install memorygraphMCP`.
 
 ---
 
@@ -314,4 +314,4 @@ MIT License - See [LICENSE](https://github.com/gregorydickson/memorygraph/blob/m
 
 ---
 
-**Install now**: `pip install memorygraph`
+**Install now**: `pip install memorygraphMCP`
