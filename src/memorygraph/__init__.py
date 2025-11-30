@@ -7,7 +7,7 @@ enabling persistent knowledge tracking, relationship mapping, and contextual dev
 Supports multiple backends: SQLite (default), Neo4j, and Memgraph.
 """
 
-__version__ = "0.5.6"
+__version__ = "0.5.7"
 __author__ = "Gregory Dickson"
 __email__ = "gregory@example.com"
 
