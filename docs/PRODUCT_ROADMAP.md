@@ -1,8 +1,8 @@
 # memory-graph Product Roadmap
 
-**Document Version**: 2.0  
-**Last Updated**: December 2025  
-**Author**: Gregory Dickson  
+**Document Version**: 2.1
+**Last Updated**: December 2025
+**Author**: Gregory Dickson
 **Status**: Strategic Plan
 
 ---
@@ -105,10 +105,135 @@ memory-graph is a lightweight memory server for AI coding agents. It helps codin
 
 ---
 
+## Core Architecture: Claude as the Semantic Layer
+
+### The Central Insight
+
+Rather than building a competing semantic search engine, we leverage what's already present: **Claude is the semantic search layer**. Our job is to provide Claude with tools that are forgiving, composable, and rich enough that Claude can find and synthesize memories effectively.
+
+This approach requires zero new infrastructure while delivering the natural-language query experience users expect.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        USER                                 │
+│         "How did we fix that timeout thing?"                │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       CLAUDE                                │
+│                                                             │
+│  • Understands natural language                             │
+│  • Interprets "timeout thing" → timeout, error, API, fix    │
+│  • Knows synonyms, context, intent                          │
+│  • Already has semantic understanding built-in              │
+│                                                             │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ MCP Tool Calls
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    MEMORY-GRAPH                             │
+│                                                             │
+│  • Stores structured knowledge                              │
+│  • Provides forgiving search tools                          │
+│  • Returns rich results with relationships                  │
+│  • Lets Claude do the semantic heavy lifting                │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**We are the knowledge store. Claude is the semantic interface.**
+
+### What We Don't Need to Build
+
+| Traditional Semantic Search | Our Approach |
+|-----------------------------|--------------|
+| Embedding model integration | Claude already understands language |
+| Vector database | SQLite text search + fuzzy matching |
+| Similarity scoring | Claude evaluates relevance |
+| Query expansion | Claude interprets intent |
+| Synonym handling | Claude knows synonyms |
+| Context understanding | Claude has conversation context |
+
+### What We Do Need to Build
+
+1. **Forgiving search tools** - return results even with partial matches
+2. **Rich result context** - include relationships so Claude can reason
+3. **Composable tool design** - let Claude chain searches effectively
+4. **Good tool descriptions** - help Claude know when/how to use each tool
+
+### Tool Design Philosophy
+
+#### Principles
+
+1. **Claude interprets, we store and retrieve**
+   - Don't try to understand user intent—Claude does that
+   - Provide rich, structured data for Claude to reason over
+
+2. **Forgiving by default**
+   - Partial matches are better than no matches
+   - Return more results and let Claude filter
+
+3. **Relationships are our superpower**
+   - Always include relationship context
+   - This is what semantic-search-only tools can't do
+
+4. **Composable over monolithic**
+   - Simple tools that Claude can chain
+   - Rather than one complex "answer my question" tool
+
+#### Tool Hierarchy
+
+```
+Primary (Claude uses first):
+  └── recall_memories     # Natural language search, returns rich context
+
+Secondary (Claude uses to drill down):
+  ├── search_nodes        # Structured search with filters
+  ├── get_entity         # Get specific entity details
+  └── get_related        # Traverse relationships
+
+Power Tools (Complex queries):
+  ├── graph_query         # Advanced relationship traversal
+  └── find_solutions_for  # Find what SOLVED a specific problem
+```
+
+### Competitive Positioning
+
+#### vs. Semantic Search Tools (basic-memory, etc.)
+
+| They Have | We Have |
+|-----------|---------|
+| Embeddings + vector similarity | Claude's semantic understanding |
+| Flat document retrieval | Relationship-enriched results |
+| "Here's what you said" | "Here's what worked and why" |
+| Similarity scores | Causal chains |
+
+**Our message**: "We don't just find similar text—we find solutions and explain how they connect."
+
+#### Why This is Defensible
+
+1. **Claude is already there** - No extra cost or infrastructure
+2. **Relationships are unique** - Semantic search alone can't do SOLVES/CAUSES
+3. **Simpler stack** - No embedding model to maintain, no vector DB
+4. **Privacy preserved** - No text sent to embedding APIs
+
+### Future Considerations
+
+If user feedback indicates we still need true semantic search:
+
+1. **Lightweight option**: `sqlite-vec` extension for local embeddings
+2. **Hybrid approach**: Semantic search for discovery, graph for enrichment
+3. **Optional cloud**: Embedding API for users who opt-in
+
+But the Claude-as-interface approach should be tried first—it may be sufficient and keeps the stack simple.
+
+---
+
 ## Product Tiers
 
 ### Free Tier: Local Memory
-**Price**: $0 forever  
+**Price**: $0 forever
 **Goal**: Drive adoption, build habit, create upgrade desire
 
 **Includes**:
@@ -125,7 +250,7 @@ memory-graph is a lightweight memory server for AI coding agents. It helps codin
 - Community support only
 
 ### Pro Tier: Sync & Dashboard
-**Price**: $8/month (early supporters: $6/month forever)  
+**Price**: $8/month (early supporters: $6/month forever)
 **Goal**: Convert individual power users
 
 **Includes Everything in Free, Plus**:
@@ -141,7 +266,7 @@ memory-graph is a lightweight memory server for AI coding agents. It helps codin
 - "I want to browse my memories without being in Claude Code"
 
 ### Team Tier: Shared Knowledge
-**Price**: $12/user/month (early adopters: $9/user/month for first year)  
+**Price**: $12/user/month (early adopters: $9/user/month for first year)
 **Goal**: Land team accounts, expand within organizations
 
 **Includes Everything in Pro, Plus**:
@@ -157,7 +282,7 @@ memory-graph is a lightweight memory server for AI coding agents. It helps codin
 - "Stop re-solving the same problems across the team"
 
 ### Enterprise Tier: Custom
-**Price**: Contact sales  
+**Price**: Contact sales
 **Goal**: Large organizations with compliance needs
 
 **Includes Everything in Team, Plus**:
@@ -172,7 +297,7 @@ memory-graph is a lightweight memory server for AI coding agents. It helps codin
 ## Roadmap Phases
 
 ## Phase 1: Launch & Community
-**Timeline**: Weeks 1-3  
+**Timeline**: Weeks 1-3
 **Goal**: Establish presence, validate messaging, build community
 
 ### 1.1 Simplify Messaging
@@ -238,7 +363,7 @@ memory-graph is a lightweight memory server for AI coding agents. It helps codin
 Title: Show HN: memory-graph – Memory for Claude Code that remembers what worked
 
 Comment:
-I got tired of re-explaining my project architecture to Claude Code 
+I got tired of re-explaining my project architecture to Claude Code
 every session. And re-discovering solutions we'd already found.
 
 memory-graph is an MCP server that gives Claude Code persistent memory.
@@ -250,12 +375,12 @@ Install in 30 seconds:
 
 Then just talk naturally:
   "Remember: retry with exponential backoff fixed the API timeouts"
-  
+
 Next session:
   "What fixed the timeout issues?"
   → Claude recalls the solution
 
-Local SQLite by default. Your data stays on your machine. 
+Local SQLite by default. Your data stays on your machine.
 Works offline. Zero config.
 
 https://github.com/gregorydickson/memory-graph
@@ -294,28 +419,156 @@ Script behavior:
 
 ---
 
-## Phase 2: User Experience Polish
-**Timeline**: Weeks 4-7  
-**Goal**: Make the product delightful, gather feedback, iterate
+## Phase 2: Search & Recall Excellence
+**Timeline**: Weeks 4-7
+**Goal**: Make memory recall natural and delightful
 
-### 2.1 Tool Value Audit
+### 2.1 Improve Search Forgiveness
 
-Review each MCP tool and ensure it provides clear value:
+Current limitation: Search requires exact or near-exact matches.
 
-| Tool Category | User Value | Priority |
-|---------------|-----------|----------|
-| **Store/Create** | "Remember this for later" | 🔴 Essential |
-| **Search/Recall** | "What do I know about X?" | 🔴 Essential |
-| **Find Solutions** | "What solved this problem?" | 🔴 Essential |
-| **Find Problems** | "What went wrong with X?" | 🔴 Essential |
-| **Context/Briefing** | "Catch me up on this project" | 🔴 Essential |
-| **Relationships** | "How are these connected?" | 🟡 Valuable |
-| **Cleanup** | "Remove outdated memories" | 🟡 Valuable |
-| **Export** | "Back up my data" | 🟡 Valuable |
+| Task | Priority | Status |
+|------|----------|--------|
+| Add fuzzy matching option to search_nodes tool | 🔴 High | ⬜ TODO |
+| Implement case-insensitive search by default | 🔴 High | ⬜ TODO |
+| Search observations content, not just entity names | 🔴 High | ⬜ TODO |
+| Add search_tolerance parameter (strict/normal/fuzzy) | 🟡 Medium | ⬜ TODO |
+| Search across all text fields (names, types, observations) | 🔴 High | ⬜ TODO |
 
-**Action**: Document the value of each tool. If a tool doesn't have a clear "user story," consider simplifying or removing it.
+**Technical Enhancements:**
 
-### 2.2 Session Briefing
+#### 1. Fuzzy Text Matching
+
+```python
+# Before: Exact substring match
+WHERE observation LIKE '%timeout%'
+
+# After: Fuzzy matching with tolerance
+# Option A: SQLite FTS5 with prefix matching
+WHERE observations MATCH 'time*'  # Matches timeout, timer, timestamp
+
+# Option B: Trigram similarity (if adding extension)
+WHERE similarity(observation, 'timeout') > 0.3
+
+# Option C: Multiple term search with OR
+WHERE observation LIKE '%timeout%'
+   OR observation LIKE '%time%out%'
+   OR observation LIKE '%timed%'
+```
+
+#### 2. Case-Insensitive and Normalized Search
+
+```python
+# Normalize both query and stored text
+# - Lowercase
+# - Strip punctuation
+# - Handle common variations (retry/retries, error/errors)
+```
+
+### 2.2 Enrich Search Results
+
+Current limitation: Search returns entities but Claude needs context to evaluate relevance.
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Include immediate relationships in search results | 🔴 High | ⬜ TODO |
+| Add include_relationships parameter (default: true) | 🔴 High | ⬜ TODO |
+| Return match quality hints (which terms matched where) | 🟡 Medium | ⬜ TODO |
+| Summarize relationship context in results | 🔴 High | ⬜ TODO |
+
+**Result Format Enhancement:**
+
+```json
+// Before: Just the entity
+{
+  "name": "RetryWithBackoff",
+  "type": "Solution",
+  "observations": ["Exponential backoff pattern"]
+}
+
+// After: Entity with relationship context
+{
+  "name": "RetryWithBackoff",
+  "type": "Solution",
+  "observations": ["Exponential backoff pattern"],
+  "relationships": {
+    "solves": ["TimeoutError", "APIRateLimiting"],
+    "used_in": ["ProjectAlpha", "PaymentService"],
+    "related_to": ["ErrorHandling", "Resilience"]
+  },
+  "context_summary": "Solution that solved TimeoutError in ProjectAlpha"
+}
+```
+
+### 2.3 Optimize Tool Descriptions for Claude
+
+Current limitation: Claude may not know the best tool to use or how to construct effective queries.
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Rewrite all tool descriptions with Claude-focused guidance | 🔴 High | ⬜ TODO |
+| Add usage examples in tool descriptions | 🔴 High | ⬜ TODO |
+| Create recall_memories convenience tool | 🔴 High | ⬜ TODO |
+| Document recommended tool selection logic | 🟡 Medium | ⬜ TODO |
+
+**Improved Tool Description Example:**
+
+```python
+# Before
+"search_nodes": "Search for nodes in the knowledge graph"
+
+# After
+"search_nodes": """
+Search memories using keywords or natural language.
+Claude should extract key terms from user queries and search for them.
+
+WHEN TO USE:
+- User asks about past solutions, decisions, or learnings
+- User references something discussed in previous sessions
+- User asks "how did we..." or "what was..." questions
+
+HOW TO USE:
+- Extract 2-4 key terms from the user's question
+- Start broad, narrow if too many results
+- Use relationship filters to find solutions (type=SOLVES) or problems (type=CAUSED_BY)
+
+EXAMPLES:
+- User: "How did we fix the timeout issue?" → search "timeout error fix solution"
+- User: "What approach did we use for caching?" → search "caching approach"
+- User: "That authentication bug" → search "authentication bug error"
+
+Returns entities with their relationships for context.
+"""
+```
+
+### 2.4 Multi-Term Search Support
+
+Current limitation: Search may require multiple calls for multi-concept queries.
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Add terms parameter accepting list of search terms | 🔴 High | ⬜ TODO |
+| Add match_mode parameter (any/all) | 🔴 High | ⬜ TODO |
+| Add relationship_filter parameter | 🟡 Medium | ⬜ TODO |
+| Support basic OR/AND/NOT in query strings | 🟡 Medium | ⬜ TODO |
+
+**Enhanced Search API:**
+
+```python
+# Allow Claude to pass multiple terms
+search_nodes(terms=["timeout", "retry", "API"], match_mode="any")
+search_nodes(terms=["authentication", "OAuth"], match_mode="all")
+
+# Simple query language Claude can use
+search_nodes(query="timeout OR retry", include_relationships=True)
+search_nodes(query="authentication AND NOT OAuth")
+
+# Relationship-filtered search
+search_nodes(query="timeout", relationship_filter="SOLVES")
+search_nodes(query="error", project="ProjectAlpha", relationship_filter="CAUSED_BY")
+```
+
+### 2.5 Session Briefing
 
 | Task | Priority | Status |
 |------|----------|--------|
@@ -341,7 +594,7 @@ Unresolved Problems:
 Would you like details on any of these?
 ```
 
-### 2.3 "What Worked / What Failed" Queries
+### 2.6 "What Worked / What Failed" Queries
 
 | Task | Priority | Status |
 |------|----------|--------|
@@ -369,7 +622,7 @@ Claude: From your memory:
 The Redis approach seems most successful. Want me to recall the implementation details?
 ```
 
-### 2.4 Data Portability
+### 2.7 Data Portability
 
 | Task | Priority | Status |
 |------|----------|--------|
@@ -390,7 +643,24 @@ memorygraph export --format markdown --output memories/
 memorygraph import --format json --input backup.json
 ```
 
-### 2.5 User Feedback Loop
+### 2.8 Tool Value Audit
+
+Review each MCP tool and ensure it provides clear value:
+
+| Tool Category | User Value | Priority |
+|---------------|-----------|----------|
+| **Store/Create** | "Remember this for later" | 🔴 Essential |
+| **Search/Recall** | "What do I know about X?" | 🔴 Essential |
+| **Find Solutions** | "What solved this problem?" | 🔴 Essential |
+| **Find Problems** | "What went wrong with X?" | 🔴 Essential |
+| **Context/Briefing** | "Catch me up on this project" | 🔴 Essential |
+| **Relationships** | "How are these connected?" | 🟡 Valuable |
+| **Cleanup** | "Remove outdated memories" | 🟡 Valuable |
+| **Export** | "Back up my data" | 🟡 Valuable |
+
+**Action**: Document the value of each tool. If a tool doesn't have a clear "user story," consider simplifying or removing it.
+
+### 2.9 User Feedback Loop
 
 | Task | Priority | Status |
 |------|----------|--------|
@@ -405,11 +675,14 @@ memorygraph import --format json --input backup.json
 - [ ] 50%+ weekly active users (of installers)
 - [ ] 3+ unsolicited testimonials
 - [ ] Clear understanding of top 3 feature requests
+- [ ] Search result relevance: 80%+ relevant in top 5 (user feedback)
+- [ ] Tool calls per recall: 1-2 average (down from 3-4)
+- [ ] Failed searches (no results): <10%
 
 ---
 
 ## Phase 3: Cloud Sync & Monetization
-**Timeline**: Weeks 8-14  
+**Timeline**: Weeks 8-14
 **Goal**: Launch paid tier, generate revenue
 
 ### 3.1 Cloud Infrastructure
@@ -529,7 +802,7 @@ Early Supporter: $6/month forever (first 100 users)
 ---
 
 ## Phase 4: Team Features
-**Timeline**: Weeks 15-22  
+**Timeline**: Weeks 15-22
 **Goal**: Enable team collaboration, expand revenue
 
 ### 4.1 Shared Team Memory
@@ -599,7 +872,7 @@ From @mike (1 month ago):
 ---
 
 ## Phase 5: Scale & Enterprise
-**Timeline**: Weeks 23-32  
+**Timeline**: Weeks 23-32
 **Goal**: Enterprise readiness, sustainable growth
 
 ### 5.1 Enterprise Features
@@ -734,7 +1007,7 @@ From @mike (1 month ago):
 - [ ] Complete Phase 1 tasks
 - [ ] Register memorygraph.dev domain
 - [ ] Begin user interviews
-- [ ] Start planning cloud infrastructure
+- [ ] Start planning Phase 2 search improvements
 
 ---
 
@@ -797,6 +1070,7 @@ Tools that don't pass this test should be:
 |---------|------|--------|---------|
 | 1.0 | Dec 2025 | Gregory Dickson | Initial roadmap |
 | 2.0 | Dec 2025 | Gregory Dickson | Refocused on value over technical features; simplified messaging; clearer monetization path |
+| 2.1 | Dec 2025 | Gregory Dickson | Elevated "Claude as the Interface" architecture; reorganized phases to prioritize search/recall; integrated semantic search strategy into Phase 2 |
 
 ---
 

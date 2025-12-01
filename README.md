@@ -35,11 +35,29 @@ Then in Claude Code: *"Store this for later: Use pytest for Python testing"*
 
 ![Memory Creation](docs/images/memory-creation.jpg)
 
-> **Other MCP clients?** See [Installation Options](#installation-options) below.
+> **Other MCP clients?** See [Supported Clients](#supported-mcp-clients) below.
 >
 > **Need pipx?** `pip install --user pipx && pipx ensurepath`
 >
 > **Command not found?** Run `pipx ensurepath` and restart your terminal.
+
+---
+
+## Supported MCP Clients
+
+MemoryGraph works with any MCP-compliant AI coding tool:
+
+| Client | Type | Quick Start |
+|--------|------|-------------|
+| **Claude Code** | CLI/IDE | [Setup Guide](docs/CLAUDE_CODE_SETUP.md) |
+| **Cursor AI** | IDE | [Setup Guide](docs/quickstart/CURSOR_SETUP.md) |
+| **Windsurf** | IDE | [Setup Guide](docs/quickstart/WINDSURF_SETUP.md) |
+| **VS Code + Copilot** | IDE (1.102+) | [Setup Guide](docs/quickstart/VSCODE_COPILOT_SETUP.md) |
+| **Continue.dev** | VS Code/JetBrains | [Setup Guide](docs/quickstart/CONTINUE_SETUP.md) |
+| **Cline** | VS Code | [Setup Guide](docs/quickstart/CLINE_SETUP.md) |
+| **Gemini CLI** | CLI | [Setup Guide](docs/quickstart/GEMINI_CLI_SETUP.md) |
+
+See [MCP_CLIENT_COMPATIBILITY.md](docs/MCP_CLIENT_COMPATIBILITY.md) for detailed compatibility info.
 
 ---
 
