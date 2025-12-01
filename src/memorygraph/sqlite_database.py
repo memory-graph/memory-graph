@@ -23,6 +23,126 @@ from .backends.sqlite_fallback import SQLiteFallbackBackend
 logger = logging.getLogger(__name__)
 
 
+def _simple_stem(word: str) -> str:
+    """
+    Simple word stemming for fuzzy search.
+
+    Handles common English plurals and verb tenses.
+    This is a lightweight alternative to full NLP stemming.
+
+    Args:
+        word: Word to stem
+
+    Returns:
+        Stemmed word
+    """
+    word = word.lower().strip()
+
+    if len(word) <= 3:
+        return word
+
+    # Handle 'ied' suffix specially (retried -> retry, not retri)
+    if word.endswith('ied') and len(word) > 4:
+        # Remove 'ied' and add 'y' back
+        stem = word[:-3] + 'y'
+        if len(stem) >= 3:
+            return stem
+
+    # Handle 'ies' suffix specially (retries -> retry, not retr)
+    if word.endswith('ies') and len(word) > 4:
+        # Remove 'ies' and add 'y' back
+        stem = word[:-3] + 'y'
+        if len(stem) >= 3:
+            return stem
+
+    # Remove common suffixes (ordered by specificity)
+    suffixes = [
+        'es',     # boxes -> box
+        'ing',    # retrying -> retry
+        'ed',     # timed -> tim
+        's',      # errors -> error
+    ]
+
+    for suffix in suffixes:
+        if word.endswith(suffix):
+            stem = word[:-len(suffix)]
+            # Don't stem too aggressively (keep at least 3 chars)
+            if len(stem) >= 3:
+                return stem
+
+    return word
+
+
+def _generate_fuzzy_patterns(query: str) -> list:
+    """
+    Generate fuzzy search patterns from a query string.
+
+    Creates multiple patterns to match variations of words.
+
+    Args:
+        query: Search query string
+
+    Returns:
+        List of (pattern, weight) tuples for matching
+    """
+    patterns = []
+    query_lower = query.lower().strip()
+
+    # Exact match pattern (highest priority)
+    patterns.append((f"%{query_lower}%", 1.0))
+
+    # Split into words for multi-word queries
+    words = query_lower.split()
+
+    for word in words:
+        if len(word) <= 2:
+            continue
+
+        # Stem the word
+        stem = _simple_stem(word)
+
+        # Add stemmed pattern if different from original
+        if stem != word and len(stem) >= 3:
+            patterns.append((f"%{stem}%", 0.8))
+
+        # Also add patterns for common variations that would stem to this word
+        # This helps match: "retry" -> "retries", "retrying", "retried"
+        if len(word) >= 4:
+            # Add common suffixes
+            variations = []
+
+            # Handle words ending in 'y' specially (retry -> retries, not retrys)
+            if word.endswith('y'):
+                variations.extend([
+                    word[:-1] + "ies",  # retry -> retries
+                    word + "ing",        # retry -> retrying
+                    word[:-1] + "ied",  # retry -> retried
+                ])
+            else:
+                variations.extend([
+                    word + "s",     # cache -> caches
+                    word + "es",    # box -> boxes
+                    word + "ing",   # cache -> caching
+                    word + "ed",    # cache -> cached
+                ])
+
+            for var in variations:
+                var_stem = _simple_stem(var)
+                # Only add if it stems back to our word's stem
+                if var_stem == stem and len(var_stem) >= 3:
+                    patterns.append((f"%{var}%", 0.9))
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_patterns = []
+    for pattern, weight in patterns:
+        if pattern not in seen:
+            seen.add(pattern)
+            unique_patterns.append((pattern, weight))
+
+    return unique_patterns
+
+
 class SQLiteMemoryDatabase:
     """SQLite-specific implementation of memory database operations."""
 
@@ -182,15 +302,61 @@ class SQLiteMemoryDatabase:
             where_conditions = ["label = 'Memory'"]
             params = []
 
-            # Text search (simple LIKE for title, content, summary)
+            # Text search with tolerance-based matching
             if search_query.query:
-                where_conditions.append(
-                    "(json_extract(properties, '$.title') LIKE ? OR "
-                    "json_extract(properties, '$.content') LIKE ? OR "
-                    "json_extract(properties, '$.summary') LIKE ?)"
-                )
-                search_pattern = f"%{search_query.query}%"
-                params.extend([search_pattern, search_pattern, search_pattern])
+                tolerance = search_query.search_tolerance or "normal"
+
+                if tolerance == "strict":
+                    # Strict mode: exact substring match only (no stemming)
+                    pattern = f"%{search_query.query.lower()}%"
+                    pattern_conditions = [
+                        "(json_extract(properties, '$.title') LIKE ? OR "
+                        "json_extract(properties, '$.content') LIKE ? OR "
+                        "json_extract(properties, '$.summary') LIKE ?)"
+                    ]
+                    params.extend([pattern, pattern, pattern])
+                    where_conditions.append(f"({' OR '.join(pattern_conditions)})")
+
+                elif tolerance == "fuzzy":
+                    # Fuzzy mode: use same as normal for now (future: trigram similarity)
+                    # Generate fuzzy patterns (exact match + stemmed variations)
+                    patterns = _generate_fuzzy_patterns(search_query.query)
+
+                    # Build OR condition for all patterns across all text fields
+                    pattern_conditions = []
+                    for pattern, weight in patterns:
+                        # Each pattern matches against title, content, or summary
+                        pattern_conditions.append(
+                            "(json_extract(properties, '$.title') LIKE ? OR "
+                            "json_extract(properties, '$.content') LIKE ? OR "
+                            "json_extract(properties, '$.summary') LIKE ?)"
+                        )
+                        # Add pattern three times (once for each field)
+                        params.extend([pattern, pattern, pattern])
+
+                    # Combine all pattern conditions with OR
+                    if pattern_conditions:
+                        where_conditions.append(f"({' OR '.join(pattern_conditions)})")
+
+                else:  # tolerance == "normal" (default)
+                    # Normal mode: fuzzy matching with stemming
+                    patterns = _generate_fuzzy_patterns(search_query.query)
+
+                    # Build OR condition for all patterns across all text fields
+                    pattern_conditions = []
+                    for pattern, weight in patterns:
+                        # Each pattern matches against title, content, or summary
+                        pattern_conditions.append(
+                            "(json_extract(properties, '$.title') LIKE ? OR "
+                            "json_extract(properties, '$.content') LIKE ? OR "
+                            "json_extract(properties, '$.summary') LIKE ?)"
+                        )
+                        # Add pattern three times (once for each field)
+                        params.extend([pattern, pattern, pattern])
+
+                    # Combine all pattern conditions with OR
+                    if pattern_conditions:
+                        where_conditions.append(f"({' OR '.join(pattern_conditions)})")
 
             # Memory type filter
             if search_query.memory_types:

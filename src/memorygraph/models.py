@@ -233,6 +233,18 @@ class SearchQuery(BaseModel):
     created_before: Optional[datetime] = None
     limit: int = Field(default=20, ge=1, le=100)
     include_relationships: bool = Field(default=True)
+    search_tolerance: Optional[str] = Field(default="normal")
+
+    @field_validator('search_tolerance')
+    @classmethod
+    def validate_search_tolerance(cls, v):
+        """Validate search_tolerance parameter."""
+        if v is None:
+            return "normal"
+        valid_values = ["strict", "normal", "fuzzy"]
+        if v not in valid_values:
+            raise ValueError(f"search_tolerance must be one of {valid_values}, got '{v}'")
+        return v
 
 
 class MemoryGraph(BaseModel):

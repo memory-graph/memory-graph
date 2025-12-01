@@ -185,6 +185,11 @@ class ClaudeMemoryServer:
                             "minimum": 1,
                             "maximum": 100,
                             "description": "Maximum number of results"
+                        },
+                        "search_tolerance": {
+                            "type": "string",
+                            "enum": ["strict", "normal", "fuzzy"],
+                            "description": "Search tolerance mode: 'strict' for exact matches, 'normal' for stemming (default), 'fuzzy' for typo tolerance"
                         }
                     }
                 }
