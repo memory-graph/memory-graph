@@ -308,3 +308,32 @@ memorygraph --backend neo4j --profile extended --log-level DEBUG
 3. **Use full paths** - Prevents version conflicts with project venvs
 4. **Start with core mode** - Upgrade to extended when needed
 5. **Don't manually edit** - Config files are managed by `claude mcp`
+6. **Configure memory protocols** - Add memory storage guidelines to your CLAUDE.md
+
+## Encouraging Memory Creation
+
+MemoryGraph provides the tools, but Claude won't automatically use them. To enable proactive memory creation:
+
+### Add to ~/.claude/CLAUDE.md
+
+```markdown
+## Memory Protocol
+After completing significant tasks, store a memory using `store_memory`:
+- Type: solution, problem, code_pattern, decision, etc.
+- Title: Brief description
+- Content: What was accomplished, key decisions, patterns discovered
+- Tags: Relevant keywords for future recall
+- Relationships: Link to related memories
+
+Before starting work, use `recall_memories` to check for relevant past learnings.
+
+At session end, store a summary with type=task.
+```
+
+### Use Trigger Phrases
+
+- **Store**: "Store this for later...", "Remember that...", "Save this pattern..."
+- **Recall**: "What do you remember about...?", "Have we solved this before?"
+- **Session**: "Summarize and store what we accomplished today"
+
+See [CLAUDE_CODE_SETUP.md](CLAUDE_CODE_SETUP.md#configuring-proactive-memory-creation) for comprehensive configuration examples and workflows.

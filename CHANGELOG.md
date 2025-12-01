@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced embedding support
 - Workflow automation templates
 
+## [0.8.1] - 2025-12-01
+
+### Fixed
+- Fixed FalkorDB integration tests failing in CI/CD when packages not installed
+- Integration tests now properly skip (not fail) when FalkorDB/FalkorDBLite unavailable
+- Fixed mock contamination between unit tests and integration tests
+
+### Added
+- Comprehensive documentation for encouraging memory creation
+- New `docs/examples/CLAUDE_MD_EXAMPLES.md` with ready-to-use templates
+- Memory best practices section in README
+- CLAUDE.md configuration examples for proactive memory storage
+
 ## [0.8.0] - 2025-12-01
 
 ### Added - FalkorDB Backend Support

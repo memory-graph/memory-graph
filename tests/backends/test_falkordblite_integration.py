@@ -13,7 +13,14 @@ import os
 
 try:
     from falkordblite import FalkorDB
-    FALKORDBLITE_AVAILABLE = True
+    from unittest.mock import MagicMock
+
+    # Check if falkordblite is a mock object (from unit tests)
+    # Verify it's the real package by checking if FalkorDB is callable and not a mock
+    if isinstance(FalkorDB, MagicMock) or not callable(FalkorDB):
+        FALKORDBLITE_AVAILABLE = False
+    else:
+        FALKORDBLITE_AVAILABLE = True
 except ImportError:
     FALKORDBLITE_AVAILABLE = False
 

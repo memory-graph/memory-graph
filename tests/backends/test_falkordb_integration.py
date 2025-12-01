@@ -29,6 +29,16 @@ def is_falkordb_available():
     """Check if FalkorDB is available for testing."""
     try:
         import falkordb
+        from unittest.mock import MagicMock
+
+        # Check if falkordb is a mock object (from unit tests)
+        if isinstance(falkordb, MagicMock) or isinstance(falkordb.FalkorDB, MagicMock):
+            return False
+
+        # Verify it has the expected real attributes
+        if not hasattr(falkordb, 'FalkorDB') or not callable(falkordb.FalkorDB):
+            return False
+
         # Try to connect to localhost
         host = os.getenv("FALKORDB_HOST", "localhost")
         port = int(os.getenv("FALKORDB_PORT", "6379"))

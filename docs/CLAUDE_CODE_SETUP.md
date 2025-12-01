@@ -830,6 +830,225 @@ ps aux | grep memorygraph
 
 ---
 
+## Configuring Proactive Memory Creation
+
+### Why This Matters
+
+MemoryGraph is an MCP tool provider, not an autonomous system. Claude won't automatically store memories unless:
+1. You explicitly ask: "Store this..."
+2. You configure Claude with memory protocols in CLAUDE.md
+3. You establish workflow habits (see examples below)
+
+This section shows you how to configure Claude to proactively use memory tools.
+
+### Global CLAUDE.md Configuration
+
+Add a memory protocol to `~/.claude/CLAUDE.md` for consistent behavior across all sessions:
+
+```markdown
+## Memory Protocol
+
+### When to Store Memories
+After completing significant work, store a memory using the `store_memory` tool:
+- **Solutions**: Working fixes, implementations
+- **Problems**: Issues encountered, blockers
+- **Patterns**: Reusable code patterns
+- **Decisions**: Architecture choices, trade-offs
+- **Errors & Fixes**: Bugs and their resolutions
+
+### Memory Storage Format
+Always include:
+- **Type**: solution, problem, code_pattern, decision, error, fix, task, technology
+- **Title**: Brief, descriptive (e.g., "Fixed Redis timeout with connection pooling")
+- **Content**:
+  - What was accomplished
+  - Why this approach was chosen
+  - Key decisions and trade-offs
+  - Context for future reuse
+- **Tags**: Technology, domain, pattern name
+- **Relationships**: Link related memories using `create_relationship`
+
+### Common Relationship Patterns
+- Solutions SOLVE problems
+- Fixes ADDRESS errors
+- Patterns APPLY_TO projects
+- Decisions IMPROVE previous approaches
+- Errors TRIGGER problems
+- Changes CAUSE issues
+
+### Recall Before Work
+Before starting on a topic, use `recall_memories` to check for:
+- Past solutions to similar problems
+- Known issues and their fixes
+- Established patterns and conventions
+- Previous decisions and rationale
+
+### Session Management
+At the end of each session:
+1. Use `store_memory` with type=task to summarize what was accomplished
+2. Include what's next in the content
+3. Tag with project name and date
+```
+
+### Project-Specific CLAUDE.md
+
+For team projects or specific repositories, add `.claude/CLAUDE.md` to your project root:
+
+```markdown
+## Project: [Your Project Name]
+
+### Memory Storage Protocol
+This project uses MemoryGraph for team knowledge sharing.
+
+When working on this project:
+1. Before starting: "What do you remember about [component]?"
+2. After solving issues: Store the problem and solution, link them
+3. After implementing features: Store the pattern used
+4. At session end: Store a task summary
+
+### Tagging Convention
+Always tag memories with:
+- `project:[project-name]`
+- `component:[auth|api|database|frontend|etc]`
+- `type:[fix|feature|optimization|refactor]`
+- Relevant technologies: `fastapi`, `react`, `postgresql`, etc.
+
+### Memory Types for This Project
+- **solution**: Working implementations (API endpoints, features)
+- **problem**: Issues we encountered (performance, bugs)
+- **code_pattern**: Reusable patterns (error handling, validation)
+- **decision**: Architecture choices (why we chose X over Y)
+- **task**: Sprint work, feature completion
+
+### Example Memory Flow
+When fixing a bug:
+1. Store problem: type=problem, title="API timeout under load"
+2. Store solution: type=solution, title="Fixed with connection pooling"
+3. Link them: solution SOLVES problem
+4. Both tagged: `project:myapp`, `component:api`, `postgresql`
+```
+
+### Trigger Phrases Guide
+
+Train yourself to use these phrases for consistent memory creation:
+
+**Storing knowledge**:
+- "Store this for later: [content]"
+- "Remember that [pattern/solution]"
+- "Save this pattern: [description]"
+- "Record this decision: [what we chose and why]"
+- "Create a memory about [topic]"
+
+**Recalling knowledge**:
+- "What do you remember about [topic]?"
+- "Have we solved [problem] before?"
+- "Recall any patterns for [use case]"
+- "What did we decide about [topic]?"
+- "Catch me up on [project/component]"
+
+**Session management**:
+- "Summarize and store what we accomplished today"
+- "Store a summary of this session"
+- "What have we learned in this session?" (triggers storage)
+
+### Workflow Integration Examples
+
+#### Example 1: Debugging Session
+
+```
+Start of session:
+You: "What do you remember about Redis timeout issues?"
+Claude: [Uses recall_memories to find past solutions]
+
+During work:
+You: "We fixed it by increasing the connection pool to 50. Store this solution."
+Claude: [Uses store_memory with type=solution]
+Claude: [Searches for related problem with recall_memories]
+Claude: [Uses create_relationship to link solution to problem]
+
+End of session:
+You: "Store a summary of what we accomplished"
+Claude: [Creates task-type memory with summary]
+```
+
+#### Example 2: Feature Development
+
+```
+Start:
+You: "Recall any authentication patterns we've used"
+Claude: [Uses recall_memories for auth-related patterns]
+
+During:
+[You implement the feature together]
+
+After implementation:
+You: "Store this authentication pattern with the JWT refresh token approach"
+Claude: [Stores as code_pattern with detailed content]
+
+Link to project:
+Claude: [Automatically creates relationship: pattern APPLIES_TO project]
+
+End:
+You: "Summarize today's auth work for the memory"
+Claude: [Stores task summary with links to patterns used]
+```
+
+#### Example 3: Architecture Decision
+
+```
+Discussion:
+You: "Should we use PostgreSQL or MongoDB?"
+[Discussion of trade-offs]
+
+After decision:
+You: "Store our decision to use PostgreSQL, including the reasoning about ACID compliance"
+Claude: [Stores as type=decision with full context]
+Claude: [Tags with project, database, architecture]
+
+Later:
+You: "Why did we choose PostgreSQL?"
+Claude: [Recalls the decision memory with full rationale]
+```
+
+### Advanced: Memory Habits for Teams
+
+If your team uses MemoryGraph, establish these habits:
+
+**Daily standup**:
+```
+"Recall what the team worked on yesterday"
+[At end of standup] "Store today's task assignments"
+```
+
+**Code review**:
+```
+[After finding issue] "Store this code smell and the better pattern"
+[Link]: code_smell SOLVED_BY better_pattern
+```
+
+**Sprint retrospective**:
+```
+"Recall all problems we encountered this sprint"
+"Store the top 3 improvements we're implementing"
+```
+
+**Onboarding**:
+```
+New dev: "Catch me up on the authentication system"
+Claude: [Recalls architecture decisions, patterns, known issues]
+```
+
+### Verification
+
+To verify your CLAUDE.md is working:
+
+1. Start a new Claude Code session
+2. Do some work (fix a bug, implement a feature)
+3. Check if Claude proactively suggests storing memories
+4. If not, try: "What's our memory protocol?" - Claude should reference your CLAUDE.md
+
+---
+
 ## Usage Tips
 
 ### Effective Memory Storage

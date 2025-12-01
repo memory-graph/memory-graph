@@ -41,11 +41,22 @@ Then in Claude Code: *"Store this for later: Use pytest for Python testing"*
 >
 > **Command not found?** Run `pipx ensurepath` and restart your terminal.
 
-**Tip:** Add this to your CLAUDE.md or AGENTS.md to encourage use:
+**Important:** MemoryGraph provides memory tools, but Claude won't use them automatically. You need to prompt Claude or configure it to store memories. See [Memory Best Practices](#memory-best-practices) below.
+
+**Quick setup:** Add this to your `~/.claude/CLAUDE.md` to enable automatic memory storage:
 ```markdown
-## Memory Tools
-When recalling past work, always start with `recall_memories` tool
+## Memory Protocol
+After completing significant tasks, store a memory with:
+- Type: solution, problem, code_pattern, etc.
+- Title: Brief description
+- Content: What was accomplished, key decisions, patterns discovered
+- Tags: Relevant keywords for future recall
+- Relationships: Link to related memories (problems solved, patterns used)
+
+Before starting work, use `recall_memories` to check for relevant past learnings.
 ```
+
+See [CLAUDE.md Examples](docs/examples/CLAUDE_MD_EXAMPLES.md) for more configuration templates.
 
 ## Supported MCP Clients
 
@@ -271,6 +282,206 @@ Use when you need exact matching or advanced filtering.
 ![Memory Report](docs/images/memory-report.jpg)
 
 See [docs/examples/](docs/examples/) for more use cases.
+
+---
+
+## Memory Best Practices
+
+### Why Memories Aren't Automatic
+
+MemoryGraph is an MCP tool provider, not an autonomous agent. This means:
+- **Claude needs to be prompted** to use the memory tools
+- **You control what gets stored** - nothing is saved without explicit instruction
+- **Configuration is key** - Add memory protocols to your CLAUDE.md for consistent behavior
+
+This design gives you full control over your memory graph, but requires setup to work effectively.
+
+### How to Encourage Memory Creation
+
+#### 1. Configure CLAUDE.md (Recommended)
+
+Add a memory protocol to `~/.claude/CLAUDE.md` for persistent behavior across all sessions:
+
+```markdown
+## Memory Protocol
+
+### Storage Guidelines
+After completing significant tasks, store a memory using `store_memory`:
+- **Type**: Choose appropriate type (solution, problem, code_pattern, decision, etc.)
+- **Title**: Brief, descriptive (e.g., "Fixed Redis timeout with connection pooling")
+- **Content**: Include:
+  - What was accomplished
+  - Why this approach was chosen
+  - Key decisions and trade-offs
+  - Context that makes it reusable
+- **Tags**: Add relevant keywords (technology, domain, pattern name)
+- **Relationships**: Link to related memories using `create_relationship`:
+  - Solutions SOLVE problems
+  - Fixes ADDRESS errors
+  - Patterns APPLY_TO projects
+  - Decisions IMPROVE previous approaches
+
+### Recall Guidelines
+Before starting work on a topic, use `recall_memories` to check for:
+- Past solutions to similar problems
+- Known issues and their fixes
+- Established patterns and conventions
+- Previous decisions and their rationale
+
+### Session Wrap-Up
+At the end of each session, store a summary memory:
+- Type: task
+- Content: What was accomplished, what's next
+- Tags: project name, session date
+```
+
+#### 2. Use Trigger Phrases
+
+Claude responds well to explicit memory-related requests:
+
+**For storing**:
+- "Store this for later..."
+- "Remember that..."
+- "Save this pattern..."
+- "Record this decision..."
+- "Create a memory about..."
+
+**For recalling**:
+- "What do you remember about...?"
+- "Have we solved this before?"
+- "Recall any patterns for..."
+- "What did we decide about...?"
+
+**For session management**:
+- "Summarize and store what we accomplished today"
+- "Store a summary of this session"
+- "Catch me up on this project" (uses stored memories)
+
+#### 3. Establish Workflow Habits
+
+**Start of session**:
+```
+You: "What do you remember about the authentication system?"
+Claude: [Uses recall_memories to find relevant context]
+```
+
+**During work**:
+```
+You: "We fixed the Redis timeout by increasing the connection pool to 50. Store this solution."
+Claude: [Uses store_memory, then create_relationship to link to the problem]
+```
+
+**End of session**:
+```
+You: "Store a summary of what we accomplished today"
+Claude: [Creates a task-type memory with summary and links]
+```
+
+#### 4. Project-Specific Configuration
+
+For team projects or specific repositories, add `.claude/CLAUDE.md` to the project:
+
+```markdown
+## Project Memory Protocol
+
+This project uses MemoryGraph for team knowledge sharing.
+
+### When to Store
+- Solutions to project-specific problems
+- Architecture decisions and rationale
+- Deployment procedures and gotchas
+- Performance optimizations
+- Bug fixes and root causes
+
+### Tagging Convention
+Always include these tags:
+- Project name: "my-app"
+- Component: "auth", "api", "database", etc.
+- Type: "fix", "feature", "optimization", etc.
+
+### Example
+When fixing a bug:
+1. Store the problem (type: problem)
+2. Store the solution (type: solution)
+3. Link them: solution SOLVES problem
+4. Tag both with component and "bug-fix"
+```
+
+### Memory Types Guide
+
+Choose the right type for better organization:
+
+| Type | Use For | Example |
+|------|---------|---------|
+| **solution** | Working fixes and implementations | "Fixed N+1 query with eager loading" |
+| **problem** | Issues encountered | "Database deadlock under high concurrency" |
+| **code_pattern** | Reusable patterns | "Repository pattern for database access" |
+| **decision** | Architecture choices | "Chose PostgreSQL over MongoDB for transactions" |
+| **task** | Work completed | "Implemented user authentication" |
+| **technology** | Tool/framework knowledge | "FastAPI dependency injection best practices" |
+| **error** | Specific errors | "ImportError: module not found" |
+| **fix** | Error resolutions | "Added missing import statement" |
+
+### Relationship Types Guide
+
+Common relationship patterns:
+
+```markdown
+# Causal relationships
+problem --CAUSES--> error
+change --TRIGGERS--> bug
+
+# Solution relationships
+solution --SOLVES--> problem
+fix --ADDRESSES--> error
+pattern --IMPROVES--> code
+
+# Context relationships
+pattern --APPLIES_TO--> project
+solution --REQUIRES--> dependency
+pattern --WORKS_WITH--> technology
+
+# Learning relationships
+new_approach --BUILDS_ON--> old_approach
+finding --CONTRADICTS--> assumption
+result --CONFIRMS--> hypothesis
+```
+
+### Example Workflows
+
+**Debugging workflow**:
+```
+1. Encounter error → Store as type: error
+2. Find root cause → Store as type: problem, link: error TRIGGERS problem
+3. Implement fix → Store as type: solution, link: solution SOLVES problem
+4. Result: Complete chain for future reference
+```
+
+**Feature development workflow**:
+```
+1. Start: "Recall any patterns for user authentication"
+2. Implement: [Work on feature]
+3. Store: "Store this authentication pattern" → type: code_pattern
+4. Link: pattern APPLIES_TO project
+5. End: "Store summary of authentication implementation"
+```
+
+**Optimization workflow**:
+```
+1. Identify issue → Store as type: problem
+2. Test solutions → Store each as type: solution
+3. Compare → Link: best_solution IMPROVES other_solutions
+4. Document → Store decision with rationale
+```
+
+### More Examples and Templates
+
+For comprehensive CLAUDE.md configuration examples including:
+- Domain-specific setups (web dev, ML, DevOps)
+- Team collaboration protocols
+- Migration strategies from other systems
+
+See: [CLAUDE.md Configuration Examples](docs/examples/CLAUDE_MD_EXAMPLES.md)
 
 ---
 
