@@ -116,6 +116,11 @@ class Memory(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     last_accessed: Optional[datetime] = None
 
+    # Enriched search result fields (populated by search operations)
+    relationships: Optional[Dict[str, List[str]]] = None
+    match_info: Optional[Dict[str, Any]] = None
+    context_summary: Optional[str] = None
+
     @field_validator('tags')
     @classmethod
     def validate_tags(cls, v):
@@ -221,6 +226,7 @@ class SearchQuery(BaseModel):
     """Search query parameters for memory retrieval."""
 
     query: Optional[str] = None
+    terms: List[str] = Field(default_factory=list, description="Multiple search terms for multi-term queries")
     memory_types: List[MemoryType] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
     project_path: Optional[str] = None
@@ -234,6 +240,8 @@ class SearchQuery(BaseModel):
     limit: int = Field(default=20, ge=1, le=100)
     include_relationships: bool = Field(default=True)
     search_tolerance: Optional[str] = Field(default="normal")
+    match_mode: Optional[str] = Field(default="any", description="Match mode for terms: 'any' (OR) or 'all' (AND)")
+    relationship_filter: Optional[List[str]] = Field(default=None, description="Filter results by relationship types")
 
     @field_validator('search_tolerance')
     @classmethod
@@ -244,6 +252,17 @@ class SearchQuery(BaseModel):
         valid_values = ["strict", "normal", "fuzzy"]
         if v not in valid_values:
             raise ValueError(f"search_tolerance must be one of {valid_values}, got '{v}'")
+        return v
+
+    @field_validator('match_mode')
+    @classmethod
+    def validate_match_mode(cls, v):
+        """Validate match_mode parameter."""
+        if v is None:
+            return "any"
+        valid_values = ["any", "all"]
+        if v not in valid_values:
+            raise ValueError(f"match_mode must be one of {valid_values}, got '{v}'")
         return v
 
 

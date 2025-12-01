@@ -7,18 +7,30 @@ Complete configuration examples for MemoryGraph with various MCP clients and bac
 Use `claude mcp add` to configure MemoryGraph:
 
 ```bash
-# Lite mode (default)
+# Core mode (default, 9 tools)
 claude mcp add --scope user memorygraph -- memorygraph
 
-# Standard mode (pattern recognition)
-claude mcp add --scope user memorygraph -- memorygraph --profile standard
+# Extended mode (11 tools)
+claude mcp add --scope user memorygraph -- memorygraph --profile extended
 
-# Full mode with Neo4j
+# Extended mode with Neo4j backend
 claude mcp add --scope user memorygraph \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=your-password \
-  -- memorygraph --profile full --backend neo4j
+  -- memorygraph --profile extended --backend neo4j
+
+# FalkorDBLite backend (embedded, like SQLite with Cypher)
+claude mcp add --scope user memorygraph \
+  --env MEMORY_FALKORDBLITE_PATH=~/.memorygraph/falkordblite.db \
+  -- memorygraph --backend falkordblite
+
+# FalkorDB backend (client-server)
+claude mcp add --scope user memorygraph \
+  --env MEMORY_FALKORDB_HOST=localhost \
+  --env MEMORY_FALKORDB_PORT=6379 \
+  --env MEMORY_FALKORDB_PASSWORD=your-password \
+  -- memorygraph --backend falkordb
 
 # Project-specific (creates .mcp.json in project root)
 claude mcp add --scope project memorygraph -- memorygraph
@@ -26,7 +38,7 @@ claude mcp add --scope project memorygraph -- memorygraph
 
 ## JSON Configuration Examples
 
-### Basic Configuration (Lite Mode)
+### Basic Configuration (Core Mode - Default)
 
 ```json
 {
@@ -38,29 +50,33 @@ claude mcp add --scope project memorygraph -- memorygraph
 }
 ```
 
-### Standard Mode (Pattern Recognition)
+This uses the default core profile with 9 essential tools.
+
+### Extended Mode (11 Tools)
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
 ```
 
-### Full Mode with SQLite
+Adds database statistics and complex relationship queries to the core tools.
+
+### Extended Mode with SQLite (Custom Path)
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "full"],
+      "args": ["--profile", "extended"],
       "env": {
-        "MEMORY_TOOL_PROFILE": "full",
+        "MEMORY_TOOL_PROFILE": "extended",
         "MEMORY_SQLITE_PATH": "/Users/yourname/.memorygraph/memory.db"
       }
     }
@@ -68,40 +84,77 @@ claude mcp add --scope project memorygraph -- memorygraph
 }
 ```
 
-### Full Mode with Neo4j
+### Extended Mode with Neo4j
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_BACKEND": "neo4j",
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
         "MEMORY_NEO4J_USER": "neo4j",
         "MEMORY_NEO4J_PASSWORD": "your-password",
-        "MEMORY_TOOL_PROFILE": "full"
+        "MEMORY_TOOL_PROFILE": "extended"
       }
     }
   }
 }
 ```
 
-### Full Mode with Memgraph
+### Extended Mode with Memgraph
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "memgraph", "--profile", "full"],
+      "args": ["--backend", "memgraph", "--profile", "extended"],
       "env": {
         "MEMORY_BACKEND": "memgraph",
         "MEMORY_MEMGRAPH_URI": "bolt://localhost:7687",
         "MEMORY_MEMGRAPH_USER": "memgraph",
         "MEMORY_MEMGRAPH_PASSWORD": "memgraph",
-        "MEMORY_TOOL_PROFILE": "full"
+        "MEMORY_TOOL_PROFILE": "extended"
+      }
+    }
+  }
+}
+```
+
+### FalkorDBLite Backend (Embedded with Cypher)
+
+```json
+{
+  "mcpServers": {
+    "memorygraph": {
+      "command": "memorygraph",
+      "args": ["--backend", "falkordblite"],
+      "env": {
+        "MEMORY_BACKEND": "falkordblite",
+        "MEMORY_FALKORDBLITE_PATH": "/Users/yourname/.memorygraph/falkordblite.db"
+      }
+    }
+  }
+}
+```
+
+### FalkorDB Backend (Client-Server)
+
+```json
+{
+  "mcpServers": {
+    "memorygraph": {
+      "command": "memorygraph",
+      "args": ["--backend", "falkordb", "--profile", "extended"],
+      "env": {
+        "MEMORY_BACKEND": "falkordb",
+        "MEMORY_FALKORDB_HOST": "localhost",
+        "MEMORY_FALKORDB_PORT": "6379",
+        "MEMORY_FALKORDB_PASSWORD": "your-password",
+        "MEMORY_TOOL_PROFILE": "extended"
       }
     }
   }
@@ -141,7 +194,7 @@ claude mcp add --scope project memorygraph -- memorygraph
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"],
+      "args": ["--profile", "extended"],
       "env": {
         "MEMORY_SQLITE_PATH": "/path/to/your/project/.memory/memory.db",
         "MEMORY_LOG_LEVEL": "DEBUG"
@@ -164,7 +217,7 @@ claude mcp add --scope project memorygraph -- memorygraph
     },
     "memory-work": {
       "command": "memorygraph",
-      "args": ["--profile", "full", "--backend", "neo4j"],
+      "args": ["--profile", "extended", "--backend", "neo4j"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://work-server:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -194,13 +247,21 @@ claude mcp add --scope project memorygraph -- memorygraph
 
 ```bash
 # Backend selection
-export MEMORY_BACKEND=sqlite          # sqlite (default) | neo4j | memgraph
+export MEMORY_BACKEND=sqlite          # sqlite (default) | falkordblite | falkordb | neo4j | memgraph
 
 # Tool profile
-export MEMORY_TOOL_PROFILE=lite       # lite (default) | standard | full
+export MEMORY_TOOL_PROFILE=core       # core (default) | extended
 
 # SQLite configuration (default backend)
 export MEMORY_SQLITE_PATH=~/.memorygraph/memory.db
+
+# FalkorDBLite configuration (embedded with Cypher)
+export MEMORY_FALKORDBLITE_PATH=~/.memorygraph/falkordblite.db
+
+# FalkorDB configuration (client-server)
+export MEMORY_FALKORDB_HOST=localhost
+export MEMORY_FALKORDB_PORT=6379
+export MEMORY_FALKORDB_PASSWORD=your-password
 
 # Neo4j configuration (if using neo4j backend)
 export MEMORY_NEO4J_URI=bolt://localhost:7687
@@ -229,7 +290,7 @@ memorygraph --show-config
 memorygraph --version
 
 # Run with custom settings
-memorygraph --backend neo4j --profile full --log-level DEBUG
+memorygraph --backend neo4j --profile extended --log-level DEBUG
 ```
 
 ## Configuration File Locations
@@ -245,5 +306,5 @@ memorygraph --backend neo4j --profile full --log-level DEBUG
 1. **Use `claude mcp add`** - Let the CLI manage configuration files
 2. **Use `--scope user`** - For global installation across all projects
 3. **Use full paths** - Prevents version conflicts with project venvs
-4. **Start with lite mode** - Upgrade to standard/full when needed
+4. **Start with core mode** - Upgrade to extended when needed
 5. **Don't manually edit** - Config files are managed by `claude mcp`

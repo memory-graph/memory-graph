@@ -84,14 +84,14 @@ What package manager should I use for this project?
 
 ## Configuration Options
 
-### Standard Mode (Pattern Recognition)
+### Extended Mode (Pattern Recognition)
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
@@ -195,4 +195,4 @@ Windsurf has a rich feature set. MemoryGraph complements these by:
 
 **Works with**: Windsurf (all versions with MCP support)
 **Transport**: stdio (SSE may be supported)
-**Profiles**: lite (8 tools), standard (15 tools), full (44 tools)
+**Profiles**: core (9 tools), extended (11 tools)

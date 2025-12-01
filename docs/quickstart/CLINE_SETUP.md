@@ -74,14 +74,14 @@ What token expiry does the auth service use?
 
 ## Configuration Options
 
-### Standard Mode
+### Extended Mode
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"],
+      "args": ["--profile", "extended"],
       "disabled": false
     }
   }
@@ -230,7 +230,7 @@ Cline supports multiple MCP servers:
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     },
     "filesystem": {
       "command": "mcp-server-filesystem",
@@ -251,5 +251,5 @@ Cline supports multiple MCP servers:
 
 **Works with**: Cline (VS Code extension)
 **Transport**: stdio
-**Profiles**: lite (8 tools), standard (15 tools), full (44 tools)
+**Profiles**: core (9 tools), extended (11 tools)
 **Model support**: Any model supported by Cline

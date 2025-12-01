@@ -1,0 +1,98 @@
+name: User Feedback
+description: Share your experience with MemoryGraph
+title: "[Feedback]: "
+labels: ["feedback", "user-experience"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to share your feedback! Your input helps us improve MemoryGraph.
+
+  - type: textarea
+    id: what-trying-to-do
+    attributes:
+      label: What were you trying to do?
+      description: Describe what you were working on or trying to accomplish
+      placeholder: "I was trying to recall past solutions for authentication issues..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Tell us what actually occurred
+      placeholder: "The search returned no results, but I know I stored memories about this..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-expected
+    attributes:
+      label: What did you expect?
+      description: What did you think would happen?
+      placeholder: "I expected to see 2-3 relevant memories about OAuth implementation..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: satisfaction
+    attributes:
+      label: How satisfied were you with this experience?
+      description: Rate your satisfaction (1 = very dissatisfied, 5 = very satisfied)
+      options:
+        - "1 - Very dissatisfied"
+        - "2 - Dissatisfied"
+        - "3 - Neutral"
+        - "4 - Satisfied"
+        - "5 - Very satisfied"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often do you use MemoryGraph?
+      options:
+        - "Daily"
+        - "Several times a week"
+        - "Once a week"
+        - "Occasionally"
+        - "First time"
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-works-well
+    attributes:
+      label: What works well?
+      description: Tell us what you like about MemoryGraph
+      placeholder: "The relationship tracking is really helpful for..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-could-improve
+    attributes:
+      label: What could be improved?
+      description: How could we make this better?
+      placeholder: "It would be great if..."
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: MemoryGraph Version
+      description: What version are you using? (run `memorygraph --version`)
+      placeholder: "0.7.1"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Anything else you'd like to share?
+    validations:
+      required: false

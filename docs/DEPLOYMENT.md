@@ -20,33 +20,28 @@ Complete guide for deploying MemoryGraph in any environment.
 
 ### Method 1: pip (Recommended)
 
-**Lite Mode (Default)**
+**Core Mode (Default)**
 ```bash
 pip install memorygraphMCP
 ```
 - SQLite backend
-- 8 core tools
+- 9 core tools
 - Zero configuration
 - Best for: Getting started, personal use
 
-**Standard Mode**
+**Extended Mode**
 ```bash
-pip install "memorygraph[intelligence]"
-```
-- SQLite backend
-- 15 tools (core + intelligence)
-- Pattern recognition
-- Best for: Most users
-
-**Full Mode**
-```bash
-pip install "memorygraph[neo4j,intelligence]"
+pip install "memorygraphMCP[neo4j]"
 # or
-pip install "memorygraph[all]"
+pip install "memorygraphMCP[falkordblite]"  # FalkorDBLite: embedded with Cypher
+# or
+pip install "memorygraphMCP[falkordb]"      # FalkorDB: client-server with high performance
+# or
+pip install "memorygraphMCP[all]"
 ```
-- Neo4j/Memgraph backend
-- All 44 tools
-- Advanced analytics
+- SQLite/FalkorDBLite/FalkorDB/Neo4j/Memgraph backend
+- 11 tools (core + advanced)
+- Complex queries and analytics
 - Best for: Power users, production
 
 ### Method 2: Docker
@@ -115,7 +110,7 @@ uvx memorygraph --show-config
 uvx memorygraph --health
 
 # Run server (ephemeral)
-uvx memorygraph --backend sqlite --profile standard
+uvx memorygraph --backend sqlite --profile extended
 
 # Test specific version
 uvx memorygraph@1.0.0 --version
@@ -238,7 +233,7 @@ claude mcp add --transport stdio memorygraph memorygraph
 
 Uses:
 - SQLite backend
-- Lite profile (8 tools)
+- Core profile (9 tools)
 - Default database path: `~/.memorygraph/memory.db`
 - Available across all projects
 
@@ -251,25 +246,18 @@ claude mcp add --transport stdio memorygraph memorygraph --scope project
 
 Creates `.mcp.json` in your project root.
 
-#### Standard Configuration
+#### Extended Configuration
 
 ```bash
-# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
-claude mcp add --transport stdio memorygraph memorygraph --profile standard
+# Prerequisite: pip install "memorygraphMCP[neo4j]" (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile extended
 ```
 
-#### Full Configuration (SQLite)
-
-```bash
-# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
-claude mcp add --transport stdio memorygraph memorygraph --profile full
-```
-
-#### Full Configuration (Neo4j)
+#### Extended Configuration with Neo4j
 
 ```bash
 # Prerequisite: pip install "memorygraphMCP[neo4j,intelligence]" (must be run first)
-claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+claude mcp add --transport stdio memorygraph memorygraph --profile extended --backend neo4j \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=your-password
@@ -311,30 +299,30 @@ If you need to manually configure (for non-Claude Code clients):
 
 Uses:
 - SQLite backend
-- Lite profile (8 tools)
+- Core profile (9 tools)
 - Default database path: `~/.memorygraph/memory.db`
 
-#### Standard Configuration
+#### Extended Configuration
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
 ```
 
-#### Full Configuration
+#### Extended Configuration with Neo4j
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -348,6 +336,14 @@ Uses:
 ---
 
 ## Backend Selection
+
+MemoryGraph supports 5 backend options:
+
+1. **sqlite** - Embedded, default, zero-config
+2. **falkordblite** - Embedded, zero-config with native Cypher/graph support
+3. **falkordb** - Client-server, user manages FalkorDB
+4. **neo4j** - Client-server, enterprise
+5. **memgraph** - Client-server, real-time analytics
 
 ### SQLite (Default)
 
@@ -374,6 +370,91 @@ export MEMORY_SQLITE_PATH=~/.memorygraph/memory.db
 - Slower graph queries at scale
 - Limited concurrent writes
 - Manual relationship traversal
+
+### FalkorDBLite (Embedded with Native Graph)
+
+**When to Use**:
+- Want native Cypher query support
+- Need better graph traversal than SQLite
+- Prefer embedded (no server setup)
+- <10k memories
+- Zero-config like SQLite
+
+**Configuration**:
+```bash
+export MEMORY_BACKEND=falkordblite
+export MEMORY_FALKORDBLITE_PATH=~/.memorygraph/falkordblite.db  # Optional, this is default
+```
+
+**Installation**:
+```bash
+pip install "memorygraphMCP[falkordblite]"
+
+# macOS users may need libomp:
+brew install libomp
+```
+
+**Pros**:
+- Zero configuration (embedded)
+- Native Cypher support
+- Better graph performance than SQLite
+- No server management
+- Portable file-based storage
+
+**Cons**:
+- Requires additional dependency (falkordblite)
+- macOS may need libomp installation
+- Not suitable for >10k memories
+
+### FalkorDB (Client-Server)
+
+**When to Use**:
+- Production deployments
+- Need high-performance graph operations
+- >10k memories
+- 500x faster p99 than Neo4j
+- Team collaboration
+
+**Setup**:
+```bash
+# Option 1: Docker
+docker run -d \
+  --name falkordb \
+  -p 6379:6379 \
+  falkordb/falkordb:latest
+
+# Option 2: Docker with password
+docker run -d \
+  --name falkordb \
+  -p 6379:6379 \
+  -e FALKORDB_PASSWORD=your-password \
+  falkordb/falkordb:latest
+
+# Configure
+export MEMORY_BACKEND=falkordb
+export MEMORY_FALKORDB_HOST=localhost
+export MEMORY_FALKORDB_PORT=6379
+export MEMORY_FALKORDB_PASSWORD=your-password  # If set above
+```
+
+**Installation**:
+```bash
+pip install "memorygraphMCP[falkordb]"
+```
+
+**Pros**:
+- Exceptional performance (500x faster p99 than Neo4j)
+- Redis-based (familiar to many teams)
+- Native Cypher query language
+- Production-ready
+- Excellent for high-throughput workloads
+
+**Cons**:
+- Requires FalkorDB server (user manages deployment)
+- Setup more complex than embedded options
+- Needs network configuration
+
+**Documentation**: [FalkorDB Docs](https://docs.falkordb.com/)
 
 ### Neo4j
 
@@ -450,60 +531,41 @@ export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
 
 ## Tool Profiles
 
-### Lite Profile (Default)
+### Core Profile (Default)
 
-**Tools**: 8 core tools
+**Tools**: 9 core tools
 **Backend**: SQLite
 **Setup Time**: 30 seconds
-**Best For**: Getting started, basic memory needs
+**Best For**: Getting started, daily use (95% of users)
 
 ```bash
 memorygraph
 # or explicitly
-memorygraph --profile lite
+memorygraph --profile core
 ```
 
 **Available Tools**:
-- store_memory, get_memory, search_memories
-- update_memory, delete_memory
+- store_memory, recall_memories, search_memories
+- get_memory, update_memory, delete_memory
 - create_relationship, get_related_memories
-- get_memory_statistics
-
-### Standard Profile
-
-**Tools**: 15 tools (core + intelligence)
-**Backend**: SQLite
-**Setup Time**: 30 seconds
-**Best For**: Most users, pattern recognition
-
-```bash
-memorygraph --profile standard
-```
-
-**Additional Tools**:
-- find_similar_solutions
-- suggest_patterns_for_context
-- get_intelligent_context
-- get_project_summary
 - get_session_briefing
-- get_memory_history
-- track_entity_timeline
 
-### Full Profile
+### Extended Profile
 
-**Tools**: All 44 tools
+**Tools**: 11 tools (core + advanced)
 **Backend**: SQLite/Neo4j/Memgraph
-**Setup Time**: 5 minutes (with backend)
+**Setup Time**: 30 seconds (SQLite) or 5 minutes (Neo4j/Memgraph)
 **Best For**: Power users, advanced analytics
 
 ```bash
-memorygraph --profile full --backend neo4j
+memorygraph --profile extended
+# or with Neo4j
+memorygraph --profile extended --backend neo4j
 ```
 
-**Additional Tools**:
-- Advanced relationship tools (7)
-- Project integration tools (11)
-- Proactive intelligence tools (11)
+**Additional Tools** (beyond core):
+- get_memory_statistics - Database statistics
+- analyze_relationship_patterns - Advanced relationship analysis
 
 See [TOOL_PROFILES.md](TOOL_PROFILES.md) for complete list.
 
@@ -515,10 +577,10 @@ See [TOOL_PROFILES.md](TOOL_PROFILES.md) for complete list.
 
 ```bash
 # Backend selection (required)
-export MEMORY_BACKEND=sqlite          # sqlite | neo4j | memgraph
+export MEMORY_BACKEND=sqlite          # sqlite | falkordblite | falkordb | neo4j | memgraph
 
-# Tool profile (optional, default: lite)
-export MEMORY_TOOL_PROFILE=lite       # lite | standard | full
+# Tool profile (optional, default: core)
+export MEMORY_TOOL_PROFILE=core       # core | extended
 
 # Logging (optional, default: INFO)
 export MEMORY_LOG_LEVEL=INFO          # DEBUG | INFO | WARNING | ERROR
@@ -535,6 +597,32 @@ export MEMORY_SQLITE_WAL_MODE=true
 
 # Cache size (optional, default: -64000 = 64MB)
 export MEMORY_SQLITE_CACHE_SIZE=-64000
+```
+
+### FalkorDBLite Configuration
+
+```bash
+# Database file path (optional, default: ~/.memorygraph/falkordblite.db)
+export MEMORY_FALKORDBLITE_PATH=~/.memorygraph/falkordblite.db
+
+# Or use short form:
+export FALKORDBLITE_PATH=~/.memorygraph/falkordblite.db
+```
+
+### FalkorDB Configuration
+
+```bash
+# Connection host (required if backend=falkordb)
+export MEMORY_FALKORDB_HOST=localhost
+export FALKORDB_HOST=localhost  # Alternative
+
+# Connection port (optional, default: 6379)
+export MEMORY_FALKORDB_PORT=6379
+export FALKORDB_PORT=6379  # Alternative
+
+# Authentication (optional)
+export MEMORY_FALKORDB_PASSWORD=your-password
+export FALKORDB_PASSWORD=your-password  # Alternative
 ```
 
 ### Neo4j Configuration
@@ -598,7 +686,6 @@ services:
     tty: true
     environment:
       - MEMORY_BACKEND=sqlite
-      - MEMORY_TOOL_PROFILE=lite
       - MEMORY_SQLITE_PATH=/data/memory.db
     volumes:
       - memory_data:/data
@@ -639,7 +726,7 @@ services:
     tty: true
     environment:
       - MEMORY_BACKEND=neo4j
-      - MEMORY_TOOL_PROFILE=full
+      - MEMORY_TOOL_PROFILE=extended
       - MEMORY_NEO4J_URI=bolt://neo4j:7687
       - MEMORY_NEO4J_USER=neo4j
       - MEMORY_NEO4J_PASSWORD=password
@@ -678,7 +765,7 @@ services:
     tty: true
     environment:
       - MEMORY_BACKEND=memgraph
-      - MEMORY_TOOL_PROFILE=full
+      - MEMORY_TOOL_PROFILE=extended
       - MEMORY_MEMGRAPH_URI=bolt://memgraph:7687
 
 volumes:
@@ -699,27 +786,18 @@ open http://localhost:3000
 
 ### Upgrading Profiles
 
-#### Lite to Standard
+#### Core to Extended
 
 No migration needed:
 ```bash
 # Before
-memorygraph --profile lite
+memorygraph --profile core
 
 # After
-memorygraph --profile standard
+memorygraph --profile extended
 ```
 
-#### Standard to Full
-
-If staying with SQLite:
-```bash
-# No migration needed
-memorygraph --profile full
-```
-
-If switching to Neo4j/Memgraph:
-See backend migration below.
+Extended mode adds 2 additional tools (get_memory_statistics, analyze_relationship_patterns) but uses the same database.
 
 ### Migrating Backends
 
@@ -748,7 +826,7 @@ memorygraph --backend neo4j --import backup.json
 ```json
 {
   "command": "memorygraph",
-  "args": ["--backend", "neo4j", "--profile", "full"],
+  "args": ["--backend", "neo4j", "--profile", "extended"],
   "env": {
     "MEMORY_NEO4J_URI": "bolt://localhost:7687",
     "MEMORY_NEO4J_USER": "neo4j",
@@ -854,7 +932,7 @@ ls -lh ~/.memorygraph/memory.db
 sqlite3 ~/.memorygraph/memory.db "VACUUM;"
 
 # Consider upgrading to Neo4j
-memorygraph --backend neo4j --profile full
+memorygraph --backend neo4j --profile extended
 ```
 
 **Neo4j out of memory**:
@@ -885,18 +963,15 @@ memorygraph --show-config
 
 **Upgrade profile**:
 ```bash
-# From lite to standard
-memorygraph --profile standard
-
-# From standard to full
-memorygraph --profile full
+# From core to extended
+memorygraph --profile extended
 ```
 
 **Check tool exists**:
 ```bash
 # List all tools (in server logs)
 memorygraph --log-level DEBUG
-# Look for "Registered X/44 tools"
+# Look for "Registered X/11 tools" (9 for core, 11 for extended)
 ```
 
 ### Debug Mode
@@ -936,7 +1011,7 @@ memorygraph --version
 ### Pre-Deployment
 
 - [ ] Choose appropriate backend (SQLite/Neo4j/Memgraph)
-- [ ] Select tool profile (lite/standard/full)
+- [ ] Select tool profile (core/extended)
 - [ ] Configure environment variables
 - [ ] Set up database (if Neo4j/Memgraph)
 - [ ] Test connection locally
@@ -990,7 +1065,7 @@ memorygraph --version
 
 ### Personal Use (Local)
 
-**Recommendation**: SQLite, lite profile
+**Recommendation**: SQLite, core profile
 
 **Step 1: Install**
 ```bash
@@ -1015,7 +1090,7 @@ claude mcp add --transport stdio memorygraph memorygraph
 
 ### Team Use (Shared Server)
 
-**Recommendation**: Neo4j, full profile
+**Recommendation**: Neo4j, extended profile
 
 **Step 1: Server setup**
 ```bash
@@ -1027,12 +1102,12 @@ docker run -d --name neo4j \
 
 **Step 2: Each team member installs**
 ```bash
-pip install "memorygraphMCP[neo4j,intelligence]"
+pip install "memorygraphMCP[neo4j]"
 ```
 
 **Step 3: Configure MCP** (Claude Code CLI - team members):
 ```bash
-claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+claude mcp add --transport stdio memorygraph memorygraph --profile extended --backend neo4j \
   --env MEMORY_NEO4J_URI=bolt://team-server:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=strong-password
@@ -1044,7 +1119,7 @@ claude mcp add --transport stdio memorygraph memorygraph --profile full --backen
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://team-server:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -1057,7 +1132,7 @@ claude mcp add --transport stdio memorygraph memorygraph --profile full --backen
 
 ### Cloud Deployment
 
-**Recommendation**: Neo4j Aura, full profile
+**Recommendation**: Neo4j Aura, extended profile
 
 **Step 1: Create Neo4j Aura instance**:
 - Go to https://neo4j.com/cloud/aura/
@@ -1066,12 +1141,12 @@ claude mcp add --transport stdio memorygraph memorygraph --profile full --backen
 
 **Step 2: Install locally**:
 ```bash
-pip install "memorygraphMCP[neo4j,intelligence]"
+pip install "memorygraphMCP[neo4j]"
 ```
 
 **Step 3: Configure MCP** (Claude Code CLI):
 ```bash
-claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+claude mcp add --transport stdio memorygraph memorygraph --profile extended --backend neo4j \
   --env MEMORY_NEO4J_URI=neo4j+s://your-instance.neo4j.io \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=your-password
@@ -1083,7 +1158,7 @@ claude mcp add --transport stdio memorygraph memorygraph --profile full --backen
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_NEO4J_URI": "neo4j+s://your-instance.neo4j.io",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -1134,9 +1209,9 @@ claude mcp add --transport stdio memorygraph memorygraph --profile full --backen
 6. Monitor and optimize
 
 For more help:
-- [FULL_MODE.md](FULL_MODE.md) - Advanced features
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Tool reference
 - [CLAUDE_CODE_SETUP.md](CLAUDE_CODE_SETUP.md) - Claude Code integration
+- [archive/FULL_MODE_LEGACY.md](archive/FULL_MODE_LEGACY.md) - Legacy documentation (archived)
 - [GitHub Issues](https://github.com/gregorydickson/memory-graph/issues) - Support
 
 ---

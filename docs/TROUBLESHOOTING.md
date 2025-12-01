@@ -143,6 +143,69 @@ mgconsole --host 127.0.0.1 --port 7687
 docker logs memgraph-container
 ```
 
+### FalkorDBLite issues
+
+**libomp error on macOS**:
+```bash
+# Error: Library not loaded: libomp.dylib
+brew install libomp
+
+# Restart your terminal after installation
+```
+
+**Database file permissions**:
+```bash
+# Check permissions
+ls -la ~/.memorygraph/falkordblite.db
+
+# Fix permissions if needed
+chmod 644 ~/.memorygraph/falkordblite.db
+```
+
+**Import error**:
+```bash
+# Install FalkorDBLite
+pip install "memorygraphMCP[falkordblite]"
+
+# Verify installation
+python -c "import falkordblite; print('FalkorDBLite installed')"
+```
+
+### FalkorDB connection issues
+
+**Connection refused**:
+```bash
+# Verify FalkorDB is running
+docker ps | grep falkordb
+
+# Check if port is accessible
+nc -zv localhost 6379
+
+# Check FalkorDB logs
+docker logs falkordb
+
+# Restart FalkorDB if needed
+docker restart falkordb
+```
+
+**Wrong host/port**:
+```bash
+# Verify configuration
+memorygraph --show-config | grep FALKORDB
+
+# Test connection manually
+redis-cli -h localhost -p 6379 ping
+```
+
+**Import error**:
+```bash
+# Install FalkorDB client
+pip install "memorygraphMCP[falkordb]"
+
+# Verify installation
+python -c "import falkordb; print('FalkorDB client installed')"
+```
+
 ### Import/Export issues
 
 ```bash
@@ -170,9 +233,9 @@ memorygraph --backend neo4j --show-config
 # Verify profile setting
 memorygraph --show-config | grep profile
 
-# Lite mode: 8 tools
-# Standard mode: 15 tools
-# Full mode: 44 tools
+# Core mode: 9 tools
+# Extended mode: 11 tools
+# Extended mode: 11 tools
 ```
 
 ## Getting Help

@@ -85,14 +85,14 @@ Retrieve it later:
 
 ## Configuration Options
 
-### Standard Mode
+### Extended Mode
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
@@ -105,7 +105,7 @@ Retrieve it later:
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"],
+      "args": ["--profile", "extended"],
       "env": {
         "MEMORY_SQLITE_PATH": "${workspaceFolder}/.vscode/memory.db"
       }
@@ -208,7 +208,7 @@ On macOS:
 
 ## Limitations
 
-- **128 tools max** per chat request (MemoryGraph lite mode has 8, standard has 15)
+- **128 tools max** per chat request (MemoryGraph core mode has 9, extended has 11)
 - **Agent mode required** for MCP access
 - **Workspace trust** must be enabled for MCP servers to run
 
@@ -223,5 +223,5 @@ On macOS:
 
 **Works with**: VS Code 1.102+ with GitHub Copilot
 **Transport**: stdio
-**Profiles**: lite (8 tools), standard (15 tools), full (44 tools)
+**Profiles**: core (9 tools), extended (11 tools)
 **Requirements**: GitHub Copilot subscription, Agent mode

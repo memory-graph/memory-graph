@@ -88,14 +88,14 @@ What do you know about this project's TypeScript setup?
 
 ## Configuration Options
 
-### Standard Mode (More Tools)
+### Extended Mode (More Tools)
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
@@ -116,14 +116,14 @@ What do you know about this project's TypeScript setup?
 }
 ```
 
-### Full Mode with Neo4j
+### Extended Mode with Neo4j
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "full", "--backend", "neo4j"],
+      "args": ["--profile", "extended", "--backend", "neo4j"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -188,4 +188,4 @@ On macOS, you may need to allow terminal access:
 
 **Works with**: Cursor AI (all versions with MCP support)
 **Transport**: stdio
-**Profiles**: lite (8 tools), standard (15 tools), full (44 tools)
+**Profiles**: core (9 tools), extended (11 tools)

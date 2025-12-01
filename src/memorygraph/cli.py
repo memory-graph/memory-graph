@@ -18,6 +18,78 @@ from .server import main as server_main
 logger = logging.getLogger(__name__)
 
 
+async def handle_export(args: argparse.Namespace) -> None:
+    """Handle export command."""
+    from .backends.factory import BackendFactory
+    from .sqlite_database import SQLiteMemoryDatabase
+    from .backends.sqlite_fallback import SQLiteFallbackBackend
+    from .utils.export_import import export_to_json, export_to_markdown
+
+    print(f"\n📤 Exporting memories to {args.format.upper()} format...")
+
+    try:
+        # Connect to database
+        backend = await BackendFactory.create_backend()
+
+        if not isinstance(backend, SQLiteFallbackBackend):
+            print("❌ Error: Export currently only supported for SQLite backend")
+            sys.exit(1)
+
+        db = SQLiteMemoryDatabase(backend)
+
+        # Perform export
+        if args.format == "json":
+            await export_to_json(db, args.output)
+            print(f"✅ Successfully exported to {args.output}")
+        elif args.format == "markdown":
+            await export_to_markdown(db, args.output)
+            print(f"✅ Successfully exported to {args.output}/")
+
+        await backend.disconnect()
+
+    except Exception as e:
+        print(f"❌ Export failed: {e}")
+        logger.error(f"Export failed: {e}", exc_info=True)
+        sys.exit(1)
+
+
+async def handle_import(args: argparse.Namespace) -> None:
+    """Handle import command."""
+    from .backends.factory import BackendFactory
+    from .sqlite_database import SQLiteMemoryDatabase
+    from .backends.sqlite_fallback import SQLiteFallbackBackend
+    from .utils.export_import import import_from_json
+
+    print(f"\n📥 Importing memories from {args.format.upper()} format...")
+
+    try:
+        # Connect to database
+        backend = await BackendFactory.create_backend()
+
+        if not isinstance(backend, SQLiteFallbackBackend):
+            print("❌ Error: Import currently only supported for SQLite backend")
+            sys.exit(1)
+
+        db = SQLiteMemoryDatabase(backend)
+        await db.initialize_schema()
+
+        # Perform import
+        if args.format == "json":
+            result = await import_from_json(db, args.input, skip_duplicates=args.skip_duplicates)
+
+            print(f"\n✅ Import complete:")
+            print(f"   - Imported: {result['imported_memories']} memories, {result['imported_relationships']} relationships")
+            if result['skipped_memories'] > 0 or result['skipped_relationships'] > 0:
+                print(f"   - Skipped: {result['skipped_memories']} memories, {result['skipped_relationships']} relationships")
+
+        await backend.disconnect()
+
+    except Exception as e:
+        print(f"❌ Import failed: {e}")
+        logger.error(f"Import failed: {e}", exc_info=True)
+        sys.exit(1)
+
+
 def print_config_summary() -> None:
     """Print current configuration summary."""
     config = Config.get_config_summary()
@@ -52,11 +124,17 @@ def validate_backend(backend: str) -> None:
 
 def validate_profile(profile: str) -> None:
     """Validate tool profile choice."""
-    valid_profiles = list(TOOL_PROFILES.keys())
+    valid_profiles = list(TOOL_PROFILES.keys()) + ["lite", "standard", "full"]  # Include legacy
     if profile not in valid_profiles:
         print(f"Error: Invalid profile '{profile}'")
-        print(f"Valid options: {', '.join(valid_profiles)}")
+        print(f"Valid options: core, extended (or legacy: lite, standard, full)")
         sys.exit(1)
+
+    # Warn about legacy profiles
+    legacy_map = {"lite": "core", "standard": "extended", "full": "extended"}
+    if profile in legacy_map:
+        print(f"⚠️  Warning: Profile '{profile}' is deprecated. Using '{legacy_map[profile]}' instead.")
+        print(f"   Update your configuration to use: --profile {legacy_map[profile]}")
 
 
 def main() -> None:
@@ -66,11 +144,14 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Start with default settings (SQLite backend, lite profile)
+  # Start with default settings (SQLite backend, core profile)
   memorygraph
 
-  # Use Neo4j backend with full tool profile
-  memorygraph --backend neo4j --profile full
+  # Use extended profile (11 tools)
+  memorygraph --profile extended
+
+  # Use Neo4j backend with extended profile
+  memorygraph --backend neo4j --profile extended
 
   # Show current configuration
   memorygraph --show-config
@@ -80,7 +161,7 @@ Examples:
 
 Environment Variables:
   MEMORY_BACKEND         Backend type (sqlite|neo4j|memgraph|auto) [default: sqlite]
-  MEMORY_TOOL_PROFILE    Tool profile (lite|standard|full) [default: lite]
+  MEMORY_TOOL_PROFILE    Tool profile (core|extended) [default: core]
   MEMORY_SQLITE_PATH     SQLite database path [default: ~/.memorygraph/memory.db]
   MEMORY_LOG_LEVEL       Log level (DEBUG|INFO|WARNING|ERROR) [default: INFO]
 
@@ -110,8 +191,8 @@ Environment Variables:
     parser.add_argument(
         "--profile",
         type=str,
-        choices=["lite", "standard", "full"],
-        help="Tool profile to use (overrides MEMORY_TOOL_PROFILE env var)"
+        choices=["core", "extended", "lite", "standard", "full"],  # Include legacy for compatibility
+        help="Tool profile to use: core (default, 9 tools) or extended (11 tools). Legacy profiles lite/standard/full are mapped to core/extended."
     )
 
     parser.add_argument(
@@ -131,6 +212,46 @@ Environment Variables:
         "--health",
         action="store_true",
         help="Run health check and exit"
+    )
+
+    # Export/Import subcommand
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Export command
+    export_parser = subparsers.add_parser("export", help="Export memories to file")
+    export_parser.add_argument(
+        "--format",
+        type=str,
+        choices=["json", "markdown"],
+        required=True,
+        help="Export format"
+    )
+    export_parser.add_argument(
+        "--output",
+        type=str,
+        required=True,
+        help="Output path (file for JSON, directory for Markdown)"
+    )
+
+    # Import command
+    import_parser = subparsers.add_parser("import", help="Import memories from file")
+    import_parser.add_argument(
+        "--format",
+        type=str,
+        choices=["json"],
+        required=True,
+        help="Import format (currently only JSON supported)"
+    )
+    import_parser.add_argument(
+        "--input",
+        type=str,
+        required=True,
+        help="Input JSON file path"
+    )
+    import_parser.add_argument(
+        "--skip-duplicates",
+        action="store_true",
+        help="Skip memories with existing IDs instead of overwriting"
     )
 
     args = parser.parse_args()
@@ -165,6 +286,15 @@ Environment Variables:
         # TODO: Implement proper health check
         print("Health check not yet implemented.")
         print("Use --show-config to see current configuration.")
+        sys.exit(0)
+
+    # Handle export/import commands
+    if args.command == "export":
+        asyncio.run(handle_export(args))
+        sys.exit(0)
+
+    if args.command == "import":
+        asyncio.run(handle_import(args))
         sys.exit(0)
 
     # Start the server

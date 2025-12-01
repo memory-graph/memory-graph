@@ -105,7 +105,7 @@ What should I do before committing code?
 
 ## Configuration Options
 
-### Standard Mode with More Tools
+### Extended Mode with More Tools
 
 ```yaml
 mcpServers:
@@ -113,7 +113,7 @@ mcpServers:
     command: memorygraph
     args:
       - "--profile"
-      - "standard"
+      - "extended"
 ```
 
 ### Custom Database Path
@@ -238,5 +238,5 @@ For JetBrains IDEs (IntelliJ, PyCharm, WebStorm, etc.):
 
 **Works with**: Continue.dev (VS Code and JetBrains)
 **Transport**: stdio
-**Profiles**: lite (8 tools), standard (15 tools), full (44 tools)
+**Profiles**: core (9 tools), extended (11 tools)
 **Config formats**: YAML, JSON

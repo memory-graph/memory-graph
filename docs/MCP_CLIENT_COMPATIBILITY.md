@@ -83,7 +83,7 @@ Different clients use different configuration formats:
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"],
+      "args": ["--profile", "extended"],
       "env": {
         "MEMORY_SQLITE_PATH": "~/.memorygraph/memory.db"
       }
@@ -132,19 +132,18 @@ mcpServers:
 
 ## Tool Profiles
 
-MemoryGraph offers three tool profiles:
+MemoryGraph offers two tool profiles:
 
 | Profile | Tools | Best For |
 |---------|-------|----------|
-| **lite** | 8 | Quick start, simple workflows |
-| **standard** | 15 | Pattern recognition, most users |
-| **full** | 44 | Advanced analytics, power users |
+| **core** (default) | 9 | Most users, essential daily tools |
+| **extended** | 11 | Power users, adds stats and complex queries |
 
 Configure via command line argument:
 
 ```json
 {
-  "args": ["--profile", "standard"]
+  "args": ["--profile", "extended"]
 }
 ```
 

@@ -40,7 +40,7 @@ class BackendFactory:
 
         Selection logic:
         - Default: SQLite (zero-config, no external dependencies)
-        - Explicit: Use MEMORY_BACKEND env var if set (neo4j, memgraph, sqlite, auto)
+        - Explicit: Use MEMORY_BACKEND env var if set (neo4j, memgraph, falkordb, falkordblite, sqlite, auto)
         - Auto: Try backends in order until one connects successfully
         """
         backend_type = os.getenv("MEMORY_BACKEND", "sqlite").lower()
@@ -53,6 +53,14 @@ class BackendFactory:
             logger.info("Explicit backend selection: Memgraph")
             return await BackendFactory._create_memgraph()
 
+        elif backend_type == "falkordb":
+            logger.info("Explicit backend selection: FalkorDB")
+            return await BackendFactory._create_falkordb()
+
+        elif backend_type == "falkordblite":
+            logger.info("Explicit backend selection: FalkorDBLite")
+            return await BackendFactory._create_falkordblite()
+
         elif backend_type == "sqlite":
             logger.info("Explicit backend selection: SQLite")
             return await BackendFactory._create_sqlite()
@@ -64,7 +72,7 @@ class BackendFactory:
         else:
             raise DatabaseConnectionError(
                 f"Unknown backend type: {backend_type}. "
-                f"Valid options: neo4j, memgraph, sqlite, auto"
+                f"Valid options: neo4j, memgraph, falkordb, falkordblite, sqlite, auto"
             )
 
     @staticmethod
@@ -164,6 +172,49 @@ class BackendFactory:
         return backend
 
     @staticmethod
+    async def _create_falkordb() -> GraphBackend:
+        """
+        Create and connect to FalkorDB backend.
+
+        Returns:
+            Connected FalkorDBBackend instance
+
+        Raises:
+            DatabaseConnectionError: If connection fails
+        """
+        # Lazy import - only load falkordb backend when needed
+        from .falkordb_backend import FalkorDBBackend
+
+        host = os.getenv("MEMORY_FALKORDB_HOST") or os.getenv("FALKORDB_HOST")
+        port_str = os.getenv("MEMORY_FALKORDB_PORT") or os.getenv("FALKORDB_PORT")
+        port = int(port_str) if port_str else None
+        password = os.getenv("MEMORY_FALKORDB_PASSWORD") or os.getenv("FALKORDB_PASSWORD")
+
+        backend = FalkorDBBackend(host=host, port=port, password=password)
+        await backend.connect()
+        return backend
+
+    @staticmethod
+    async def _create_falkordblite() -> GraphBackend:
+        """
+        Create and connect to FalkorDBLite backend.
+
+        Returns:
+            Connected FalkorDBLiteBackend instance
+
+        Raises:
+            DatabaseConnectionError: If connection fails
+        """
+        # Lazy import - only load falkordblite backend when needed
+        from .falkordblite_backend import FalkorDBLiteBackend
+
+        db_path = os.getenv("MEMORY_FALKORDBLITE_PATH") or os.getenv("FALKORDBLITE_PATH")
+
+        backend = FalkorDBLiteBackend(db_path=db_path)
+        await backend.connect()
+        return backend
+
+    @staticmethod
     async def _create_sqlite() -> GraphBackend:
         """
         Create and connect to SQLite fallback backend.
@@ -199,7 +250,7 @@ class BackendFactory:
         Check if a specific backend is configured via environment variables.
 
         Args:
-            backend_type: Backend type to check ("neo4j", "memgraph", "sqlite")
+            backend_type: Backend type to check ("neo4j", "memgraph", "falkordb", "falkordblite", "sqlite")
 
         Returns:
             True if backend appears to be configured
@@ -211,6 +262,13 @@ class BackendFactory:
             )
         elif backend_type == "memgraph":
             return bool(os.getenv("MEMORY_MEMGRAPH_URI"))
+        elif backend_type == "falkordb":
+            return bool(
+                os.getenv("MEMORY_FALKORDB_HOST") or
+                os.getenv("FALKORDB_HOST")
+            )
+        elif backend_type == "falkordblite":
+            return True  # FalkorDBLite is always available (embedded, like SQLite)
         elif backend_type == "sqlite":
             return True  # SQLite is always available if NetworkX is installed
         else:

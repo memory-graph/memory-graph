@@ -1,100 +1,113 @@
 # Tool Profiles Reference
 
-This document provides a complete inventory of all 44 MCP tools in MemoryGraph, organized by profile tier.
+This document provides a complete inventory of all implemented MCP tools in MemoryGraph, organized by profile tier.
 
 ## Profile Overview
 
 | Profile | Tool Count | Description | Use Case |
 |---------|------------|-------------|----------|
-| **lite** | 8 | Core memory operations | Quick setup, basic memory needs |
-| **standard** | 15 | Core + basic intelligence | Most users, balanced features |
-| **full** | 44 | All features | Power users, advanced analytics |
+| **core** | 9 | Essential memory operations | Default for 95% of users, zero-config |
+| **extended** | 11 | Core + advanced analytics | Power users needing stats & complex queries |
+
+## Quick Comparison
+
+| Feature | Core (Default) | Extended |
+|---------|----------------|----------|
+| Memory CRUD | ✅ 5 tools | ✅ 5 tools |
+| Relationships | ✅ 2 tools | ✅ 2 tools |
+| Discovery | ✅ 2 tools | ✅ 2 tools |
+| Database Stats | ❌ | ✅ 1 tool |
+| Complex Queries | ❌ | ✅ 1 tool |
+| Setup | Zero-config | Zero-config |
+| Backend | SQLite | SQLite |
 
 ---
 
-## Lite Profile (8 tools)
+## Core Profile (9 tools) - DEFAULT
 
-**Zero-config default**. Provides essential memory operations with no external dependencies.
+**Zero-config default**. Provides all essential memory operations for daily use.
 
-### Core Memory Operations (8 tools)
+### Essential Memory Operations (5 tools)
 
 1. **store_memory** - Store a new memory with context and metadata
-2. **get_memory** - Retrieve a specific memory by ID
-3. **search_memories** - Search for memories based on various criteria
-4. **update_memory** - Update an existing memory
-5. **delete_memory** - Delete a memory and all its relationships
+   - Capture solutions, problems, errors, patterns, decisions
+   - Add tags, importance scores, project context
+   - Returns memory_id for future reference
 
-### Core Relationship Operations (3 tools)
+2. **get_memory** - Retrieve a specific memory by ID with full details
+   - Get complete memory information
+   - Optionally include relationships
+   - Use after finding a memory in search
+
+3. **search_memories** - Advanced search with fine-grained control
+   - Full-text search across title, content, summary
+   - Filter by memory types, tags, importance
+   - Strict or fuzzy matching modes
+   - Boolean queries (any/all terms)
+
+4. **update_memory** - Update an existing memory
+   - Modify title, content, summary, tags
+   - Update importance scores
+   - Requires memory_id
+
+5. **delete_memory** - Delete a memory and all its relationships
+   - Permanent removal
+   - Cascades to delete relationships
+   - Requires memory_id
+
+### Essential Relationship Operations (2 tools)
 
 6. **create_relationship** - Create a relationship between two memories
+   - 35+ relationship types (SOLVES, CAUSES, REQUIRES, etc.)
+   - Optional strength and confidence scores
+   - Natural language context auto-extracted
+   - Enables "What solved X?" queries
+
 7. **get_related_memories** - Find memories related to a specific memory
-8. **get_memory_statistics** - Get statistics about the memory database
+   - Traverse relationships by type
+   - Control depth (1-5 levels)
+   - Explore knowledge graph connections
+   - Filter by relationship types
+
+### Discovery and Navigation (2 tools)
+
+8. **recall_memories** - Primary search with fuzzy matching (RECOMMENDED)
+   - Optimized for natural language queries
+   - Automatic fuzzy matching (handles plurals, tenses)
+   - Always includes relationship context
+   - Best starting point for recall queries
+   - Match quality hints and suggestions
+
+9. **get_recent_activity** - Session briefing and progress tracking
+   - Summary of recent memories (last N days)
+   - Breakdown by type (solutions, problems, etc.)
+   - Unresolved problems highlighted
+   - Project-scoped activity
+   - "Catch me up" functionality
 
 ---
 
-## Standard Profile (15 tools)
+## Extended Profile (11 tools)
 
-**Lite + basic intelligence**. Adds pattern recognition and context retrieval without heavy dependencies.
+**Core + advanced analytics**. For power users who need database statistics and complex relationship queries.
 
-### All Lite Tools (8)
-- (See above)
+### All Core Tools (9)
+- All tools from Core profile above
 
-### Intelligence Tools (7 additional)
+### Advanced Analytics (2 additional)
 
-9. **find_similar_solutions** - Find similar solutions to a given problem
-10. **suggest_patterns_for_context** - Suggest patterns based on current context
-11. **get_intelligent_context** - Get intelligent context for a query with token limiting
-12. **get_project_summary** - Get a summary of project-related memories
-13. **get_session_briefing** - Get a briefing of the current session
-14. **get_memory_history** - Get the history of a memory over time
-15. **track_entity_timeline** - Track timeline of entities across memories
+10. **get_memory_statistics** - Get comprehensive database statistics
+    - Total memories and relationships
+    - Breakdown by memory type
+    - Average importance and confidence scores
+    - Graph metrics overview
 
----
-
-## Full Profile (44 tools)
-
-**All features enabled**. Requires Neo4j or Memgraph for full graph analytics capabilities.
-
-### All Standard Tools (15)
-- (See above)
-
-### Advanced Relationship Tools (7 additional)
-
-16. **find_memory_path** - Find the shortest path between two memories through relationships
-17. **analyze_memory_clusters** - Detect clusters of densely connected memories
-18. **find_bridge_memories** - Find memories that connect different clusters (knowledge bridges)
-19. **suggest_relationship_type** - Get intelligent suggestions for relationship types between two memories
-20. **reinforce_relationship** - Reinforce a relationship based on successful usage
-21. **get_relationship_types_by_category** - List all relationship types in a specific category
-22. **analyze_graph_metrics** - Get comprehensive graph analytics and metrics
-
-### Integration Tools (11 additional)
-
-23. **detect_project** - Detect project information from a directory
-24. **analyze_project** - Analyze codebase structure and dependencies
-25. **track_file_changes** - Track file changes in a project
-26. **identify_patterns** - Identify code patterns in files
-27. **capture_task** - Capture context about a task being worked on
-28. **capture_command** - Capture command execution with results
-29. **track_error_solution** - Track error patterns and their solutions
-30. **track_workflow** - Track workflow actions in a session
-31. **suggest_workflow** - Suggest workflow based on history
-32. **optimize_workflow** - Optimize workflow based on performance data
-33. **get_session_state** - Get current session state and suggestions
-
-### Proactive Tools (11 additional)
-
-34. **get_session_briefing** - Get AI-generated session briefing (duplicate name, proactive version)
-35. **check_for_issues** - Check for potential issues in current context
-36. **get_suggestions** - Get proactive suggestions for current work
-37. **predict_solution_effectiveness** - Predict effectiveness of a solution
-38. **find_similar_solutions** - Find similar solutions (duplicate name, proactive version)
-39. **suggest_related_memories** - Suggest related memories proactively
-40. **identify_knowledge_gaps** - Identify gaps in knowledge graph
-41. **recommend_learning_paths** - Recommend learning paths based on goals
-42. **record_outcome** - Record the outcome of an action for learning
-43. **track_memory_roi** - Track return on investment for memories
-44. **get_graph_visualization** - Get graph visualization data for frontend
+11. **search_relationships_by_context** - Complex relationship queries
+    - Search by structured context fields (scope, conditions, evidence)
+    - Filter by implementation scope (partial/full/conditional)
+    - Find relationships with specific evidence types
+    - Query by components and temporal information
+    - Advanced relationship analytics
 
 ---
 
@@ -102,51 +115,42 @@ This document provides a complete inventory of all 44 MCP tools in MemoryGraph, 
 
 ### By Functionality
 
-| Category | Tools | Profile |
-|----------|-------|---------|
-| Memory CRUD | 5 | lite |
-| Relationships | 3 | lite |
-| Statistics | 1 | lite |
-| Pattern Recognition | 4 | standard |
-| Context Retrieval | 3 | standard |
-| Graph Analytics | 7 | full |
-| Project Integration | 11 | full |
-| Proactive Intelligence | 11 | full |
+| Category | Tools | Count | Profile |
+|----------|-------|-------|---------|
+| Memory CRUD | store_memory, get_memory, search_memories, update_memory, delete_memory | 5 | core |
+| Relationships | create_relationship, get_related_memories | 2 | core |
+| Discovery | recall_memories, get_recent_activity | 2 | core |
+| Statistics | get_memory_statistics | 1 | extended |
+| Advanced Queries | search_relationships_by_context | 1 | extended |
 
-### By Backend Compatibility
+### By Use Case
 
-| Backend | Compatible Tools | Notes |
-|---------|------------------|-------|
-| **SQLite** | All 44 tools | Some analytics may be slower on large graphs |
-| **Neo4j** | All 44 tools | Optimal performance for graph operations |
-| **Memgraph** | All 44 tools | Fastest graph analytics, best for full mode |
+| Use Case | Recommended Tools | Profile |
+|----------|-------------------|---------|
+| Store learnings | store_memory, create_relationship | core |
+| Find past solutions | recall_memories, get_related_memories | core |
+| Session briefing | get_recent_activity | core |
+| Advanced search | search_memories, search_relationships_by_context | core, extended |
+| Database insights | get_memory_statistics | extended |
+| Complex analytics | search_relationships_by_context, get_memory_statistics | extended |
 
 ---
 
 ## Choosing Your Profile
 
-### Use **Lite** Profile If:
-- You want zero configuration
-- You need basic memory storage and retrieval
-- You're just getting started
-- You have simple relationship tracking needs
-- You prefer SQLite backend
+### Use **Core** Profile If:
+- ✅ You're getting started
+- ✅ You need basic memory storage and retrieval
+- ✅ You want zero configuration
+- ✅ You're a typical user (95% of use cases)
+- ✅ You want the simplest setup
 
-### Use **Standard** Profile If:
-- You need pattern recognition
-- You want intelligent context suggestions
-- You work on projects and want summaries
-- You need session briefings
-- You want more than basic search
-
-### Use **Full** Profile If:
-- You need advanced graph analytics
-- You want workflow automation
-- You need proactive suggestions
-- You want to track code patterns
-- You need project integration features
-- You want visualization capabilities
-- You're using Neo4j or Memgraph
+### Use **Extended** Profile If:
+- ✅ You need database statistics
+- ✅ You want advanced relationship queries
+- ✅ You're analyzing patterns across large memory sets
+- ✅ You need scope/evidence-based relationship filtering
+- ✅ You're a power user who wants all capabilities
 
 ---
 
@@ -155,27 +159,21 @@ This document provides a complete inventory of all 44 MCP tools in MemoryGraph, 
 ### Environment Variable
 
 ```bash
-# Default (lite)
-export MEMORY_TOOL_PROFILE=lite
+# Core (default)
+export MEMORY_TOOL_PROFILE=core
 
-# Standard
-export MEMORY_TOOL_PROFILE=standard
-
-# Full power
-export MEMORY_TOOL_PROFILE=full
+# Extended
+export MEMORY_TOOL_PROFILE=extended
 ```
 
 ### CLI Flag
 
 ```bash
-# Default (lite)
+# Core (default)
 memorygraph
 
-# Standard
-memorygraph --profile standard
-
-# Full
-memorygraph --profile full --backend neo4j
+# Extended
+memorygraph --profile extended
 ```
 
 ### MCP Configuration
@@ -185,7 +183,7 @@ memorygraph --profile full --backend neo4j
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"],
+      "args": ["--profile", "extended"],
       "env": {
         "MEMORY_BACKEND": "sqlite"
       }
@@ -196,24 +194,98 @@ memorygraph --profile full --backend neo4j
 
 ---
 
-## Implementation Status
+## Backend Compatibility
 
-**Phase 8.0 - Pre-flight Validation**
-- ✅ Tool inventory complete (44 tools identified)
-- ✅ Tool categories documented
-- ✅ Profile tiers defined (lite/standard/full)
-- ⏳ Currently only 15 tools registered in server.py (8 core + 7 advanced relationship)
-- ⏳ Integration and proactive tools defined but not yet registered
-- ⏳ Tool profiling system to be implemented in Phase 8.3
+| Backend | Compatible Tools | Notes |
+|---------|------------------|-------|
+| **SQLite** | All 11 tools | Default backend, zero configuration |
+| **Neo4j** | All 11 tools | Requires setup, optimal for large graphs |
+| **Memgraph** | All 11 tools | Requires setup, fastest analytics |
 
-**Next Steps**
-- Phase 8.3 will implement the profiling system
-- All 44 tools will be registered with filtering
-- Profile selection via env var or CLI flag
+All profiles work with all backends. The profile controls *which tools are exposed*, not *which backend is used*.
 
 ---
 
-**Last Updated**: November 28, 2025
-**Total Tools**: 44
-**Profiles**: 3 (lite/standard/full)
+## Migration from Legacy Profiles
+
+Previous versions used three profiles (lite/standard/full). The system now uses two profiles (core/extended).
+
+**Automatic Migration:**
+- `lite` → `core` (9 tools)
+- `standard` → `extended` (11 tools)
+- `full` → `extended` (11 tools)
+
+Legacy profile names are still supported but will be automatically mapped to the new profiles.
+
+**What Changed:**
+- **Removed**: 33 unimplemented "vaporware" tools that were documented but not built
+- **Kept**: All 11 actually implemented and tested tools
+- **Simplified**: From 3 tiers to 2 tiers (Core/Extended)
+- **Focused**: Core mode is now the default, works for 95% of users
+
+---
+
+## Implementation Status
+
+**Current Status (v0.7.1+)**
+- ✅ All 11 tools fully implemented and tested
+- ✅ 409 tests with 93% coverage
+- ✅ Profile filtering system working
+- ✅ Core/Extended profiles defined
+- ✅ Legacy profile compatibility (lite/standard/full → core/extended)
+
+**Tools Removed from Documentation**
+- 33 unimplemented tools removed (intelligence, integration, proactive categories)
+- Tools were either redundant (Claude already does it) or YAGNI (not needed)
+- Focus shifted to stable, tested, production-ready tools
+
+---
+
+## Tool Selection Guide
+
+### For Search and Recall
+
+**Primary tool**: `recall_memories`
+- Best for: "What did we learn about X?"
+- Features: Fuzzy matching, relationship context, match quality hints
+- Use when: You want natural language search with smart defaults
+
+**Secondary tool**: `search_memories`
+- Best for: Exact matching, multi-term boolean queries
+- Features: Full control, strict/normal/fuzzy modes, advanced filters
+- Use when: You need precise control or recall_memories didn't find what you need
+
+### For Relationships
+
+**Primary tool**: `create_relationship`
+- Creates links between memories (solution SOLVES problem, etc.)
+- 35+ relationship types across 7 categories
+
+**Secondary tool**: `get_related_memories`
+- Explores connections by traversing relationships
+- Filter by type, control depth
+
+### For Session Context
+
+**Primary tool**: `get_recent_activity`
+- "Catch me up" functionality
+- Shows recent work, unresolved problems
+- Project-scoped summaries
+
+### For Analytics (Extended only)
+
+**Primary tool**: `get_memory_statistics`
+- Database overview and metrics
+- Breakdown by type, importance, etc.
+
+**Secondary tool**: `search_relationships_by_context`
+- Complex relationship queries
+- Scope/evidence/condition filtering
+
+---
+
+**Last Updated**: December 1, 2025
+**Total Implemented Tools**: 11
+**Profiles**: 2 (core/extended)
+**Default Profile**: core
 **Backends**: 3 (SQLite/Neo4j/Memgraph)

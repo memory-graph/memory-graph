@@ -19,21 +19,25 @@ class BackendType(Enum):
 
 
 # Tool profile definitions
+# Core mode: Essential tools for daily use (9 tools)
+# Extended mode: Core + advanced analytics (11 tools)
 TOOL_PROFILES = {
-    "lite": [
-        # Core memory operations (5 tools)
+    "core": [
+        # Essential memory operations (5 tools)
         "store_memory",
         "get_memory",
         "search_memories",
         "update_memory",
         "delete_memory",
-        # Core relationship operations (3 tools)
+        # Essential relationship operations (2 tools)
         "create_relationship",
         "get_related_memories",
-        "get_memory_statistics",
+        # Discovery and navigation (2 tools)
+        "recall_memories",  # Primary search with fuzzy matching
+        "get_recent_activity",  # Session briefing
     ],
-    "standard": [
-        # Lite tools (8)
+    "extended": [
+        # All Core tools (9)
         "store_memory",
         "get_memory",
         "search_memories",
@@ -41,17 +45,12 @@ TOOL_PROFILES = {
         "delete_memory",
         "create_relationship",
         "get_related_memories",
-        "get_memory_statistics",
-        # Intelligence tools (7 additional)
-        "find_similar_solutions",
-        "suggest_patterns_for_context",
-        "get_intelligent_context",
-        "get_project_summary",
-        "get_session_briefing",
-        "get_memory_history",
-        "track_entity_timeline",
+        "recall_memories",
+        "get_recent_activity",
+        # Advanced analytics (2 additional)
+        "get_memory_statistics",  # Database stats
+        "search_relationships_by_context",  # Complex relationship queries
     ],
-    "full": None,  # None means all tools enabled
 }
 
 
@@ -76,7 +75,7 @@ class Config:
             MEMORY_SQLITE_PATH: Database file path [default: ~/.memorygraph/memory.db]
 
         Tool Profile Configuration:
-            MEMORY_TOOL_PROFILE: Tool profile (lite|standard|full) [default: lite]
+            MEMORY_TOOL_PROFILE: Tool profile (core|extended) [default: core]
 
         Logging Configuration:
             MEMORY_LOG_LEVEL: Log level (DEBUG|INFO|WARNING|ERROR) [default: INFO]
@@ -100,7 +99,7 @@ class Config:
     SQLITE_PATH: str = os.getenv("MEMORY_SQLITE_PATH", os.path.expanduser("~/.memorygraph/memory.db"))
 
     # Tool Profile Configuration
-    TOOL_PROFILE: str = os.getenv("MEMORY_TOOL_PROFILE", "lite")
+    TOOL_PROFILE: str = os.getenv("MEMORY_TOOL_PROFILE", "core")
 
     # Logging Configuration
     LOG_LEVEL: str = os.getenv("MEMORY_LOG_LEVEL", "INFO")
@@ -141,10 +140,17 @@ class Config:
         Get the list of enabled tools based on the configured profile.
 
         Returns:
-            List of tool names to enable, or None for all tools (full profile)
+            List of tool names to enable, or None for legacy profiles (defaults to core)
         """
         profile = cls.TOOL_PROFILE.lower()
-        return TOOL_PROFILES.get(profile, TOOL_PROFILES["lite"])
+        # Map legacy profiles to new ones
+        legacy_map = {
+            "lite": "core",
+            "standard": "extended",
+            "full": "extended"
+        }
+        profile = legacy_map.get(profile, profile)
+        return TOOL_PROFILES.get(profile, TOOL_PROFILES["core"])
 
     @classmethod
     def get_config_summary(cls) -> dict:

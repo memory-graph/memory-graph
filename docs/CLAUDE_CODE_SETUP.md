@@ -10,7 +10,7 @@ Step-by-step guide to integrate MemoryGraph with Claude Code.
 4. [MCP Configuration](#mcp-configuration)
 5. [Verifying Connection](#verifying-connection)
 6. [First Memory](#first-memory)
-7. [Upgrading to Full Mode](#upgrading-to-full-mode)
+7. [Upgrading to Extended Mode](#upgrading-to-extended-mode)
 8. [Troubleshooting](#troubleshooting)
 9. [Usage Tips](#usage-tips)
 
@@ -253,11 +253,11 @@ claude mcp add --transport stdio memorygraph memorygraph --scope user
 
 # Project A: Standard profile with intelligence
 cd /path/to/project-a
-claude mcp add --transport stdio memorygraph-ai memorygraph --scope project --profile standard
+claude mcp add --transport stdio memorygraph-ai memorygraph --scope project --profile extended
 
 # Project B: Full profile with Neo4j
 cd /path/to/project-b
-claude mcp add --transport stdio memorygraph-full memorygraph --scope project --profile full \
+claude mcp add --transport stdio memorygraph-full memorygraph --scope project --profile extended \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=your-password
@@ -269,26 +269,26 @@ Use when: Different projects need different capabilities.
 ```bash
 # Prerequisite: pipx install "memorygraphMCP[intelligence]" (must be run first)
 # User scope (global)
-claude mcp add --transport stdio memorygraph memorygraph --profile standard
+claude mcp add --transport stdio memorygraph memorygraph --profile extended
 
 # Or project scope
-claude mcp add --transport stdio memorygraph memorygraph --scope project --profile standard
+claude mcp add --transport stdio memorygraph memorygraph --scope project --profile extended
 ```
 
 This adds:
 - Pattern recognition
 - Intelligence features
-- 15 tools total
+- 11 tools total
 
 #### Full Configuration (SQLite)
 
 ```bash
 # Prerequisite: pipx install "memorygraphMCP[intelligence]" (must be run first)
-claude mcp add --transport stdio memorygraph memorygraph --profile full
+claude mcp add --transport stdio memorygraph memorygraph --profile extended
 ```
 
 This enables:
-- All 44 tools
+- 11 tools total
 - Graph analytics
 - Advanced features
 
@@ -296,14 +296,14 @@ This enables:
 
 ```bash
 # Prerequisite: pipx install "memorygraphMCP[neo4j,intelligence]" (must be run first)
-claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+claude mcp add --transport stdio memorygraph memorygraph --profile extended --backend neo4j \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=your-password
 ```
 
 This enables:
-- All 44 tools
+- 11 tools total
 - Neo4j backend
 - Graph analytics
 - Advanced features
@@ -434,7 +434,7 @@ This uses:
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
@@ -443,7 +443,7 @@ This uses:
 This adds:
 - Pattern recognition
 - Intelligence features
-- 15 tools total
+- 11 tools total
 
 #### Full Configuration (Neo4j)
 
@@ -452,7 +452,7 @@ This adds:
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -464,7 +464,7 @@ This adds:
 ```
 
 This enables:
-- All 44 tools
+- 11 tools total
 - Graph analytics
 - Advanced features
 
@@ -484,7 +484,7 @@ If you insist on using uvx (for testing purposes only):
       "args": ["memorygraph"],
       "env": {
         "MEMORY_SQLITE_PATH": "/Users/yourname/.memorygraph/memory.db",
-        "MEMORY_TOOL_PROFILE": "lite"
+        "MEMORY_TOOL_PROFILE": "core"
       }
     }
   }
@@ -637,11 +637,11 @@ Claude will find both memories and their relationship!
 
 ---
 
-## Upgrading to Full Mode
+## Upgrading to Extended Mode
 
 ### Why Upgrade?
 
-Upgrade to full mode when you need:
+Upgrade to extended mode when you need:
 - Graph analytics (cluster analysis, path finding)
 - Workflow automation
 - Project integration (codebase scanning)
@@ -650,7 +650,7 @@ Upgrade to full mode when you need:
 
 ### Prerequisites
 
-1. **Set up Neo4j or Memgraph** (see [FULL_MODE.md](FULL_MODE.md))
+1. **Set up Neo4j or Memgraph** (see [DEPLOYMENT.md](DEPLOYMENT.md))
 
 **Quick Neo4j Setup**:
 ```bash
@@ -676,7 +676,7 @@ Edit `~/.claude/mcp.json`:
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -692,7 +692,7 @@ Edit `~/.claude/mcp.json`:
 
 1. Restart Claude Code
 2. Ask: "How many memory tools do you have now?"
-3. Claude should report 44 tools (full mode)
+3. Claude should report 11 tools (extended mode)
 
 ### Migrate Existing Data
 
@@ -800,7 +800,7 @@ memorygraph --show-config
 ```json
 {
   "command": "memorygraph",
-  "args": ["--profile", "full"]
+  "args": ["--profile", "extended"]
 }
 ```
 
@@ -822,9 +822,9 @@ ls -lh ~/.memorygraph/memory.db
 # Check Claude Code memory usage
 ps aux | grep memorygraph
 
-# Consider using lite profile if not needed
+# Consider using core profile if not needed
 {
-  "args": ["--profile", "lite"]
+  "args": ["--profile", "core"]
 }
 ```
 
@@ -922,7 +922,7 @@ ps aux | grep memorygraph
 
 ## Advanced Features
 
-### Intelligence Features (Standard Profile)
+### Intelligence Features (Extended Profile)
 
 **Find Similar Solutions**:
 ```
@@ -939,7 +939,7 @@ ps aux | grep memorygraph
 "Give me a briefing of what we worked on this session"
 ```
 
-### Analytics (Full Profile)
+### Analytics (Extended Profile)
 
 **Cluster Analysis**:
 ```
@@ -956,7 +956,7 @@ ps aux | grep memorygraph
 "Based on my history, what's the next step when implementing a new API endpoint?"
 ```
 
-### Project Integration (Full Profile)
+### Project Integration (Extended Profile)
 
 **Analyze Codebase**:
 ```
@@ -985,7 +985,7 @@ ps aux | grep memorygraph
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
@@ -997,7 +997,7 @@ ps aux | grep memorygraph
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://team-server:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -1014,7 +1014,7 @@ ps aux | grep memorygraph
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "memgraph", "--profile", "full"],
+      "args": ["--backend", "memgraph", "--profile", "extended"],
       "env": {
         "MEMORY_MEMGRAPH_URI": "bolt://localhost:7687"
       }
@@ -1039,7 +1039,7 @@ ps aux | grep memorygraph
 
 ## Best Practices
 
-1. **Start Simple**: Begin with lite profile, upgrade when needed
+1. **Start Simple**: Begin with core profile, upgrade when needed
 2. **Be Consistent**: Use consistent tags and naming conventions
 3. **Create Relationships**: Link related memories for better retrieval
 4. **Use Memory Types**: Choose appropriate types for context
@@ -1057,12 +1057,12 @@ ps aux | grep memorygraph
 3. **Explore Search**: Try different search queries
 4. **Track Patterns**: Store successful approaches
 5. **Monitor Usage**: See how memory helps your workflow
-6. **Upgrade When Ready**: Move to full mode for advanced features
+6. **Upgrade When Ready**: Move to extended mode for advanced features
 
 For more information:
 - [README.md](../README.md) - Overview and features
 - [TOOL_PROFILES.md](TOOL_PROFILES.md) - Complete tool reference
-- [FULL_MODE.md](FULL_MODE.md) - Advanced features guide
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Advanced features guide
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment options
 - [GitHub Issues](https://github.com/gregorydickson/memory-graph/issues) - Support
 

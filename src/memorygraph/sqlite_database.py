@@ -10,7 +10,7 @@ import logging
 import json
 import uuid
 from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .models import (
     Memory, MemoryType, MemoryNode, Relationship, RelationshipType,
@@ -302,8 +302,47 @@ class SQLiteMemoryDatabase:
             where_conditions = ["label = 'Memory'"]
             params = []
 
-            # Text search with tolerance-based matching
-            if search_query.query:
+            # Multi-term search (takes precedence over single query)
+            if search_query.terms:
+                tolerance = search_query.search_tolerance or "normal"
+                match_mode = search_query.match_mode or "any"
+
+                term_conditions = []
+                for term in search_query.terms:
+                    if tolerance == "strict":
+                        # Strict mode: exact substring match only
+                        pattern = f"%{term.lower()}%"
+                        term_conditions.append(
+                            "(json_extract(properties, '$.title') LIKE ? OR "
+                            "json_extract(properties, '$.content') LIKE ? OR "
+                            "json_extract(properties, '$.summary') LIKE ?)"
+                        )
+                        params.extend([pattern, pattern, pattern])
+                    else:
+                        # Normal/fuzzy mode: use stemming
+                        patterns = _generate_fuzzy_patterns(term)
+                        pattern_conditions = []
+                        for pattern, weight in patterns:
+                            pattern_conditions.append(
+                                "(json_extract(properties, '$.title') LIKE ? OR "
+                                "json_extract(properties, '$.content') LIKE ? OR "
+                                "json_extract(properties, '$.summary') LIKE ?)"
+                            )
+                            params.extend([pattern, pattern, pattern])
+                        if pattern_conditions:
+                            term_conditions.append(f"({' OR '.join(pattern_conditions)})")
+
+                # Combine term conditions based on match_mode
+                if term_conditions:
+                    if match_mode == "all":
+                        # AND: all terms must match
+                        where_conditions.append(f"({' AND '.join(term_conditions)})")
+                    else:
+                        # OR: any term matches (default)
+                        where_conditions.append(f"({' OR '.join(term_conditions)})")
+
+            # Text search with tolerance-based matching (single query)
+            elif search_query.query:
                 tolerance = search_query.search_tolerance or "normal"
 
                 if tolerance == "strict":
@@ -418,6 +457,45 @@ class SQLiteMemoryDatabase:
                 if memory:
                     memories.append(memory)
 
+            # Enrich results with relationships and match info if requested
+            if search_query.include_relationships:
+                # Use terms for enrichment if provided, otherwise use query
+                search_text = (search_query.terms[0] if search_query.terms
+                              else search_query.query)
+                memories = await self._enrich_search_results(
+                    memories,
+                    search_text
+                )
+
+            # Apply relationship filter if specified
+            if search_query.relationship_filter:
+                filtered_memories = []
+                for memory in memories:
+                    # Check if memory has any of the specified relationship types
+                    if hasattr(memory, 'relationships') and memory.relationships:
+                        # relationships is a dict like {"SOLVES": ["title1", "title2"], ...}
+                        has_matching_relationship = any(
+                            rel_type in search_query.relationship_filter
+                            for rel_type in memory.relationships.keys()
+                        )
+                        if has_matching_relationship:
+                            filtered_memories.append(memory)
+                    else:
+                        # If relationship_filter is specified but memory has no relationships,
+                        # we need to query relationships manually
+                        query_rels = """
+                            SELECT type FROM relationships
+                            WHERE from_memory_id = ? OR to_memory_id = ?
+                        """
+                        rel_result = self.backend.execute_sync(
+                            query_rels,
+                            (memory.id, memory.id)
+                        )
+                        rel_types = {row['type'] for row in rel_result}
+                        if any(rel_type in search_query.relationship_filter for rel_type in rel_types):
+                            filtered_memories.append(memory)
+                memories = filtered_memories
+
             logger.info(f"Found {len(memories)} memories for search query")
             return memories
 
@@ -426,6 +504,169 @@ class SQLiteMemoryDatabase:
                 raise
             logger.error(f"Failed to search memories: {e}")
             raise DatabaseConnectionError(f"Failed to search memories: {e}")
+
+    async def _enrich_search_results(
+        self,
+        memories: List[Memory],
+        query: Optional[str] = None
+    ) -> List[Memory]:
+        """
+        Enrich search results with relationship context and match quality hints.
+
+        Args:
+            memories: List of memories to enrich
+            query: Original search query for match analysis
+
+        Returns:
+            List of enriched Memory objects with relationships, match_info, and context_summary
+        """
+        try:
+            enriched_memories = []
+
+            for memory in memories:
+                # Get immediate relationships for this memory
+                related = await self.get_related_memories(
+                    memory.id,
+                    relationship_types=None,  # Get all types
+                    max_depth=1  # Only immediate relationships
+                )
+
+                # Group relationships by type
+                relationships_by_type = {}
+                for related_memory, relationship in related:
+                    rel_type_key = relationship.type.value.lower()
+
+                    if rel_type_key not in relationships_by_type:
+                        relationships_by_type[rel_type_key] = []
+
+                    # Add related memory title to the list
+                    relationships_by_type[rel_type_key].append(related_memory.title)
+
+                # Add match quality hints
+                match_info = self._generate_match_info(memory, query)
+
+                # Generate context summary
+                context_summary = self._generate_context_summary(
+                    memory,
+                    relationships_by_type
+                )
+
+                # Update memory with enriched data
+                memory.relationships = relationships_by_type if relationships_by_type else {}
+                memory.match_info = match_info
+                memory.context_summary = context_summary
+
+                enriched_memories.append(memory)
+
+            return enriched_memories
+
+        except Exception as e:
+            # If enrichment fails, log warning and return original memories
+            logger.warning(f"Failed to enrich search results: {e}")
+            return memories
+
+    def _generate_match_info(
+        self,
+        memory: Memory,
+        query: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate match quality hints for a search result.
+
+        Args:
+            memory: Memory object
+            query: Search query string
+
+        Returns:
+            Dictionary with match information
+        """
+        matched_fields = []
+        matched_terms = []
+        match_quality = "low"
+
+        if query:
+            query_lower = query.lower()
+            query_terms = query_lower.split()
+
+            # Check which fields matched
+            if memory.title and query_lower in memory.title.lower():
+                matched_fields.append("title")
+                match_quality = "high"  # Title matches are high quality
+
+            if memory.content and query_lower in memory.content.lower():
+                matched_fields.append("content")
+                if match_quality == "low":
+                    match_quality = "medium"
+
+            if memory.summary and query_lower in memory.summary.lower():
+                matched_fields.append("summary")
+                if match_quality == "low":
+                    match_quality = "medium"
+
+            # Check tags
+            for tag in memory.tags:
+                if any(term in tag.lower() for term in query_terms):
+                    matched_fields.append("tags")
+                    break
+
+            # Identify which terms matched
+            for term in query_terms:
+                term_found = False
+                if memory.title and term in memory.title.lower():
+                    term_found = True
+                elif memory.content and term in memory.content.lower():
+                    term_found = True
+                elif memory.summary and term in memory.summary.lower():
+                    term_found = True
+
+                if term_found:
+                    matched_terms.append(term)
+
+        return {
+            "matched_fields": matched_fields,
+            "matched_terms": matched_terms,
+            "match_quality": match_quality
+        }
+
+    def _generate_context_summary(
+        self,
+        memory: Memory,
+        relationships: Dict[str, List[str]]
+    ) -> str:
+        """
+        Generate a natural language context summary for a memory.
+
+        Args:
+            memory: Memory object
+            relationships: Dict of relationship types to related memory titles
+
+        Returns:
+            Concise natural language summary (<100 chars)
+        """
+        summary_parts = []
+
+        # Start with memory type
+        summary_parts.append(memory.type.value.replace('_', ' ').capitalize())
+
+        # Add key relationship information
+        if 'solves' in relationships and relationships['solves']:
+            problems = relationships['solves'][:2]  # Limit to 2
+            summary_parts.append(f"solves {', '.join(problems)}")
+        elif 'solved_by' in relationships and relationships['solved_by']:
+            solutions = relationships['solved_by'][:1]
+            summary_parts.append(f"solved by {solutions[0]}")
+
+        if 'used_in' in relationships and relationships['used_in']:
+            projects = relationships['used_in'][:1]
+            summary_parts.append(f"in {projects[0]}")
+
+        # Join parts with appropriate separators
+        if len(summary_parts) == 1:
+            return summary_parts[0]
+        elif len(summary_parts) == 2:
+            return f"{summary_parts[0]} {summary_parts[1]}"
+        else:
+            return f"{summary_parts[0]} {summary_parts[1]}, {summary_parts[2]}"
 
     async def update_memory(self, memory: Memory) -> bool:
         """
@@ -942,6 +1183,120 @@ class SQLiteMemoryDatabase:
         except Exception as e:
             logger.error(f"Failed to get statistics: {e}")
             raise DatabaseConnectionError(f"Failed to get statistics: {e}")
+
+    async def get_recent_activity(
+        self,
+        days: int = 7,
+        project: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get recent activity summary for session briefing.
+
+        Args:
+            days: Number of days to look back (default: 7)
+            project: Optional project path filter
+
+        Returns:
+            Dictionary containing:
+            - total_count: Total number of memories in timeframe
+            - memories_by_type: Count of memories grouped by type
+            - recent_memories: List of recent memories (limited to 20)
+            - unresolved_problems: List of problems with no SOLVES relationship
+            - days: Number of days queried
+            - project: Project filter applied (if any)
+
+        Raises:
+            DatabaseConnectionError: If query fails
+        """
+        try:
+            # Calculate cutoff date
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            cutoff_iso = cutoff_date.isoformat()
+
+            # Build WHERE conditions
+            where_conditions = [
+                "label = 'Memory'",
+                "json_extract(properties, '$.created_at') >= ?"
+            ]
+            params = [cutoff_iso]
+
+            # Add project filter if specified
+            if project:
+                where_conditions.append("json_extract(properties, '$.context_project_path') = ?")
+                params.append(project)
+
+            where_clause = " AND ".join(where_conditions)
+
+            # Get total count
+            count_query = f"SELECT COUNT(*) as count FROM nodes WHERE {where_clause}"
+            count_result = self.backend.execute_sync(count_query, tuple(params))
+            total_count = count_result[0]['count'] if count_result else 0
+
+            # Get memories by type
+            type_query = f"""
+                SELECT
+                    json_extract(properties, '$.type') as type,
+                    COUNT(*) as count
+                FROM nodes
+                WHERE {where_clause}
+                GROUP BY json_extract(properties, '$.type')
+            """
+            type_result = self.backend.execute_sync(type_query, tuple(params))
+            memories_by_type = {row['type']: row['count'] for row in type_result} if type_result else {}
+
+            # Get recent memories (limited to 20)
+            recent_query = f"""
+                SELECT properties
+                FROM nodes
+                WHERE {where_clause}
+                ORDER BY json_extract(properties, '$.created_at') DESC
+                LIMIT 20
+            """
+            recent_result = self.backend.execute_sync(recent_query, tuple(params))
+
+            recent_memories = []
+            for row in recent_result:
+                properties = json.loads(row['properties'])
+                memory = self._properties_to_memory(properties)
+                if memory:
+                    recent_memories.append(memory)
+
+            # Find unresolved problems (problems with no incoming SOLVES relationships)
+            unresolved_query = f"""
+                SELECT n.properties
+                FROM nodes n
+                WHERE {where_clause}
+                    AND json_extract(properties, '$.type') IN ('problem', 'error')
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM relationships r
+                        WHERE r.to_id = n.id
+                            AND r.rel_type IN ('SOLVES', 'FIXES', 'ADDRESSES')
+                    )
+                ORDER BY CAST(json_extract(properties, '$.importance') AS REAL) DESC
+                LIMIT 10
+            """
+            unresolved_result = self.backend.execute_sync(unresolved_query, tuple(params))
+
+            unresolved_problems = []
+            for row in unresolved_result:
+                properties = json.loads(row['properties'])
+                memory = self._properties_to_memory(properties)
+                if memory:
+                    unresolved_problems.append(memory)
+
+            return {
+                "total_count": total_count,
+                "memories_by_type": memories_by_type,
+                "recent_memories": recent_memories,
+                "unresolved_problems": unresolved_problems,
+                "days": days,
+                "project": project
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get recent activity: {e}")
+            raise DatabaseConnectionError(f"Failed to get recent activity: {e}")
 
     def _properties_to_memory(self, properties: Dict[str, Any]) -> Optional[Memory]:
         """

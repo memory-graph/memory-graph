@@ -6,7 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/memorygraph)](https://pypi.org/project/memorygraph/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![Zero Config](https://img.shields.io/badge/setup-zero--config-green)](docs/DEPLOYMENT.md)
-[![3 Backends](https://img.shields.io/badge/backends-SQLite%20%7C%20Neo4j%20%7C%20Memgraph-purple)](docs/FULL_MODE.md)
+[![5 Backends](https://img.shields.io/badge/backends-5%20options-purple)](docs/DEPLOYMENT.md)
 
 A graph-based [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that gives AI coding agents persistent memory. Store patterns, track relationships, retrieve knowledge across sessions.
 
@@ -41,7 +41,11 @@ Then in Claude Code: *"Store this for later: Use pytest for Python testing"*
 >
 > **Command not found?** Run `pipx ensurepath` and restart your terminal.
 
----
+**Tip:** Add this to your CLAUDE.md or AGENTS.md to encourage use:
+```markdown
+## Memory Tools
+When recalling past work, always start with `recall_memories` tool
+```
 
 ## Supported MCP Clients
 
@@ -104,23 +108,25 @@ MemoryGraph tracks 7 categories of relationships:
 
 ## Choose Your Mode
 
-| Feature | Lite (Default) | Standard | Full |
-|---------|----------------|----------|------|
-| Memory Storage | 8 tools | 15 tools | 44 tools |
-| Relationships | Basic | Basic | Advanced |
-| Pattern Recognition | - | Yes | Yes |
-| Session Briefings | - | Yes | Yes |
-| Graph Analytics | - | - | Yes |
-| Backend | SQLite | SQLite | SQLite/Neo4j/Memgraph |
-| Setup Time | 30 sec | 30 sec | 5 min |
+| Feature | Core (Default) | Extended |
+|---------|----------------|----------|
+| Memory Storage | 9 tools | 11 tools |
+| Relationships | Yes | Yes |
+| Session Briefings | Yes | Yes |
+| Database Stats | - | Yes |
+| Complex Queries | - | Yes |
+| Backend | SQLite | SQLite |
+| Setup Time | 30 sec | 30 sec |
 
 ```bash
-memorygraph                      # Lite (default)
-memorygraph --profile standard   # Pattern recognition
-memorygraph --profile full       # All features
+memorygraph                    # Core (default, 9 tools)
+memorygraph --profile extended # Extended (11 tools)
 ```
 
-See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list.
+**Core mode** provides all essential tools for daily use and works for 95% of users.
+**Extended mode** adds database statistics and complex relationship queries for power users.
+
+See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list and details.
 
 ---
 
@@ -129,9 +135,10 @@ See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list.
 ### pipx (Recommended)
 
 ```bash
-pipx install memorygraphMCP                      # Lite mode
-pipx install "memorygraphMCP[intelligence]"      # Standard mode
-pipx install "memorygraphMCP[neo4j,intelligence]" # Full mode + Neo4j
+pipx install memorygraphMCP                      # Core mode (default, SQLite)
+pipx install "memorygraphMCP[neo4j]"             # With Neo4j backend support
+pipx install "memorygraphMCP[falkordblite]"      # With FalkorDBLite backend (embedded)
+pipx install "memorygraphMCP[falkordb]"          # With FalkorDB backend (client-server)
 ```
 
 ### pip
@@ -169,18 +176,18 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed options.
 ### Claude Code CLI
 
 ```bash
-# Lite mode (default)
+# Core mode (default)
 claude mcp add --scope user memorygraph -- memorygraph
 
-# Standard mode
-claude mcp add --scope user memorygraph -- memorygraph --profile standard
+# Extended mode
+claude mcp add --scope user memorygraph -- memorygraph --profile extended
 
-# Full mode with Neo4j
+# Extended mode with Neo4j backend
 claude mcp add --scope user memorygraph \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=password \
-  -- memorygraph --profile full --backend neo4j
+  -- memorygraph --profile extended --backend neo4j
 ```
 
 ### Other MCP Clients
@@ -190,13 +197,26 @@ claude mcp add --scope user memorygraph \
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
 ```
 
 See [CONFIGURATION.md](docs/CONFIGURATION.md) for all options.
+
+### Recommended: Add to CLAUDE.md
+
+For best results, add this to your `CLAUDE.md` or project instructions:
+
+```markdown
+## Memory Tools
+When recalling past work or learnings, always start with `recall_memories`
+before using `search_memories`. The recall tool has optimized defaults
+for natural language queries (fuzzy matching, relationship context included).
+```
+
+This helps Claude use the optimal tool for memory recall.
 
 ---
 
@@ -213,15 +233,29 @@ See [CONFIGURATION.md](docs/CONFIGURATION.md) for all options.
 }
 ```
 
-### Search Memories
+### Recall Memories (Recommended)
+
+```json
+{
+  "tool": "recall_memories",
+  "query": "authentication security"
+}
+```
+
+Returns fuzzy-matched results with relationship context and match quality hints.
+
+### Search Memories (Advanced)
 
 ```json
 {
   "tool": "search_memories",
   "query": "authentication",
+  "search_tolerance": "strict",
   "limit": 5
 }
 ```
+
+Use when you need exact matching or advanced filtering.
 
 ### Create Relationships
 
@@ -242,11 +276,21 @@ See [docs/examples/](docs/examples/) for more use cases.
 
 ## Backends
 
-| Backend | Best For | Setup |
-|---------|----------|-------|
-| **SQLite** (default) | Personal use, <10k memories | Zero config |
-| **Neo4j** | Teams, complex analytics | [Setup guide](docs/FULL_MODE.md) |
-| **Memgraph** | High-performance analytics | [Setup guide](docs/FULL_MODE.md) |
+MemoryGraph supports 5 backend options to fit your deployment needs:
+
+| Backend | Type | Config | Native Graph | Zero-Config | Best For |
+|---------|------|--------|--------------|-------------|----------|
+| **sqlite** | Embedded | File path | No (simulated) | ✅ | Default, simple use |
+| **falkordblite** | Embedded | File path | ✅ Cypher | ✅ | Graph queries without server |
+| **falkordb** | Client-server | Host:port | ✅ Cypher | ❌ | High-performance production |
+| **neo4j** | Client-server | URI | ✅ Cypher | ❌ | Enterprise features |
+| **memgraph** | Client-server | Host:port | ✅ Cypher | ❌ | Real-time analytics |
+
+**New: FalkorDB Options**
+- **FalkorDBLite**: Zero-config embedded database with native Cypher support, perfect upgrade from SQLite
+- **FalkorDB**: Redis-based graph DB with 500x faster p99 than Neo4j ([docs](https://docs.falkordb.com/))
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for setup details.
 
 ---
 
@@ -264,7 +308,7 @@ See [docs/examples/](docs/examples/) for more use cases.
 ```
 memorygraph/
 ├── src/memorygraph/     # Main source
-│   ├── server.py        # MCP server (44 tools)
+│   ├── server.py        # MCP server (11 tools)
 │   ├── backends/        # SQLite, Neo4j, Memgraph
 │   └── tools/           # Tool implementations
 ├── tests/               # 409 tests, 93% coverage
@@ -311,13 +355,14 @@ pytest tests/ -v --cov=memorygraph
 
 ## Roadmap
 
-### Current (v1.0)
+### Current (v0.7.1+)
 - SQLite default backend
-- Three-tier complexity (lite/standard/full)
-- 44 MCP tools
+- Two-tier profiles (core/extended)
+- 11 fully implemented MCP tools
+- 93% test coverage
 - PyPI + Docker
 
-### Planned (v1.1)
+### Planned (v1.0+)
 - Web visualization dashboard
 - PostgreSQL backend
 - Enhanced embeddings

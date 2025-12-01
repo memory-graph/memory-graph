@@ -69,14 +69,14 @@ What database does this project use?
 
 ## Configuration Options
 
-### Standard Mode (More Tools)
+### Extended Mode (More Tools)
 
 ```json
 {
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--profile", "standard"]
+      "args": ["--profile", "extended"]
     }
   }
 }
@@ -206,5 +206,5 @@ Alternative locations may be supported - check Gemini CLI documentation for your
 
 **Works with**: Gemini CLI (with MCP support)
 **Transport**: stdio
-**Profiles**: lite (8 tools), standard (15 tools), full (44 tools)
+**Profiles**: core (9 tools), extended (11 tools)
 **Note**: MCP support may vary by Gemini CLI version

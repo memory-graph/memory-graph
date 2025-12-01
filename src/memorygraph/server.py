@@ -88,8 +88,100 @@ class ClaudeMemoryServer:
         # Basic tools (defined inline below)
         basic_tools = [
             Tool(
+                name="recall_memories",
+                description="""🎯 RECOMMENDED STARTING POINT for recalling past memories and learnings.
+
+This is a convenience tool that wraps search_memories with optimal defaults for natural language queries.
+
+WHEN TO USE:
+- This should be your FIRST tool for any recall query
+- User asks "What did we learn about X?"
+- Looking for past solutions, problems, or patterns
+- Understanding project context or history
+- Finding related memories by topic
+
+WHY USE THIS vs search_memories:
+- Optimized for natural language queries
+- Automatically uses fuzzy matching (handles plurals, tenses, case)
+- Always includes relationship context
+- Simpler interface for common use cases
+- Best default settings applied
+
+HOW TO USE:
+- Pass a natural language query (e.g., "Redis timeout solutions")
+- Optionally filter by memory_types for precision
+- Optionally specify project_path to scope results
+- Results automatically ranked by relevance
+
+EXAMPLES:
+- User: "What timeouts have we fixed?" → recall_memories(query="timeout fix")
+- User: "Show me Redis solutions" → recall_memories(query="Redis", memory_types=["solution"])
+- User: "What authentication errors occurred?" → recall_memories(query="authentication error", memory_types=["error"])
+- User: "Catch me up on this project" → recall_memories(project_path="/current/project")
+
+RETURNS:
+- Memories with match quality hints
+- Immediate relationships (what solves what, what causes what)
+- Context summaries for quick understanding
+
+NOTE: For advanced queries (boolean operators, exact matches, multi-term), use search_memories directly.""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Natural language query for what you're looking for"
+                        },
+                        "memory_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [t.value for t in MemoryType]
+                            },
+                            "description": "Optional: Filter by memory types for more precision"
+                        },
+                        "project_path": {
+                            "type": "string",
+                            "description": "Optional: Filter by project path to scope results"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "description": "Maximum number of results (default: 20)"
+                        }
+                    }
+                }
+            ),
+            Tool(
                 name="store_memory",
-                description="Store a new memory with context and metadata",
+                description="""Store a new memory with context and metadata.
+
+WHEN TO USE:
+- Capturing solutions to problems
+- Recording important decisions and rationale
+- Documenting errors and their causes
+- Noting patterns or learnings from work
+- Saving technology choices and trade-offs
+- Recording project context and state
+
+HOW TO USE:
+- Choose appropriate type: solution, problem, error, fix, decision, pattern, etc.
+- Write clear, searchable title (this is searched during recall)
+- Include detailed content with specifics
+- Add tags for categorical organization (e.g., "redis", "authentication", "performance")
+- Set importance: 0.8-1.0 for critical info, 0.5-0.7 for normal, 0.0-0.4 for reference
+- Optional: Add project_path in context to scope to current project
+
+EXAMPLES:
+- Solved a bug: store_memory(type="solution", title="Fixed Redis timeout in payment flow", content="...", tags=["redis", "payment"], importance=0.8)
+- Learned a pattern: store_memory(type="pattern", title="Use exponential backoff for API retries", content="...", tags=["api", "reliability"])
+- Made a decision: store_memory(type="decision", title="Chose PostgreSQL over MongoDB", content="Rationale: ...", importance=0.9)
+- Hit an error: store_memory(type="error", title="Authentication fails with OAuth2", content="Error details...", tags=["auth", "oauth"])
+
+AFTER STORING:
+- Use create_relationship to link related memories (e.g., solution SOLVES problem)
+- Returns memory_id for future reference""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -131,7 +223,23 @@ class ClaudeMemoryServer:
             ),
             Tool(
                 name="get_memory",
-                description="Retrieve a specific memory by ID",
+                description="""Retrieve a specific memory by ID with full details.
+
+WHEN TO USE:
+- You have a memory_id from search results
+- User asks for details about a specific memory
+- Need to verify memory contents before updating or deleting
+- Drilling down after finding a memory in search
+
+HOW TO USE:
+- Pass memory_id from search_memories or store_memory results
+- Set include_relationships=true (default) to see what connects to this memory
+- Returns full memory with all fields
+
+EXAMPLE:
+- After search: get_memory(memory_id="abc-123", include_relationships=true)
+
+NOTE: Prefer search_memories for discovery. Use get_memory only when you have a specific ID.""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -149,13 +257,52 @@ class ClaudeMemoryServer:
             ),
             Tool(
                 name="search_memories",
-                description="Search for memories based on various criteria",
+                description="""Advanced search tool with fine-grained control over search parameters.
+
+⚠️ CONSIDER USING recall_memories FIRST - it has better defaults for most queries.
+Use search_memories only when you need:
+- Exact matching (search_tolerance="strict")
+- Multi-term boolean queries
+- Specific tag filtering
+- Advanced parameter control
+
+WHEN TO USE:
+- Need strict exact matching instead of fuzzy
+- Complex queries with multiple terms and match_mode
+- Filtering by specific tags or importance thresholds
+- When recall_memories didn't find what you need
+
+HOW TO USE:
+- Query searches across title, content, and summary fields
+- Use search_tolerance to control matching:
+  • 'normal' (default): Handles plurals, tenses, case variations (e.g., "timeout" matches "timeouts", "timed out")
+  • 'strict': Exact substring matches only
+  • 'fuzzy': Reserved for future typo tolerance
+- Filter by memory_types to narrow results (e.g., only "solution" or "problem")
+- Filter by tags for categorical search
+- Results include relationship context automatically (what connects to what)
+
+EXAMPLES:
+- User: "What timeouts have we fixed?" → search_memories(query="timeout", memory_types=["solution"])
+- User: "Show me Redis issues" → search_memories(query="Redis", memory_types=["problem", "error"])
+- User: "Authentication solutions" → search_memories(query="authentication", memory_types=["solution"])
+- User: "High priority items" → search_memories(min_importance=0.7)
+
+RESULTS INCLUDE:
+- Match quality hints (which fields matched)
+- Relationship context (what solves/causes/relates to what)
+- Context summaries for quick scanning""",
                 inputSchema={
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
                             "description": "Text to search for in memory content"
+                        },
+                        "terms": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Multiple search terms for complex queries (alternative to query)"
                         },
                         "memory_types": {
                             "type": "array",
@@ -190,6 +337,16 @@ class ClaudeMemoryServer:
                             "type": "string",
                             "enum": ["strict", "normal", "fuzzy"],
                             "description": "Search tolerance mode: 'strict' for exact matches, 'normal' for stemming (default), 'fuzzy' for typo tolerance"
+                        },
+                        "match_mode": {
+                            "type": "string",
+                            "enum": ["any", "all"],
+                            "description": "Match mode for terms: 'any' returns results matching ANY term (OR), 'all' requires ALL terms (AND)"
+                        },
+                        "relationship_filter": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Filter results to only include memories with these relationship types"
                         }
                     }
                 }
@@ -236,7 +393,39 @@ class ClaudeMemoryServer:
             ),
             Tool(
                 name="create_relationship",
-                description="Create a relationship between two memories",
+                description="""Create a relationship between two memories to capture how they connect.
+
+WHEN TO USE:
+- After storing a solution, link it to the problem it solves
+- Connect an error to its fix
+- Link a decision to what it improves or replaces
+- Associate patterns with where they apply
+- Track what causes what (e.g., error TRIGGERS problem)
+- Document what requires what (dependencies)
+
+HOW TO USE:
+- Get memory IDs from store_memory or search_memories
+- Choose appropriate relationship type:
+  • SOLVES: solution → problem/error
+  • CAUSES/TRIGGERS: cause → effect
+  • FIXES/ADDRESSES: fix → error/problem
+  • IMPROVES/REPLACES: new approach → old approach
+  • REQUIRES/DEPENDS_ON: dependent → dependency
+  • USED_IN/APPLIES_TO: pattern → project/context
+  • RELATED_TO: general association
+- Optional: Add natural language context (auto-extracted into structured format)
+- Optional: Set strength (defaults to 0.5) and confidence (defaults to 0.8)
+
+EXAMPLES:
+- Link solution to problem: create_relationship(from_memory_id="sol-123", to_memory_id="prob-456", relationship_type="SOLVES")
+- Document cause: create_relationship(from_memory_id="config-error", to_memory_id="timeout-problem", relationship_type="CAUSES", context="Missing Redis timeout config causes connection timeouts in production")
+- Track dependency: create_relationship(from_memory_id="auth-module", to_memory_id="jwt-library", relationship_type="REQUIRES")
+- Pattern usage: create_relationship(from_memory_id="retry-pattern", to_memory_id="api-integration", relationship_type="APPLIES_TO")
+
+WHY IT MATTERS:
+- Relationships enable "What solved X?" queries
+- Builds knowledge graph for pattern recognition
+- Context is automatically structured for advanced queries""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -275,7 +464,33 @@ class ClaudeMemoryServer:
             ),
             Tool(
                 name="get_related_memories",
-                description="Find memories related to a specific memory",
+                description="""Find memories related to a specific memory by traversing relationships.
+
+WHEN TO USE:
+- After finding a memory, explore what connects to it
+- User asks "What caused this?" or "What solves this?"
+- Understanding the context around a specific memory
+- Following chains of reasoning (what led to what)
+- Finding all solutions for a problem
+
+HOW TO USE:
+- Pass memory_id from search_memories or get_memory
+- Filter by relationship_types to focus query:
+  • ["SOLVES"] → Find all solutions for a problem
+  • ["CAUSES", "TRIGGERS"] → Find what causes this
+  • ["USED_IN", "APPLIES_TO"] → Find where a pattern applies
+- Set max_depth to control traversal:
+  • 1 = immediate connections only (default)
+  • 2 = connections of connections
+  • 3+ = deeper traversal (rarely needed)
+
+EXAMPLES:
+- Find solutions: get_related_memories(memory_id="problem-123", relationship_types=["SOLVES"], max_depth=1)
+- Explore context: get_related_memories(memory_id="decision-456", max_depth=2)
+- Find causes: get_related_memories(memory_id="error-789", relationship_types=["CAUSES", "TRIGGERS"])
+
+RETURNS:
+- List of related memories with relationship types and strengths""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -307,6 +522,53 @@ class ClaudeMemoryServer:
                 inputSchema={
                     "type": "object",
                     "properties": {}
+                }
+            ),
+            Tool(
+                name="get_recent_activity",
+                description="""Get a summary of recent memory activity for session briefing.
+
+WHEN TO USE:
+- User asks "What have we been working on?"
+- User asks "Catch me up" or "What's the status?"
+- Starting a new session and want context
+- Need to understand recent progress
+
+HOW TO USE:
+- Specify days (default: 7) to control timeframe
+- Optionally filter by project to scope to current work
+- Returns summary by type, recent memories, and unresolved problems
+
+WHAT YOU GET:
+- Count of memories by type (solutions, problems, etc.)
+- List of recent memories (up to 20)
+- Unresolved problems (problems with no solution yet)
+- Time range and filters applied
+
+EXAMPLES:
+- User: "What have we been working on?" → get_recent_activity(days=7)
+- User: "Catch me up on this project" → get_recent_activity(days=7, project="/current/project")
+- User: "What happened last month?" → get_recent_activity(days=30)
+- User: "Any unsolved problems?" → get_recent_activity(days=30) // check unresolved_problems
+
+WHY IT MATTERS:
+- Provides quick context at session start
+- Identifies work that needs attention (unresolved problems)
+- Shows progress and activity patterns""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "days": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 365,
+                            "description": "Number of days to look back (default: 7)"
+                        },
+                        "project": {
+                            "type": "string",
+                            "description": "Optional: Filter by project path"
+                        }
+                    }
                 }
             ),
             Tool(
@@ -386,7 +648,9 @@ class ClaudeMemoryServer:
                         isError=True
                     )
 
-                if name == "store_memory":
+                if name == "recall_memories":
+                    return await self._handle_recall_memories(arguments)
+                elif name == "store_memory":
                     return await self._handle_store_memory(arguments)
                 elif name == "get_memory":
                     return await self._handle_get_memory(arguments)
@@ -402,6 +666,8 @@ class ClaudeMemoryServer:
                     return await self._handle_get_related_memories(arguments)
                 elif name == "get_memory_statistics":
                     return await self._handle_get_memory_statistics(arguments)
+                elif name == "get_recent_activity":
+                    return await self._handle_get_recent_activity(arguments)
                 elif name == "search_relationships_by_context":
                     return await self._handle_search_relationships_by_context(arguments)
                 # Advanced relationship tools
@@ -520,6 +786,103 @@ class ClaudeMemoryServer:
             await self.db_connection.close()
         logger.info("Claude Memory Server cleanup completed")
     
+    async def _handle_recall_memories(self, arguments: Dict[str, Any]) -> CallToolResult:
+        """Handle recall_memories tool call - convenience wrapper around search_memories."""
+        try:
+            # Build search query with optimal defaults
+            search_query = SearchQuery(
+                query=arguments.get("query"),
+                memory_types=[MemoryType(t) for t in arguments.get("memory_types", [])],
+                project_path=arguments.get("project_path"),
+                limit=arguments.get("limit", 20),
+                search_tolerance="normal",  # Always use fuzzy matching
+                include_relationships=True  # Always include relationships
+            )
+
+            # Use the existing search_memories implementation
+            memories = await self.memory_db.search_memories(search_query)
+
+            if not memories:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text="No memories found matching your query. Try:\n- Using different search terms\n- Removing filters to broaden the search\n- Checking if memories have been stored for this topic"
+                    )]
+                )
+
+            # Format results with enhanced context
+            results_text = f"**Found {len(memories)} relevant memories:**\n\n"
+
+            for i, memory in enumerate(memories, 1):
+                results_text += f"**{i}. {memory.title}** (ID: {memory.id})\n"
+                results_text += f"Type: {memory.type.value} | Importance: {memory.importance}\n"
+
+                # Add match quality if available
+                if hasattr(memory, 'match_info') and memory.match_info:
+                    match_info = memory.match_info
+                    if isinstance(match_info, dict):
+                        quality = match_info.get('match_quality', 'unknown')
+                        matched_fields = match_info.get('matched_fields', [])
+                        results_text += f"Match: {quality} quality"
+                        if matched_fields:
+                            results_text += f" (in {', '.join(matched_fields)})"
+                        results_text += "\n"
+
+                # Add context summary if available
+                if hasattr(memory, 'context_summary') and memory.context_summary:
+                    results_text += f"Context: {memory.context_summary}\n"
+
+                # Add summary or content snippet
+                if memory.summary:
+                    results_text += f"Summary: {memory.summary}\n"
+                elif memory.content:
+                    # Show first 150 chars of content
+                    snippet = memory.content[:150]
+                    if len(memory.content) > 150:
+                        snippet += "..."
+                    results_text += f"Content: {snippet}\n"
+
+                # Add tags
+                if memory.tags:
+                    results_text += f"Tags: {', '.join(memory.tags)}\n"
+
+                # Add relationships if available
+                if hasattr(memory, 'relationships') and memory.relationships:
+                    rel_summary = []
+                    for rel_type, related_titles in memory.relationships.items():
+                        if related_titles:
+                            rel_summary.append(f"{rel_type}: {len(related_titles)} memories")
+                    if rel_summary:
+                        results_text += f"Relationships: {', '.join(rel_summary)}\n"
+
+                results_text += "\n"
+
+            # Add helpful tip at the end
+            results_text += "\n💡 **Next steps:**\n"
+            results_text += "- Use `get_memory(memory_id=\"...\")` to see full details\n"
+            results_text += "- Use `get_related_memories(memory_id=\"...\")` to explore connections\n"
+
+            return CallToolResult(
+                content=[TextContent(type="text", text=results_text)]
+            )
+
+        except ValidationError as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Invalid search parameters: {e}"
+                )],
+                isError=True
+            )
+        except Exception as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to recall memories: {e}"
+                )],
+                isError=True
+            )
+
     async def _handle_store_memory(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle store_memory tool call."""
         try:
@@ -622,11 +985,15 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
             # Build search query
             search_query = SearchQuery(
                 query=arguments.get("query"),
+                terms=arguments.get("terms", []),
                 memory_types=[MemoryType(t) for t in arguments.get("memory_types", [])],
                 tags=arguments.get("tags", []),
                 project_path=arguments.get("project_path"),
                 min_importance=arguments.get("min_importance"),
-                limit=arguments.get("limit", 20)
+                limit=arguments.get("limit", 20),
+                search_tolerance=arguments.get("search_tolerance", "normal"),
+                match_mode=arguments.get("match_mode", "any"),
+                relationship_filter=arguments.get("relationship_filter")
             )
             
             memories = await self.memory_db.search_memories(search_query)
@@ -900,6 +1267,87 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
                 content=[TextContent(
                     type="text",
                     text=f"Failed to get memory statistics: {e}"
+                )],
+                isError=True
+            )
+
+    async def _handle_get_recent_activity(self, arguments: Dict[str, Any]) -> CallToolResult:
+        """Handle get_recent_activity tool call."""
+        try:
+            # Check if database supports get_recent_activity
+            if not isinstance(self.memory_db, SQLiteMemoryDatabase):
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text="Recent activity summary is only available with SQLite backend"
+                    )],
+                    isError=True
+                )
+
+            days = arguments.get("days", 7)
+            project = arguments.get("project")
+
+            # Auto-detect project if not specified
+            if not project:
+                from .utils.project_detection import detect_project_context
+                project_info = detect_project_context()
+                if project_info:
+                    project = project_info.get("project_path")
+
+            activity = await self.memory_db.get_recent_activity(days=days, project=project)
+
+            # Format results
+            result_text = f"**Recent Activity Summary (Last {days} days)**\n\n"
+
+            if project:
+                result_text += f"**Project**: {project}\n\n"
+
+            # Total count
+            result_text += f"**Total Memories**: {activity['total_count']}\n\n"
+
+            # Memories by type
+            if activity['memories_by_type']:
+                result_text += "**Breakdown by Type**:\n"
+                for mem_type, count in sorted(activity['memories_by_type'].items(), key=lambda x: x[1], reverse=True):
+                    result_text += f"- {mem_type.replace('_', ' ').title()}: {count}\n"
+                result_text += "\n"
+
+            # Unresolved problems
+            if activity['unresolved_problems']:
+                result_text += f"**⚠️ Unresolved Problems ({len(activity['unresolved_problems'])})**:\n"
+                for problem in activity['unresolved_problems']:
+                    result_text += f"- **{problem.title}** (importance: {problem.importance:.1f})\n"
+                    if problem.summary:
+                        result_text += f"  {problem.summary}\n"
+                result_text += "\n"
+
+            # Recent memories
+            if activity['recent_memories']:
+                result_text += f"**Recent Memories** (showing {min(10, len(activity['recent_memories']))}):\n"
+                for i, memory in enumerate(activity['recent_memories'][:10], 1):
+                    result_text += f"{i}. **{memory.title}** ({memory.type.value})\n"
+                    if memory.summary:
+                        result_text += f"   {memory.summary}\n"
+                result_text += "\n"
+
+            # Next steps suggestion
+            result_text += "**💡 Next Steps**:\n"
+            if activity['unresolved_problems']:
+                result_text += "- Review unresolved problems and consider solutions\n"
+                result_text += f"- Use `get_memory(memory_id=\"...\")` for details\n"
+            else:
+                result_text += "- All problems have been addressed!\n"
+
+            return CallToolResult(
+                content=[TextContent(type="text", text=result_text)]
+            )
+
+        except Exception as e:
+            logger.error(f"Error in get_recent_activity: {e}")
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to get recent activity: {e}"
                 )],
                 isError=True
             )

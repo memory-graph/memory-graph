@@ -116,7 +116,7 @@ export MEMORY_NEO4J_PASSWORD=your-password
 ```bash
 # Set backend to Neo4j
 export MEMORY_BACKEND=neo4j
-export MEMORY_TOOL_PROFILE=full
+export MEMORY_TOOL_PROFILE=extended
 
 # Neo4j connection
 export MEMORY_NEO4J_URI=bolt://localhost:7687
@@ -124,7 +124,7 @@ export MEMORY_NEO4J_USER=neo4j
 export MEMORY_NEO4J_PASSWORD=your-password
 
 # Start server
-memorygraph --backend neo4j --profile full
+memorygraph --backend neo4j --profile extended
 ```
 
 ### MCP Configuration
@@ -134,7 +134,7 @@ memorygraph --backend neo4j --profile full
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "neo4j", "--profile", "full"],
+      "args": ["--backend", "neo4j", "--profile", "extended"],
       "env": {
         "MEMORY_NEO4J_URI": "bolt://localhost:7687",
         "MEMORY_NEO4J_USER": "neo4j",
@@ -185,13 +185,13 @@ Follow [Memgraph installation guide](https://memgraph.com/docs/getting-started) 
 ```bash
 # Set backend to Memgraph
 export MEMORY_BACKEND=memgraph
-export MEMORY_TOOL_PROFILE=full
+export MEMORY_TOOL_PROFILE=extended
 
 # Memgraph connection (no auth by default)
 export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
 
 # Start server
-memorygraph --backend memgraph --profile full
+memorygraph --backend memgraph --profile extended
 ```
 
 ### MCP Configuration
@@ -201,7 +201,7 @@ memorygraph --backend memgraph --profile full
   "mcpServers": {
     "memorygraph": {
       "command": "memorygraph",
-      "args": ["--backend", "memgraph", "--profile", "full"],
+      "args": ["--backend", "memgraph", "--profile", "extended"],
       "env": {
         "MEMORY_MEMGRAPH_URI": "bolt://localhost:7687"
       }
@@ -567,7 +567,7 @@ Test: 100,000 memories, 250,000 relationships
    ```json
    {
      "command": "memorygraph",
-     "args": ["--backend", "neo4j", "--profile", "full"]
+     "args": ["--backend", "neo4j", "--profile", "extended"]
    }
    ```
 
@@ -686,7 +686,7 @@ memorygraph --show-config
 
 1. **Set up your backend** (Neo4j or Memgraph)
 2. **Configure environment variables**
-3. **Start with `--profile full`**
+3. **Start with `--profile extended`**
 4. **Explore advanced tools**
 5. **Monitor performance**
 6. **Optimize as needed**
