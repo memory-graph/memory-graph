@@ -983,11 +983,19 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
 async def main():
     """Main entry point for the MCP server."""
     server = ClaudeMemoryServer()
-    
+
     try:
         # Initialize the server
         await server.initialize()
-        
+
+        # Create notification options and capabilities BEFORE passing to InitializationOptions
+        # This ensures proper object instantiation and avoids potential GC or scoping issues
+        notification_options = NotificationOptions()
+        capabilities = server.server.get_capabilities(
+            notification_options=notification_options,
+            experimental_capabilities={},
+        )
+
         # Run the stdio server
         async with stdio_server() as (read_stream, write_stream):
             await server.server.run(
@@ -996,13 +1004,10 @@ async def main():
                 InitializationOptions(
                     server_name="claude-memory",
                     server_version=__version__,
-                    capabilities=server.server.get_capabilities(
-                        notification_options=NotificationOptions(),
-                        experimental_capabilities={},
-                    ),
+                    capabilities=capabilities,
                 ),
             )
-    
+
     except KeyboardInterrupt:
         logger.info("Received interrupt signal")
     except Exception as e:
