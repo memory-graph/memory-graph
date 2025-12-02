@@ -2,7 +2,8 @@
 Integration tests for FalkorDBLite backend.
 
 These tests use real FalkorDBLite (if available) to test the full backend implementation.
-Tests are skipped if falkordblite is not installed.
+Tests are skipped if falkordblite is not installed or if the bundled binaries are
+incompatible with the current platform (e.g., Linux binaries on macOS).
 """
 
 import pytest
@@ -10,19 +11,52 @@ import uuid
 from datetime import datetime
 import tempfile
 import os
+import platform
+import subprocess
+
+FALKORDBLITE_AVAILABLE = False
+SKIP_REASON = "falkordblite not installed"
 
 try:
-    from falkordblite import FalkorDB
+    from redislite.falkordb_client import FalkorDB
+    from redislite.client import __redis_executable__, __falkordb_module__
     from unittest.mock import MagicMock
 
     # Check if falkordblite is a mock object (from unit tests)
     # Verify it's the real package by checking if FalkorDB is callable and not a mock
     if isinstance(FalkorDB, MagicMock) or not callable(FalkorDB):
-        FALKORDBLITE_AVAILABLE = False
+        SKIP_REASON = "falkordblite is mocked"
+    elif not __redis_executable__ or not os.path.exists(__redis_executable__):
+        SKIP_REASON = "redis-server executable not found"
+    elif not __falkordb_module__ or not os.path.exists(__falkordb_module__):
+        SKIP_REASON = "falkordb.so module not found"
     else:
-        FALKORDBLITE_AVAILABLE = True
-except ImportError:
-    FALKORDBLITE_AVAILABLE = False
+        # Check if falkordb.so is compatible with this platform
+        # On macOS, the bundled falkordb.so from falkordblite v0.4.0 is a Linux ELF binary
+        if platform.system() == "Darwin":
+            try:
+                result = subprocess.run(
+                    ["file", __falkordb_module__],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                if "ELF" in result.stdout:
+                    SKIP_REASON = (
+                        "falkordb.so is a Linux ELF binary, incompatible with macOS - "
+                        "falkordblite v0.4.0+ only supports Linux"
+                    )
+                elif "Mach-O" in result.stdout:
+                    FALKORDBLITE_AVAILABLE = True
+                else:
+                    SKIP_REASON = f"unknown falkordb.so format: {result.stdout.strip()}"
+            except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+                SKIP_REASON = f"failed to check falkordb.so compatibility: {e}"
+        else:
+            # On Linux, assume ELF binaries are compatible
+            FALKORDBLITE_AVAILABLE = True
+except ImportError as e:
+    SKIP_REASON = f"falkordblite import failed: {e}"
 
 from memorygraph.backends.falkordblite_backend import FalkorDBLiteBackend
 from memorygraph.models import (
@@ -35,7 +69,7 @@ from memorygraph.models import (
 )
 
 
-@pytest.mark.skipif(not FALKORDBLITE_AVAILABLE, reason="falkordblite not installed")
+@pytest.mark.skipif(not FALKORDBLITE_AVAILABLE, reason=SKIP_REASON)
 class TestFalkorDBLiteIntegration:
     """Integration tests with real FalkorDBLite database."""
 

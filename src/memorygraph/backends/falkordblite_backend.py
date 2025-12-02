@@ -76,7 +76,7 @@ class FalkorDBLiteBackend(GraphBackend):
         try:
             # Lazy import falkordblite only when connecting
             try:
-                from falkordblite import FalkorDB
+                from redislite.falkordb_client import FalkorDB
             except ImportError as e:
                 raise DatabaseConnectionError(
                     "falkordblite package is required for FalkorDBLite backend. "

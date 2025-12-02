@@ -317,6 +317,27 @@ memorygraph --backend neo4j --profile extended --log-level DEBUG
 | `~/.claude.json` | Global MCP servers | `claude mcp add --scope user` |
 | `settings.json` | Permissions & behavior | Claude Code settings |
 
+## Backend Platform Support
+
+| Backend | Linux | macOS | Windows |
+|---------|-------|-------|---------|
+| SQLite | ✅ | ✅ | ✅ |
+| Neo4j | ✅ | ✅ | ✅ |
+| Memgraph | ✅ | ✅ | ✅ |
+| FalkorDB | ✅ | ✅ | ✅ |
+| FalkorDBLite | ✅ | ❌ | ❌ |
+
+### FalkorDBLite Platform Limitation
+
+**FalkorDBLite is currently Linux-only** (as of v0.4.0). The bundled `falkordb.so` module is compiled as a Linux ELF binary and is not compatible with macOS or Windows.
+
+- On **Linux**: FalkorDBLite works as an embedded database similar to SQLite but with Cypher query support
+- On **macOS/Windows**: Use SQLite (default), FalkorDB (client-server), or Neo4j instead
+
+If you need Cypher query support on macOS:
+1. Use FalkorDB with Docker: `docker run -p 6379:6379 falkordb/falkordb:latest`
+2. Or use Neo4j: `docker run -p 7687:7687 neo4j:latest`
+
 ## Best Practices
 
 1. **Use `claude mcp add`** - Let the CLI manage configuration files

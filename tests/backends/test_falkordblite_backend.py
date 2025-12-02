@@ -11,8 +11,9 @@ from datetime import datetime, UTC
 import uuid
 import sys
 
-# Mock the falkordblite module before importing the backend
-sys.modules['falkordblite'] = MagicMock()
+# Mock the redislite.falkordb_client module before importing the backend
+sys.modules['redislite'] = MagicMock()
+sys.modules['redislite.falkordb_client'] = MagicMock()
 
 from memorygraph.backends.falkordblite_backend import FalkorDBLiteBackend
 from memorygraph.models import (
@@ -33,7 +34,7 @@ class TestFalkorDBLiteConnection:
     @pytest.mark.asyncio
     async def test_connect_success(self):
         """Test successful connection to FalkorDBLite."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             # Mock FalkorDBLite client (embedded, uses file path)
             mock_client = Mock()
             mock_graph = Mock()
@@ -52,7 +53,7 @@ class TestFalkorDBLiteConnection:
     @pytest.mark.asyncio
     async def test_connect_failure(self):
         """Test connection failure handling."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             # Simulate connection error
             mock_falkordblite_class.side_effect = Exception("Database file not accessible")
 
@@ -64,7 +65,7 @@ class TestFalkorDBLiteConnection:
     @pytest.mark.asyncio
     async def test_disconnect(self):
         """Test disconnection from FalkorDBLite."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_client.select_graph.return_value = mock_graph
@@ -79,7 +80,7 @@ class TestFalkorDBLiteConnection:
     @pytest.mark.asyncio
     async def test_default_path(self):
         """Test default database path is used when none specified."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_client.select_graph.return_value = mock_graph
@@ -114,7 +115,7 @@ class TestFalkorDBLiteQuery:
     @pytest.mark.asyncio
     async def test_execute_query_read(self):
         """Test executing a read query."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -138,7 +139,7 @@ class TestFalkorDBLiteQuery:
     @pytest.mark.asyncio
     async def test_execute_query_write(self):
         """Test executing a write query."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -174,7 +175,7 @@ class TestFalkorDBLiteSchema:
     @pytest.mark.asyncio
     async def test_initialize_schema(self):
         """Test schema creation with constraints and indexes."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_client.select_graph.return_value = mock_graph
@@ -211,7 +212,7 @@ class TestFalkorDBLiteMemoryOperations:
     @pytest.mark.asyncio
     async def test_store_memory(self, sample_memory):
         """Test storing a memory."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -230,7 +231,7 @@ class TestFalkorDBLiteMemoryOperations:
     @pytest.mark.asyncio
     async def test_get_memory(self, sample_memory):
         """Test retrieving a memory by ID."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
 
@@ -267,7 +268,7 @@ class TestFalkorDBLiteMemoryOperations:
     @pytest.mark.asyncio
     async def test_get_memory_not_found(self):
         """Test retrieving a non-existent memory."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -286,7 +287,7 @@ class TestFalkorDBLiteMemoryOperations:
     @pytest.mark.asyncio
     async def test_update_memory(self, sample_memory):
         """Test updating an existing memory."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -306,7 +307,7 @@ class TestFalkorDBLiteMemoryOperations:
     @pytest.mark.asyncio
     async def test_delete_memory(self, sample_memory):
         """Test deleting a memory."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -329,7 +330,7 @@ class TestFalkorDBLiteRelationships:
     @pytest.mark.asyncio
     async def test_create_relationship(self):
         """Test creating a relationship between memories."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -355,7 +356,7 @@ class TestFalkorDBLiteRelationships:
     @pytest.mark.asyncio
     async def test_get_related_memories(self):
         """Test getting related memories."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -400,7 +401,7 @@ class TestFalkorDBLiteSearch:
     @pytest.mark.asyncio
     async def test_search_memories(self):
         """Test searching for memories."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
@@ -439,7 +440,7 @@ class TestFalkorDBLiteStatistics:
     @pytest.mark.asyncio
     async def test_get_memory_statistics(self):
         """Test getting database statistics."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
 
@@ -480,7 +481,7 @@ class TestFalkorDBLiteHealthCheck:
     @pytest.mark.asyncio
     async def test_health_check_connected(self):
         """Test health check when connected."""
-        with patch('falkordblite.FalkorDB') as mock_falkordblite_class:
+        with patch('redislite.falkordb_client.FalkorDB') as mock_falkordblite_class:
             mock_client = Mock()
             mock_graph = Mock()
             mock_result = Mock()
