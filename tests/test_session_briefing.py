@@ -5,7 +5,7 @@ This module tests the get_recent_activity tool and project context detection.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from memorygraph.models import Memory, MemoryType, MemoryContext, SearchQuery, RelationshipType, RelationshipProperties
 from memorygraph.sqlite_database import SQLiteMemoryDatabase
 from memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
@@ -43,7 +43,7 @@ async def populated_db(db):
 
         # Manually set created_at to simulate time passage
         backend = db.backend
-        created_at = (datetime.utcnow() - timedelta(days=i)).isoformat()
+        created_at = (datetime.now(UTC) - timedelta(days=i)).isoformat()
         backend.execute_sync(
             """
             UPDATE nodes
@@ -72,7 +72,7 @@ async def populated_db(db):
 
         # Set older created_at
         backend = db.backend
-        created_at = (datetime.utcnow() - timedelta(days=30 + i)).isoformat()
+        created_at = (datetime.now(UTC) - timedelta(days=30 + i)).isoformat()
         backend.execute_sync(
             """
             UPDATE nodes
@@ -318,7 +318,7 @@ async def test_time_based_search_filter(db):
 
     # Set old timestamp
     backend = db.backend
-    created_at = (datetime.utcnow() - timedelta(days=30)).isoformat()
+    created_at = (datetime.now(UTC) - timedelta(days=30)).isoformat()
     backend.execute_sync(
         """
         UPDATE nodes
@@ -338,7 +338,7 @@ async def test_time_based_search_filter(db):
     recent_id = await db.store_memory(recent_memory)
 
     # Search with time filter (last 7 days)
-    cutoff_date = datetime.utcnow() - timedelta(days=7)
+    cutoff_date = datetime.now(UTC) - timedelta(days=7)
     query = SearchQuery(
         query="Solution",
         created_after=cutoff_date,
@@ -366,7 +366,7 @@ async def test_time_based_search_before_filter(db):
 
     # Set old timestamp
     backend = db.backend
-    created_at = (datetime.utcnow() - timedelta(days=30)).isoformat()
+    created_at = (datetime.now(UTC) - timedelta(days=30)).isoformat()
     backend.execute_sync(
         """
         UPDATE nodes
@@ -386,7 +386,7 @@ async def test_time_based_search_before_filter(db):
     recent_id = await db.store_memory(recent_memory)
 
     # Search with before filter (only old memories)
-    cutoff_date = datetime.utcnow() - timedelta(days=7)
+    cutoff_date = datetime.now(UTC) - timedelta(days=7)
     query = SearchQuery(
         query="Solution",
         created_before=cutoff_date,

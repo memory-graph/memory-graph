@@ -959,6 +959,35 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
             if memory.summary:
                 memory_text = f"**Summary:** {memory.summary}\n\n" + memory_text
 
+            # Add context information if available
+            if memory.context:
+                context_parts = []
+
+                if memory.context.project_path:
+                    context_parts.append(f"Project: {memory.context.project_path}")
+
+                if memory.context.files_involved:
+                    files_str = ', '.join(memory.context.files_involved[:3])
+                    if len(memory.context.files_involved) > 3:
+                        files_str += f" (+{len(memory.context.files_involved) - 3} more)"
+                    context_parts.append(f"Files: {files_str}")
+
+                if memory.context.languages:
+                    context_parts.append(f"Languages: {', '.join(memory.context.languages)}")
+
+                if memory.context.frameworks:
+                    context_parts.append(f"Frameworks: {', '.join(memory.context.frameworks)}")
+
+                if memory.context.technologies:
+                    context_parts.append(f"Technologies: {', '.join(memory.context.technologies)}")
+
+                if memory.context.git_branch:
+                    context_parts.append(f"Branch: {memory.context.git_branch}")
+
+                if context_parts:
+                    context_text = "\n**Context:**\n" + "\n".join(f"  {part}" for part in context_parts)
+                    memory_text += "\n" + context_text
+
             return CallToolResult(
                 content=[TextContent(type="text", text=memory_text)]
             )

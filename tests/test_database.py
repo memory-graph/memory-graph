@@ -12,7 +12,7 @@ Tests cover:
 
 import pytest
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from memorygraph.database import Neo4jConnection, MemoryDatabase
@@ -434,8 +434,8 @@ class TestMemoryDatabase:
                 "tags": sample_memory.tags,
                 "importance": sample_memory.importance,
                 "confidence": sample_memory.confidence,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(UTC).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat()
             },
             "relationships": []
         }
@@ -471,8 +471,8 @@ class TestMemoryDatabase:
                     "tags": ["test"],
                     "importance": 0.8,
                     "confidence": 0.9,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat()
+                    "created_at": datetime.now(UTC).isoformat(),
+                    "updated_at": datetime.now(UTC).isoformat()
                 }
             }
         ]
@@ -570,8 +570,8 @@ class TestMemoryDatabase:
                     "tags": [],
                     "importance": 0.7,
                     "confidence": 0.8,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat()
+                    "created_at": datetime.now(UTC).isoformat(),
+                    "updated_at": datetime.now(UTC).isoformat()
                 },
                 "rel_type": "SOLVES",
                 "rel_props": {

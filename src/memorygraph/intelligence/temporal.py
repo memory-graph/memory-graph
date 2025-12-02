@@ -346,8 +346,8 @@ async def get_state_at(
         Memory state at that time, or None
 
     Example:
-        >>> from datetime import datetime, timedelta
-        >>> yesterday = datetime.utcnow() - timedelta(days=1)
+        >>> from datetime import datetime, timedelta, UTC
+        >>> yesterday = datetime.now(UTC) - timedelta(days=1)
         >>> state = await get_state_at(backend, "memory-123", yesterday)
     """
     temporal = TemporalMemory(backend)

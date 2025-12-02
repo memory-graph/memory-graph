@@ -1,7 +1,7 @@
 """Tests for pattern recognition functionality."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 from memorygraph.intelligence.pattern_recognition import (
     Pattern,
     PatternRecognizer,
@@ -116,7 +116,7 @@ class TestPatternRecognizer:
                 "problem_id": "p1",
                 "problem_title": "Auth timeout",
                 "problem_content": "Authentication times out after 30min",
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "similarity": 0.85,
                 "solutions": [
                     {
@@ -441,7 +441,7 @@ class TestPatternQuality:
                 "problem_id": "p1",
                 "problem_title": "High similarity",
                 "problem_content": "content",
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "similarity": 0.9,
                 "solutions": [],
             },
@@ -449,7 +449,7 @@ class TestPatternQuality:
                 "problem_id": "p2",
                 "problem_title": "Low similarity",
                 "problem_content": "content",
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "similarity": 0.5,
                 "solutions": [],
             },

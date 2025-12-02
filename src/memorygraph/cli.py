@@ -6,9 +6,11 @@ Provides easy server startup with configuration options for AI coding agents.
 
 import argparse
 import asyncio
+import json
 import logging
 import os
 import sys
+from datetime import datetime, UTC
 from typing import Optional
 
 from . import __version__
@@ -88,6 +90,72 @@ async def handle_import(args: argparse.Namespace) -> None:
         print(f"❌ Import failed: {e}")
         logger.error(f"Import failed: {e}", exc_info=True)
         sys.exit(1)
+
+
+async def perform_health_check(timeout: float = 5.0) -> dict:
+    """
+    Perform health check on the backend and return status information.
+
+    Args:
+        timeout: Maximum time in seconds to wait for health check (default: 5.0)
+
+    Returns:
+        Dictionary containing health check results:
+            - status: "healthy" or "unhealthy"
+            - connected: bool indicating if backend is connected
+            - backend_type: str with backend type (e.g., "sqlite", "neo4j")
+            - version: str with backend version (if available)
+            - statistics: dict with database statistics (if available)
+            - timestamp: ISO format timestamp of the check
+            - error: str with error message (if unhealthy)
+    """
+    from .backends.factory import BackendFactory
+
+    result = {
+        "status": "unhealthy",
+        "connected": False,
+        "backend_type": "unknown",
+        "timestamp": datetime.now(UTC).isoformat()
+    }
+
+    try:
+        # Create backend with timeout
+        backend = await asyncio.wait_for(
+            BackendFactory.create_backend(),
+            timeout=timeout
+        )
+
+        # Run health check
+        health_info = await asyncio.wait_for(
+            backend.health_check(),
+            timeout=timeout
+        )
+
+        # Update result with health check information
+        result.update(health_info)
+
+        # Determine overall status
+        if health_info.get("connected", False):
+            result["status"] = "healthy"
+        else:
+            result["status"] = "unhealthy"
+            if "error" not in result:
+                result["error"] = "Backend reports disconnected status"
+
+        # Clean up
+        await backend.disconnect()
+
+    except asyncio.TimeoutError:
+        result["error"] = f"Health check timed out after {timeout} seconds"
+        result["status"] = "unhealthy"
+        logger.error(f"Health check timeout after {timeout}s")
+
+    except Exception as e:
+        result["error"] = str(e)
+        result["status"] = "unhealthy"
+        logger.error(f"Health check failed: {e}", exc_info=True)
+
+    return result
 
 
 def print_config_summary() -> None:
@@ -214,6 +282,19 @@ Environment Variables:
         help="Run health check and exit"
     )
 
+    parser.add_argument(
+        "--health-json",
+        action="store_true",
+        help="Output health check as JSON (use with --health)"
+    )
+
+    parser.add_argument(
+        "--health-timeout",
+        type=float,
+        default=5.0,
+        help="Health check timeout in seconds (default: 5.0)"
+    )
+
     # Export/Import subcommand
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -281,12 +362,46 @@ Environment Variables:
         sys.exit(0)
 
     if args.health:
-        print(f"MemoryGraph MCP Server v{__version__}")
-        print("\n🏥 Running health check...\n")
-        # TODO: Implement proper health check
-        print("Health check not yet implemented.")
-        print("Use --show-config to see current configuration.")
-        sys.exit(0)
+        # Perform health check
+        result = asyncio.run(perform_health_check(timeout=args.health_timeout))
+
+        # Output in JSON format if requested
+        if args.health_json:
+            print(json.dumps(result, indent=2))
+        else:
+            # Human-readable format
+            print(f"MemoryGraph MCP Server v{__version__}")
+            print("\n🏥 Health Check Results\n")
+            print(f"Status: {'✅ Healthy' if result['status'] == 'healthy' else '❌ Unhealthy'}")
+            print(f"Backend: {result.get('backend_type', 'unknown')}")
+            print(f"Connected: {'Yes' if result.get('connected') else 'No'}")
+
+            if result.get('version'):
+                print(f"Version: {result['version']}")
+
+            if result.get('db_path'):
+                print(f"Database: {result['db_path']}")
+
+            if result.get('statistics'):
+                stats = result['statistics']
+                print(f"\nStatistics:")
+                if 'memory_count' in stats:
+                    print(f"  Memories: {stats['memory_count']}")
+                for key, value in stats.items():
+                    if key != 'memory_count':
+                        print(f"  {key.replace('_', ' ').title()}: {value}")
+
+            if result.get('database_size_bytes'):
+                size_mb = result['database_size_bytes'] / (1024 * 1024)
+                print(f"  Database Size: {size_mb:.2f} MB")
+
+            if result.get('error'):
+                print(f"\nError: {result['error']}")
+
+            print(f"\nTimestamp: {result['timestamp']}")
+
+        # Exit with appropriate status code
+        sys.exit(0 if result['status'] == 'healthy' else 1)
 
     # Handle export/import commands
     if args.command == "export":

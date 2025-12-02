@@ -10,7 +10,7 @@ import logging
 from typing import Dict, List, Optional, Any, Union, Tuple, TYPE_CHECKING
 from contextlib import asynccontextmanager
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 
 # Lazy imports for neo4j - only imported when Neo4jConnection is instantiated
 # This allows the package to work with SQLite backend without neo4j installed
@@ -285,7 +285,7 @@ class MemoryDatabase:
             if not memory.id:
                 memory.id = str(uuid.uuid4())
 
-            memory.updated_at = datetime.utcnow()
+            memory.updated_at = datetime.now(UTC)
 
             # Convert memory to Neo4j properties
             memory_node = MemoryNode(memory=memory)
@@ -443,7 +443,7 @@ class MemoryDatabase:
             if not memory.id:
                 raise ValidationError("Memory must have an ID to update")
 
-            memory.updated_at = datetime.utcnow()
+            memory.updated_at = datetime.now(UTC)
 
             # Convert memory to Neo4j properties
             memory_node = MemoryNode(memory=memory)

@@ -6,7 +6,7 @@ including memory types, relationships, and validation schemas.
 """
 
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Dict, List, Optional, Any, Union
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
@@ -92,7 +92,7 @@ class MemoryContext(BaseModel):
     git_commit: Optional[str] = None
     git_branch: Optional[str] = None
     working_directory: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     session_id: Optional[str] = None
     user_id: Optional[str] = None
     additional_metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -112,8 +112,8 @@ class Memory(BaseModel):
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
     effectiveness: Optional[float] = Field(None, ge=0.0, le=1.0)
     usage_count: int = Field(default=0, ge=0)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_accessed: Optional[datetime] = None
 
     # Enriched search result fields (populated by search operations)
@@ -142,8 +142,8 @@ class RelationshipProperties(BaseModel):
     context: Optional[str] = None
     evidence_count: int = Field(default=1, ge=0)
     success_rate: Optional[float] = Field(None, ge=0.0, le=1.0)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_validated: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_validated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     validation_count: int = Field(default=0, ge=0)
     counter_evidence_count: int = Field(default=0, ge=0)
 
@@ -292,7 +292,7 @@ class AnalysisResult(BaseModel):
     results: Dict[str, Any]
     confidence: float = Field(ge=0.0, le=1.0)
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 # Custom Exception Hierarchy

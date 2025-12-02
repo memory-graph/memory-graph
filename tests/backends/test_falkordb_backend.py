@@ -7,7 +7,7 @@ requiring a running FalkorDB instance.
 
 import pytest
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from datetime import datetime
+from datetime import datetime, UTC
 import uuid
 import sys
 
@@ -229,8 +229,8 @@ class TestFalkorDBMemoryOperations:
                     "tags": ["redis", "timeout", "performance"],
                     "importance": 0.8,
                     "confidence": 0.9,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
+                    "updated_at": datetime.now(UTC).isoformat(),
                     "usage_count": 0
                 }
             }]
@@ -351,8 +351,8 @@ class TestFalkorDBRelationships:
                     "tags": [],
                     "importance": 0.7,
                     "confidence": 0.8,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
+                    "updated_at": datetime.now(UTC).isoformat(),
                     "usage_count": 0
                 },
                 "rel_type": "SOLVES",
@@ -396,8 +396,8 @@ class TestFalkorDBSearch:
                     "tags": ["redis"],
                     "importance": 0.8,
                     "confidence": 0.9,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
+                    "updated_at": datetime.now(UTC).isoformat(),
                     "usage_count": 0
                 }
             }]

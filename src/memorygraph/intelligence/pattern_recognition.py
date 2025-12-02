@@ -8,7 +8,7 @@ and pattern suggestion capabilities.
 import re
 import logging
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, UTC
 from collections import Counter
 from pydantic import BaseModel, Field
 
@@ -26,7 +26,7 @@ class Pattern(BaseModel):
     occurrences: int = 0
     source_memory_ids: list[str] = Field(default_factory=list)
     entities: list[str] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     effectiveness: Optional[float] = Field(None, ge=0.0, le=1.0)
     context: Optional[dict] = None
 
@@ -139,7 +139,7 @@ class PatternRecognizer:
 
             for result in entity_results:
                 pattern = Pattern(
-                    id=f"pattern-{result['entity']}-{datetime.utcnow().timestamp()}",
+                    id=f"pattern-{result['entity']}-{datetime.now(UTC).timestamp()}",
                     name=f"{result['entity_type']} Pattern: {result['entity']}",
                     description=f"Common {memory_type} pattern involving {result['entity']}",
                     pattern_type=memory_type,
@@ -191,7 +191,7 @@ class PatternRecognizer:
 
             for result in results:
                 pattern = Pattern(
-                    id=f"pattern-pair-{result['entity1']}-{result['entity2']}-{datetime.utcnow().timestamp()}",
+                    id=f"pattern-pair-{result['entity1']}-{result['entity2']}-{datetime.now(UTC).timestamp()}",
                     name=f"Co-occurrence: {result['entity1']} + {result['entity2']}",
                     description=f"Frequent {memory_type} pattern combining {result['entity1']} and {result['entity2']}",
                     pattern_type=f"{memory_type}_combination",

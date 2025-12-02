@@ -10,7 +10,7 @@ import logging
 import json
 import uuid
 from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from .models import (
     Memory, MemoryType, MemoryNode, Relationship, RelationshipType,
@@ -204,7 +204,7 @@ class SQLiteMemoryDatabase:
             if not memory.id:
                 memory.id = str(uuid.uuid4())
 
-            memory.updated_at = datetime.utcnow()
+            memory.updated_at = datetime.now(UTC)
 
             # Convert memory to properties dict
             memory_node = MemoryNode(memory=memory)
@@ -686,7 +686,7 @@ class SQLiteMemoryDatabase:
             if not memory.id:
                 raise ValidationError("Memory must have an ID to update")
 
-            memory.updated_at = datetime.utcnow()
+            memory.updated_at = datetime.now(UTC)
 
             # Convert memory to properties dict
             memory_node = MemoryNode(memory=memory)
@@ -1210,7 +1210,7 @@ class SQLiteMemoryDatabase:
         """
         try:
             # Calculate cutoff date
-            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            cutoff_date = datetime.now(UTC) - timedelta(days=days)
             cutoff_iso = cutoff_date.isoformat()
 
             # Build WHERE conditions

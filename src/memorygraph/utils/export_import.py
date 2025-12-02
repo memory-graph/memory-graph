@@ -6,7 +6,7 @@ Supports JSON and Markdown export formats.
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -90,7 +90,7 @@ async def export_to_json(db: SQLiteMemoryDatabase, output_path: str) -> None:
     # Create export data structure
     export_data = {
         "export_version": "1.0",
-        "export_date": datetime.utcnow().isoformat(),
+        "export_date": datetime.now(UTC).isoformat(),
         "memories": memories_data,
         "relationships": relationships_data
     }
