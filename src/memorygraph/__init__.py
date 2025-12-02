@@ -7,7 +7,7 @@ enabling persistent knowledge tracking, relationship mapping, and contextual dev
 Supports multiple backends: SQLite (default), Neo4j, and Memgraph.
 """
 
-__version__ = "0.8.3"
+__version__ = "0.8.4"
 __author__ = "Gregory Dickson"
 __email__ = "gregory@example.com"
 
@@ -25,6 +25,9 @@ from .models import (
     ValidationError,
     DatabaseConnectionError,
     SchemaError,
+    NotFoundError,
+    BackendError,
+    ConfigurationError,
 )
 
 __all__ = [
@@ -41,4 +44,7 @@ __all__ = [
     "ValidationError",
     "DatabaseConnectionError",
     "SchemaError",
+    "NotFoundError",
+    "BackendError",
+    "ConfigurationError",
 ]
