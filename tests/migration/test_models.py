@@ -4,6 +4,7 @@ Tests for migration data models.
 
 import os
 import pytest
+from unittest.mock import patch
 from src.memorygraph.migration.models import (
     BackendType,
     BackendConfig,
@@ -51,22 +52,24 @@ class TestBackendConfig:
         errors = config.validate()
         assert len(errors) == 0
 
+    @patch.dict(os.environ, {
+        "MEMORY_BACKEND": "sqlite",
+        "MEMORY_SQLITE_PATH": "/tmp/test.db"
+    }, clear=False)
     def test_from_env_sqlite(self):
         """Test creating config from environment for SQLite."""
-        os.environ["MEMORY_BACKEND"] = "sqlite"
-        os.environ["MEMORY_SQLITE_PATH"] = "/tmp/test.db"
-
         config = BackendConfig.from_env()
         assert config.backend_type == BackendType.SQLITE
         assert config.path == "/tmp/test.db"
 
+    @patch.dict(os.environ, {
+        "MEMORY_BACKEND": "neo4j",
+        "MEMORY_NEO4J_URI": "bolt://localhost:7687",
+        "MEMORY_NEO4J_USER": "neo4j",
+        "MEMORY_NEO4J_PASSWORD": "password"
+    }, clear=False)
     def test_from_env_neo4j(self):
         """Test creating config from environment for Neo4j."""
-        os.environ["MEMORY_BACKEND"] = "neo4j"
-        os.environ["MEMORY_NEO4J_URI"] = "bolt://localhost:7687"
-        os.environ["MEMORY_NEO4J_USER"] = "neo4j"
-        os.environ["MEMORY_NEO4J_PASSWORD"] = "password"
-
         config = BackendConfig.from_env()
         assert config.backend_type == BackendType.NEO4J
         assert config.uri == "bolt://localhost:7687"
