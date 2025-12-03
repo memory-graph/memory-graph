@@ -5,8 +5,8 @@
 [![Tests](https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml/badge.svg)](https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/memorygraph)](https://pypi.org/project/memorygraph/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Zero Config](https://img.shields.io/badge/setup-zero--config-green)](docs/DEPLOYMENT.md)
-[![5 Backends](https://img.shields.io/badge/backends-5%20options-purple)](docs/DEPLOYMENT.md)
+[![Zero Config](https://img.shields.io/badge/setup-zero--config-green)](docs/CONFIGURATION.md)
+[![7 Backends](https://img.shields.io/badge/backends-7%20options-purple)](docs/CONFIGURATION.md)
 
 A graph-based [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that gives AI coding agents persistent memory. Store patterns, track relationships, retrieve knowledge across sessions.
 
@@ -93,7 +93,7 @@ MemoryGraph works with any MCP-compliant AI coding tool:
 | **Cline** | VS Code | [Setup Guide](docs/quickstart/CLINE_SETUP.md) |
 | **Gemini CLI** | CLI | [Setup Guide](docs/quickstart/GEMINI_CLI_SETUP.md) |
 
-See [MCP_CLIENT_COMPATIBILITY.md](docs/MCP_CLIENT_COMPATIBILITY.md) for detailed compatibility info.
+See [CONFIGURATION.md](docs/CONFIGURATION.md) for detailed compatibility info.
 
 ---
 
@@ -223,7 +223,7 @@ uvx memorygraph --version  # No install needed
 | Docker | Teams, production | Yes |
 | uvx | Quick testing | No |
 
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed options.
+See [CONFIGURATION.md](docs/CONFIGURATION.md) for detailed options.
 
 ---
 
@@ -578,7 +578,7 @@ MemoryGraph supports 7 backend options to fit your deployment needs:
 - **FalkorDBLite**: Zero-config embedded database with native Cypher support, perfect upgrade from SQLite
 - **FalkorDB**: Redis-based graph DB with 500x faster p99 than Neo4j ([docs](https://docs.falkordb.com/))
 
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for setup details.
+See [CONFIGURATION.md](docs/CONFIGURATION.md) for setup details.
 
 ---
 
@@ -597,9 +597,10 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for setup details.
 memorygraph/
 ├── src/memorygraph/     # Main source
 │   ├── server.py        # MCP server (11 tools)
-│   ├── backends/        # SQLite, Neo4j, Memgraph
+│   ├── backends/        # SQLite, Neo4j, Memgraph, FalkorDB, Turso, Cloud
+│   ├── migration/       # Backend-to-backend migration
 │   └── tools/           # Tool implementations
-├── tests/               # 409 tests, 93% coverage
+├── tests/               # 900+ tests
 └── docs/                # Documentation
 ```
 
@@ -646,43 +647,67 @@ pytest tests/ -v --cov=memorygraph
 
 ---
 
+## What's New in v0.9.5
+
+### Cloud Backend & Turso Support
+- **MemoryGraph Cloud** - REST API client with circuit breaker for resilience (coming soon)
+- **Turso Backend** - Distributed SQLite with embedded replica support for edge deployments
+- **7 total backends** - sqlite, neo4j, memgraph, falkordb, falkordblite, turso, cloud
+
+### Backend Migration
+- **`memorygraph migrate`** - Migrate data between any two backends
+- **5-phase validation** - Pre-flight checks, export, validate, import, verify
+- **Dry-run mode** - Test migrations without writing data
+- **Rollback support** - Automatic cleanup on failure
+
+```bash
+# Migrate from SQLite to FalkorDB
+memorygraph migrate --from sqlite --to falkordb --to-uri redis://localhost:6379
+
+# Test migration first
+memorygraph migrate --from sqlite --to neo4j --dry-run
+```
+
+### Universal Export/Import
+- **Works with ALL backends** - Export from any backend, import to any backend
+- **Progress reporting** - Track long-running operations
+- **Format v2.0** - Enhanced metadata with backend info and counts
+
+```bash
+memorygraph export --format json --output backup.json
+memorygraph import --format json --input backup.json --skip-duplicates
+```
+
+### Architecture Improvements
+- **Circuit breaker** - Prevents cascading failures in cloud backend
+- **Thread-safe backend creation** - Safe for concurrent migrations
+- **Async correctness** - All Turso operations properly non-blocking
+
 ## What's New in v0.9.0
 
-### Pagination
-- **Result pagination** for large datasets - Use `limit` and `offset` parameters to navigate through large result sets efficiently
-- **PaginatedResult** model provides total count, has_more flag, and next offset for seamless pagination
-
-### Cycle Detection
-- **Prevents circular relationships** by default - DFS algorithm detects cycles before creating relationships
-- **Configuration option** `MEMORY_ALLOW_CYCLES` to allow circular relationships when needed
-- **Clear error messages** when cycles are detected
+### Pagination & Cycle Detection
+- **Result pagination** for large datasets with `limit` and `offset` parameters
+- **Cycle detection** prevents circular relationships by default
 
 ### Health Check CLI
-- **Quick diagnostics** with `memorygraph --health` - Check backend connection and database statistics
-- **JSON output** with `--health-json` for scripting and monitoring
-- **Configurable timeout** with `--health-timeout` (default: 5 seconds)
-
-### Improved Error Handling
-- **Exception hierarchy** - `MemoryGraphError` base class with specialized errors: `ValidationError`, `NotFoundError`, `BackendError`, `ConfigurationError`
-- **Error decorator** - `@handle_errors` for consistent error handling across all operations
-- **Better error messages** - More context and actionable suggestions in error messages
+- **Quick diagnostics** with `memorygraph --health`
+- **JSON output** with `--health-json` for scripting
 
 ---
 
 ## Roadmap
 
-### Current (v0.9.0)
-- SQLite default backend with FalkorDB options
-- Two-tier profiles (core/extended)
-- 11 fully implemented MCP tools
-- Result pagination and cycle detection
-- Health check CLI
-- 93% test coverage
+### Current (v0.9.5)
+- 7 backend options (SQLite, Neo4j, Memgraph, FalkorDB, FalkorDBLite, Turso, Cloud)
+- Backend-to-backend migration with `memorygraph migrate`
+- Universal export/import (all backends)
+- Circuit breaker for cloud resilience
+- 900+ tests
 - PyPI + Docker
 
 ### Planned (v1.0+)
 - Web visualization dashboard
-- PostgreSQL backend
+- MemoryGraph Cloud general availability
 - Enhanced embeddings
 
 See [PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md) for details.
