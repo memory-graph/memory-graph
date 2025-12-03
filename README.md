@@ -49,14 +49,30 @@ Then in your coding agent you can ask it to remember important items: *"Remember
 **Quick setup:** Add this to your `~/.claude/CLAUDE.md` or `AGENTS.md` to enable automatic memory storage:
 ```markdown
 ## Memory Protocol
-After completing significant tasks, store a memory with:
-- Type: solution, problem, code_pattern, etc.
-- Title: Brief description
-- Content: What was accomplished, key decisions, patterns discovered
-- Tags: Relevant keywords for future recall
-- Relationships: Link to related memories (problems solved, patterns used)
 
-Before starting work, use `recall_memories` to check for relevant past learnings.
+### REQUIRED: Before Starting Work
+You MUST use `recall_memories` before any task. Query by project, tech, or task type.
+
+### REQUIRED: Automatic Storage Triggers
+Store memories on ANY of:
+- **Git commit** → what was fixed/added
+- **Bug fix** → problem + solution
+- **Version release** → summarize changes
+- **Architecture decision** → choice + rationale
+- **Pattern discovered** → reusable approach
+
+### Timing Mode (default: on-commit)
+`memory_mode: immediate | on-commit | session-end`
+
+### Memory Fields
+- **Type**: solution | problem | code_pattern | fix | error | workflow
+- **Title**: Specific, searchable (not generic)
+- **Content**: Accomplishment, decisions, patterns
+- **Tags**: project, tech, category (REQUIRED)
+- **Importance**: 0.8+ critical, 0.5-0.7 standard, 0.3-0.4 minor
+- **Relationships**: Link related memories when they exist
+
+Do NOT wait to be asked. Memory storage is automatic.
 ```
 
 See [CLAUDE.md Examples](docs/examples/CLAUDE_MD_EXAMPLES.md) for more configuration templates.
@@ -332,34 +348,29 @@ Add a memory protocol to `~/.claude/CLAUDE.md` for persistent behavior across al
 ```markdown
 ## Memory Protocol
 
-### Storage Guidelines
-After completing significant tasks, store a memory using `store_memory`:
-- **Type**: Choose appropriate type (solution, problem, code_pattern, decision, etc.)
-- **Title**: Brief, descriptive (e.g., "Fixed Redis timeout with connection pooling")
-- **Content**: Include:
-  - What was accomplished
-  - Why this approach was chosen
-  - Key decisions and trade-offs
-  - Context that makes it reusable
-- **Tags**: Add relevant keywords (technology, domain, pattern name)
-- **Relationships**: Link to related memories using `create_relationship`:
-  - Solutions SOLVE problems
-  - Fixes ADDRESS errors
-  - Patterns APPLY_TO projects
-  - Decisions IMPROVE previous approaches
+### REQUIRED: Before Starting Work
+You MUST use `recall_memories` before any task. Query by project, tech, or task type.
 
-### Recall Guidelines
-Before starting work on a topic, use `recall_memories` to check for:
-- Past solutions to similar problems
-- Known issues and their fixes
-- Established patterns and conventions
-- Previous decisions and their rationale
+### REQUIRED: Automatic Storage Triggers
+Store memories on ANY of:
+- **Git commit** → what was fixed/added
+- **Bug fix** → problem + solution
+- **Version release** → summarize changes
+- **Architecture decision** → choice + rationale
+- **Pattern discovered** → reusable approach
 
-### Session Wrap-Up
-At the end of each session, store a summary memory:
-- Type: task
-- Content: What was accomplished, what's next
-- Tags: project name, session date
+### Timing Mode (default: on-commit)
+`memory_mode: immediate | on-commit | session-end`
+
+### Memory Fields
+- **Type**: solution | problem | code_pattern | fix | error | workflow
+- **Title**: Specific, searchable (not generic)
+- **Content**: Accomplishment, decisions, patterns
+- **Tags**: project, tech, category (REQUIRED)
+- **Importance**: 0.8+ critical, 0.5-0.7 standard, 0.3-0.4 minor
+- **Relationships**: Link related memories when they exist
+
+Do NOT wait to be asked. Memory storage is automatic.
 ```
 
 #### 2. Use Trigger Phrases

@@ -10,14 +10,30 @@ Add this to `~/.claude/CLAUDE.md` for basic memory functionality:
 
 ```markdown
 ## Memory Protocol
-After completing significant tasks, store a memory with:
-- Type: solution, problem, code_pattern, etc.
-- Title: Brief description
-- Content: What was accomplished, key decisions made
-- Tags: Relevant keywords
-- Relationships: Link to related memories
 
-Before starting work, use `recall_memories` to check for past learnings.
+### REQUIRED: Before Starting Work
+You MUST use `recall_memories` before any task. Query by project, tech, or task type.
+
+### REQUIRED: Automatic Storage Triggers
+Store memories on ANY of:
+- **Git commit** → what was fixed/added
+- **Bug fix** → problem + solution
+- **Version release** → summarize changes
+- **Architecture decision** → choice + rationale
+- **Pattern discovered** → reusable approach
+
+### Timing Mode (default: on-commit)
+`memory_mode: immediate | on-commit | session-end`
+
+### Memory Fields
+- **Type**: solution | problem | code_pattern | fix | error | workflow
+- **Title**: Specific, searchable (not generic)
+- **Content**: Accomplishment, decisions, patterns
+- **Tags**: project, tech, category (REQUIRED)
+- **Importance**: 0.8+ critical, 0.5-0.7 standard, 0.3-0.4 minor
+- **Relationships**: Link related memories when they exist
+
+Do NOT wait to be asked. Memory storage is automatic.
 ```
 
 ---
@@ -29,25 +45,27 @@ Add this to `~/.claude/CLAUDE.md` for full proactive memory usage:
 ```markdown
 ## Memory Protocol
 
-### When to Store Memories
-After completing significant work, store a memory using the `store_memory` tool:
-- **Solutions**: Working fixes, implementations
-- **Problems**: Issues encountered, blockers
-- **Patterns**: Reusable code patterns
-- **Decisions**: Architecture choices, trade-offs
-- **Errors & Fixes**: Bugs and their resolutions
+### REQUIRED: Before Starting Work
+You MUST use `recall_memories` before any task. Query by project, tech, or task type.
 
-### Memory Storage Format
-Always include:
-- **Type**: solution, problem, code_pattern, decision, error, fix, task, technology
-- **Title**: Brief, descriptive (e.g., "Fixed Redis timeout with connection pooling")
-- **Content**:
-  - What was accomplished
-  - Why this approach was chosen
-  - Key decisions and trade-offs
-  - Context for future reuse
-- **Tags**: Technology, domain, pattern name
-- **Relationships**: Link related memories using `create_relationship`
+### REQUIRED: Automatic Storage Triggers
+Store memories on ANY of:
+- **Git commit** → what was fixed/added
+- **Bug fix** → problem + solution
+- **Version release** → summarize changes
+- **Architecture decision** → choice + rationale
+- **Pattern discovered** → reusable approach
+
+### Timing Mode (default: on-commit)
+`memory_mode: immediate | on-commit | session-end`
+
+### Memory Fields
+- **Type**: solution | problem | code_pattern | fix | error | workflow
+- **Title**: Specific, searchable (not generic)
+- **Content**: Accomplishment, decisions, patterns
+- **Tags**: project, tech, category (REQUIRED)
+- **Importance**: 0.8+ critical, 0.5-0.7 standard, 0.3-0.4 minor
+- **Relationships**: Link related memories when they exist
 
 ### Common Relationship Patterns
 - Solutions SOLVE problems
@@ -57,18 +75,13 @@ Always include:
 - Errors TRIGGER problems
 - Changes CAUSE issues
 
-### Recall Before Work
-Before starting on a topic, use `recall_memories` to check for:
-- Past solutions to similar problems
-- Known issues and their fixes
-- Established patterns and conventions
-- Previous decisions and rationale
-
 ### Session Management
 At the end of each session:
 1. Use `store_memory` with type=task to summarize what was accomplished
 2. Include what's next in the content
 3. Tag with project name and date
+
+Do NOT wait to be asked. Memory storage is automatic.
 ```
 
 ---
@@ -417,5 +430,5 @@ Tags: database, pattern, architecture
 
 ---
 
-**Last Updated**: December 1, 2025
-**Version**: 1.0
+**Last Updated**: December 3, 2025
+**Version**: 1.1
