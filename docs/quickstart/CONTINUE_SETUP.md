@@ -209,6 +209,42 @@ mcpServers:
 3. **Combine with Continue's context** - Use `@file` and `@folder` with memory
 4. **Share configs** - Continue configs work across VS Code and JetBrains
 
+## Recommended: Memory Protocol
+
+Add this to `.continuerules` or your Continue config for automatic memory usage:
+
+```markdown
+## Memory Protocol
+
+### REQUIRED: Before Starting Work
+You MUST use `recall_memories` before any task. Query by project, tech, or task type.
+
+### REQUIRED: Automatic Storage Triggers
+Store memories on ANY of:
+- **Git commit** → what was fixed/added
+- **Bug fix** → problem + solution
+- **Version release** → summarize changes
+- **Architecture decision** → choice + rationale
+- **Pattern discovered** → reusable approach
+
+### Timing Mode (default: on-commit)
+`memory_mode: immediate | on-commit | session-end`
+
+### Memory Fields
+- **Type**: solution | problem | code_pattern | fix | error | workflow
+- **Title**: Specific, searchable (not generic)
+- **Content**: Accomplishment, decisions, patterns
+- **Tags**: project, tech, category (REQUIRED)
+- **Importance**: 0.8+ critical, 0.5-0.7 standard, 0.3-0.4 minor
+- **Relationships**: Link related memories when they exist
+
+Do NOT wait to be asked. Memory storage is automatic.
+```
+
+**File locations:**
+- **Project-specific**: `.continuerules` in project root
+- **User-level**: `~/.continue/config.yaml` under `systemMessage`
+
 ## Continue-Specific Features
 
 Continue's MCP integration works well for:

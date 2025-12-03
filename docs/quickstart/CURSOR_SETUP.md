@@ -178,6 +178,42 @@ On macOS, you may need to allow terminal access:
 3. **Query before implementing** - Check if you've solved similar problems before
 4. **Use project-scoped config** - Keep `.cursor/mcp.json` in your repo for team sharing
 
+## Recommended: Memory Protocol
+
+Add this to `.cursorrules` or your project's rules file for automatic memory usage:
+
+```markdown
+## Memory Protocol
+
+### REQUIRED: Before Starting Work
+You MUST use `recall_memories` before any task. Query by project, tech, or task type.
+
+### REQUIRED: Automatic Storage Triggers
+Store memories on ANY of:
+- **Git commit** → what was fixed/added
+- **Bug fix** → problem + solution
+- **Version release** → summarize changes
+- **Architecture decision** → choice + rationale
+- **Pattern discovered** → reusable approach
+
+### Timing Mode (default: on-commit)
+`memory_mode: immediate | on-commit | session-end`
+
+### Memory Fields
+- **Type**: solution | problem | code_pattern | fix | error | workflow
+- **Title**: Specific, searchable (not generic)
+- **Content**: Accomplishment, decisions, patterns
+- **Tags**: project, tech, category (REQUIRED)
+- **Importance**: 0.8+ critical, 0.5-0.7 standard, 0.3-0.4 minor
+- **Relationships**: Link related memories when they exist
+
+Do NOT wait to be asked. Memory storage is automatic.
+```
+
+**File locations:**
+- **Project-specific**: `.cursorrules` in project root
+- **Global**: `~/.cursor/rules` or Cursor Settings
+
 ## Next Steps
 
 - [Full Configuration Reference](../CONFIGURATION.md)
