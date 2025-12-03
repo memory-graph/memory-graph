@@ -166,6 +166,275 @@ Claude Code uses multiple configuration files with different purposes. **This is
 
 **Prerequisites**: You must have already installed MemoryGraph via pip (see [Installation](#installation) section above). The `claude mcp add` command configures Claude Code to use the already-installed `memorygraph` command.
 
+
+# Preauthorizing MCP Tool Usage in Claude Code CLI
+
+This guide covers how to preauthorize tool usage for MCP servers in Claude Code CLI, with specific examples for the **memory-graph** MCP server.
+
+## Quick Start
+
+### Option 1: Wildcard (Recommended)
+
+Allow all tools from your memorygraph server with a single wildcard:
+
+**Project config** (`.claude/settings.json`):
+```json
+{
+  "permissions": {
+    "allowedTools": [
+      "mcp__memorygraph__*"
+    ]
+  }
+}
+```
+
+**CLI flag** (per-session):
+```bash
+claude --allowedTools "mcp__memorygraph__*"
+```
+
+---
+
+## Configuration Methods
+
+### 1. Project Settings (Recommended for Teams)
+
+Create `.claude/settings.json` in your project root:
+
+```json
+{
+  "permissions": {
+    "allowedTools": [
+      "mcp__memorygraph__*",
+      "Read",
+      "Edit",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(pytest *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)"
+    ]
+  }
+}
+```
+
+### 2. User Global Settings
+
+For settings that apply to all your projects, edit `~/.claude.json` or `~/.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allowedTools": [
+      "mcp__memorygraph__*"
+    ]
+  }
+}
+```
+
+### 3. CLI Flags (Per-Session)
+
+For one-off sessions:
+
+```bash
+# Allow memorygraph + common tools
+claude --allowedTools "mcp__memorygraph__*" "Read" "Edit" "Bash(git *)"
+
+# Non-interactive mode with permissions
+claude -p "Store a memory about this project" --allowedTools "mcp__memorygraph__*"
+```
+
+### 4. Interactive Commands
+
+During a Claude Code session:
+
+```
+/permissions
+/allowed-tools add mcp__memorygraph__*
+```
+
+Or click **"Always allow"** when prompted.
+
+---
+
+## Full Tool List for memory-graph
+
+If you prefer explicit tool declarations over wildcards:
+
+```json
+{
+  "permissions": {
+    "allowedTools": [
+      "mcp__memorygraph__recall_memories",
+      "mcp__memorygraph__store_memory",
+      "mcp__memorygraph__get_memory",
+      "mcp__memorygraph__search_memories",
+      "mcp__memorygraph__update_memory",
+      "mcp__memorygraph__delete_memory",
+      "mcp__memorygraph__create_relationship",
+      "mcp__memorygraph__get_related_memories",
+      "mcp__memorygraph__get_memory_statistics",
+      "mcp__memorygraph__get_recent_activity",
+      "mcp__memorygraph__search_relationships_by_context",
+      "mcp__memorygraph__find_memory_path",
+      "mcp__memorygraph__analyze_memory_clusters",
+      "mcp__memorygraph__find_bridge_memories",
+      "mcp__memorygraph__suggest_relationship_type",
+      "mcp__memorygraph__reinforce_relationship",
+      "mcp__memorygraph__get_relationship_types_by_category",
+      "mcp__memorygraph__analyze_graph_metrics",
+      "mcp__memorygraph__find_similar_solutions",
+      "mcp__memorygraph__suggest_patterns_for_context",
+      "mcp__memorygraph__get_intelligent_context",
+      "mcp__memorygraph__get_project_summary",
+      "mcp__memorygraph__get_session_briefing",
+      "mcp__memorygraph__get_memory_history",
+      "mcp__memorygraph__track_entity_timeline",
+      "mcp__memorygraph__capture_task",
+      "mcp__memorygraph__capture_command",
+      "mcp__memorygraph__track_error_solution",
+      "mcp__memorygraph__detect_project",
+      "mcp__memorygraph__analyze_project",
+      "mcp__memorygraph__track_file_changes",
+      "mcp__memorygraph__identify_patterns",
+      "mcp__memorygraph__track_workflow",
+      "mcp__memorygraph__suggest_workflow",
+      "mcp__memorygraph__optimize_workflow",
+      "mcp__memorygraph__get_session_state",
+      "mcp__memorygraph__check_for_issues",
+      "mcp__memorygraph__get_suggestions",
+      "mcp__memorygraph__predict_solution_effectiveness",
+      "mcp__memorygraph__suggest_related_memories",
+      "mcp__memorygraph__record_outcome",
+      "mcp__memorygraph__get_graph_visualization",
+      "mcp__memorygraph__recommend_learning_paths",
+      "mcp__memorygraph__identify_knowledge_gaps",
+      "mcp__memorygraph__track_memory_roi"
+    ]
+  }
+}
+```
+
+---
+
+## Tool Naming Convention
+
+MCP tools follow this pattern:
+
+```
+mcp__<server-name>__<tool-name>
+```
+
+| Component | Description |
+|-----------|-------------|
+| `mcp__` | Prefix indicating an MCP tool |
+| `<server-name>` | Name from your MCP config (e.g., `memorygraph`) |
+| `<tool-name>` | The tool's registered name |
+
+**Important:** The server name must match what's in your `.mcp.json` or MCP configuration.
+
+---
+
+## Pattern Syntax
+
+| Pattern | Meaning |
+|---------|---------|
+| `mcp__memorygraph__*` | All tools from memorygraph server |
+| `mcp__memorygraph__store_memory` | Specific tool only |
+| `Bash(git *)` | Any git command |
+| `Bash(npm run *)` | npm run with any script |
+| `Read` | Read any file |
+| `Edit` | Edit any file |
+| `Write(src/*)` | Write only in src/ directory |
+
+---
+
+## Deny Rules
+
+Deny rules take precedence over allow rules. Use them to create safe boundaries:
+
+```json
+{
+  "permissions": {
+    "allowedTools": [
+      "mcp__memorygraph__*",
+      "Bash(*)"
+    ],
+    "deny": [
+      "mcp__memorygraph__delete_memory",
+      "Bash(rm *)",
+      "Bash(sudo *)",
+      "Bash(curl *)"
+    ]
+  }
+}
+```
+
+---
+
+## Complete Example Configuration
+
+A production-ready `.claude/settings.json` for a project using memory-graph:
+
+```json
+{
+  "permissions": {
+    "allowedTools": [
+      "mcp__memorygraph__*",
+      "Read",
+      "Edit",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(pytest *)",
+      "Bash(python *)",
+      "Bash(uv *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(find *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ]
+  }
+}
+```
+
+---
+
+## Troubleshooting
+
+### Tools still prompting for permission?
+
+1. **Check server name**: Verify the server name in your MCP config matches the tool path
+2. **Non-interactive mode quirks**: The `-p` flag sometimes doesn't respect config file permissions—use `--allowedTools` explicitly
+3. **Restart Claude Code**: After config changes, restart your session
+
+### View current permissions
+
+```bash
+claude /permissions
+```
+
+### Debug MCP connections
+
+```bash
+claude --mcp-debug
+claude mcp list
+```
+
+---
+
+## References
+
+- [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
+- [Claude Code Settings](https://docs.anthropic.com/en/docs/claude-code/settings#permissions)
+- [memory-graph Repository](https://github.com/gregorydickson/memory-graph)
 ---
 
 ### Configuration Examples

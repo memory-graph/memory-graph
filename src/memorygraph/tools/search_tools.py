@@ -33,7 +33,8 @@ async def handle_search_memories(
             - tags: Filter by tags (optional)
             - project_path: Filter by project path (optional)
             - min_importance: Minimum importance threshold (optional)
-            - limit: Maximum results (default: 20)
+            - limit: Maximum results per page (default: 50)
+            - offset: Number of results to skip for pagination (default: 0)
             - search_tolerance: Search mode (strict/normal/fuzzy, default: normal)
             - match_mode: Match mode for terms (any/all, default: any)
             - relationship_filter: Filter by relationship types (optional)
@@ -50,7 +51,8 @@ async def handle_search_memories(
             tags=arguments.get("tags", []),
             project_path=arguments.get("project_path"),
             min_importance=arguments.get("min_importance"),
-            limit=arguments.get("limit", 20),
+            limit=arguments.get("limit", 50),
+            offset=arguments.get("offset", 0),
             search_tolerance=arguments.get("search_tolerance", "normal"),
             match_mode=arguments.get("match_mode", "any"),
             relationship_filter=arguments.get("relationship_filter")
@@ -114,7 +116,8 @@ async def handle_recall_memories(
             - query: Natural language search query (optional)
             - memory_types: Filter by memory types (optional)
             - project_path: Filter by project path (optional)
-            - limit: Maximum results (default: 20)
+            - limit: Maximum results per page (default: 20)
+            - offset: Number of results to skip for pagination (default: 0)
 
     Returns:
         CallToolResult with enhanced formatted results or error message
@@ -126,6 +129,7 @@ async def handle_recall_memories(
             memory_types=[MemoryType(t) for t in arguments.get("memory_types", [])],
             project_path=arguments.get("project_path"),
             limit=arguments.get("limit", 20),
+            offset=arguments.get("offset", 0),
             search_tolerance="normal",  # Always use fuzzy matching
             include_relationships=True  # Always include relationships
         )

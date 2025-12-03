@@ -21,31 +21,49 @@ logger = logging.getLogger(__name__)
 
 
 async def handle_export(args: argparse.Namespace) -> None:
-    """Handle export command."""
+    """Handle export command - works with all backends."""
+    import time
     from .backends.factory import BackendFactory
     from .sqlite_database import SQLiteMemoryDatabase
+    from .database import MemoryDatabase
     from .backends.sqlite_fallback import SQLiteFallbackBackend
     from .utils.export_import import export_to_json, export_to_markdown
-
-    print(f"\n📤 Exporting memories to {args.format.upper()} format...")
 
     try:
         # Connect to database
         backend = await BackendFactory.create_backend()
+        backend_name = backend.backend_name()
 
-        if not isinstance(backend, SQLiteFallbackBackend):
-            print("❌ Error: Export currently only supported for SQLite backend")
-            sys.exit(1)
+        print(f"\n📤 Exporting memories from {backend_name} backend...")
 
-        db = SQLiteMemoryDatabase(backend)
+        # Create appropriate database wrapper
+        if isinstance(backend, SQLiteFallbackBackend):
+            db = SQLiteMemoryDatabase(backend)
+        else:
+            db = MemoryDatabase(backend)
 
-        # Perform export
+        start_time = time.time()
+
+        # Perform export with progress tracking
         if args.format == "json":
-            await export_to_json(db, args.output)
-            print(f"✅ Successfully exported to {args.output}")
+            result = await export_to_json(db, args.output)
+            duration = time.time() - start_time
+
+            print(f"\n✅ Export complete!")
+            print(f"   Backend: {result.get('backend_type', backend_name)}")
+            print(f"   Output: {args.output}")
+            print(f"   Memories: {result['memory_count']}")
+            print(f"   Relationships: {result['relationship_count']}")
+            print(f"   Duration: {duration:.1f} seconds")
+
         elif args.format == "markdown":
             await export_to_markdown(db, args.output)
-            print(f"✅ Successfully exported to {args.output}/")
+            duration = time.time() - start_time
+
+            print(f"\n✅ Export complete!")
+            print(f"   Backend: {backend_name}")
+            print(f"   Output: {args.output}/")
+            print(f"   Duration: {duration:.1f} seconds")
 
         await backend.disconnect()
 
@@ -56,39 +74,123 @@ async def handle_export(args: argparse.Namespace) -> None:
 
 
 async def handle_import(args: argparse.Namespace) -> None:
-    """Handle import command."""
+    """Handle import command - works with all backends."""
+    import time
     from .backends.factory import BackendFactory
     from .sqlite_database import SQLiteMemoryDatabase
+    from .database import MemoryDatabase
     from .backends.sqlite_fallback import SQLiteFallbackBackend
     from .utils.export_import import import_from_json
-
-    print(f"\n📥 Importing memories from {args.format.upper()} format...")
 
     try:
         # Connect to database
         backend = await BackendFactory.create_backend()
+        backend_name = backend.backend_name()
 
-        if not isinstance(backend, SQLiteFallbackBackend):
-            print("❌ Error: Import currently only supported for SQLite backend")
-            sys.exit(1)
+        print(f"\n📥 Importing memories to {backend_name} backend...")
 
-        db = SQLiteMemoryDatabase(backend)
+        # Create appropriate database wrapper
+        if isinstance(backend, SQLiteFallbackBackend):
+            db = SQLiteMemoryDatabase(backend)
+        else:
+            db = MemoryDatabase(backend)
+
         await db.initialize_schema()
+
+        start_time = time.time()
 
         # Perform import
         if args.format == "json":
             result = await import_from_json(db, args.input, skip_duplicates=args.skip_duplicates)
+            duration = time.time() - start_time
 
-            print(f"\n✅ Import complete:")
-            print(f"   - Imported: {result['imported_memories']} memories, {result['imported_relationships']} relationships")
+            print(f"\n✅ Import complete!")
+            print(f"   Backend: {backend_name}")
+            print(f"   Imported: {result['imported_memories']} memories, {result['imported_relationships']} relationships")
             if result['skipped_memories'] > 0 or result['skipped_relationships'] > 0:
-                print(f"   - Skipped: {result['skipped_memories']} memories, {result['skipped_relationships']} relationships")
+                print(f"   Skipped: {result['skipped_memories']} memories, {result['skipped_relationships']} relationships")
+            print(f"   Duration: {duration:.1f} seconds")
 
         await backend.disconnect()
 
     except Exception as e:
         print(f"❌ Import failed: {e}")
         logger.error(f"Import failed: {e}", exc_info=True)
+        sys.exit(1)
+
+
+async def handle_migrate(args: argparse.Namespace) -> None:
+    """Handle migrate command."""
+    from .migration.manager import MigrationManager
+    from .migration.models import BackendConfig, MigrationOptions
+
+    print(f"\n🔄 Migrating memories: {args.source_backend or 'current'} → {args.target_backend}")
+
+    try:
+        # Build source config
+        if args.source_backend:
+            source_config = BackendConfig(
+                backend_type=BackendType(args.source_backend),
+                path=args.from_path,
+                uri=args.from_uri
+            )
+        else:
+            source_config = BackendConfig.from_env()
+
+        # Build target config
+        target_config = BackendConfig(
+            backend_type=BackendType(args.target_backend),
+            path=args.to_path,
+            uri=args.to_uri
+        )
+
+        # Build options
+        options = MigrationOptions(
+            dry_run=args.dry_run,
+            verbose=args.verbose,
+            skip_duplicates=args.skip_duplicates,
+            verify=not args.no_verify,
+            rollback_on_failure=True
+        )
+
+        # Perform migration
+        manager = MigrationManager()
+        result = await manager.migrate(source_config, target_config, options)
+
+        # Display results
+        if result.dry_run:
+            print("\n✅ Dry-run successful - migration would proceed safely")
+            if result.source_stats:
+                memory_count = result.source_stats.get('memory_count', 0)
+                print(f"   Source: {memory_count} memories")
+            if result.errors:
+                print("\n⚠️  Warnings:")
+                for error in result.errors:
+                    print(f"   - {error}")
+
+        elif result.success:
+            print("\n✅ Migration completed successfully!")
+            print(f"   Migrated: {result.imported_memories} memories")
+            print(f"   Migrated: {result.imported_relationships} relationships")
+            if result.skipped_memories > 0:
+                print(f"   Skipped: {result.skipped_memories} duplicates")
+            print(f"   Duration: {result.duration_seconds:.1f} seconds")
+
+            if result.verification_result and result.verification_result.valid:
+                print(f"\n✓ Verification passed:")
+                print(f"   Source: {result.verification_result.source_count} memories")
+                print(f"   Target: {result.verification_result.target_count} memories")
+                print(f"   Sample check: {result.verification_result.sample_passed}/{result.verification_result.sample_checks} passed")
+
+        else:
+            print("\n❌ Migration failed!")
+            for error in result.errors:
+                print(f"   - {error}")
+            sys.exit(1)
+
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        logger.error(f"Migration failed: {e}", exc_info=True)
         sys.exit(1)
 
 
@@ -299,13 +401,16 @@ Environment Variables:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Export command
-    export_parser = subparsers.add_parser("export", help="Export memories to file")
+    export_parser = subparsers.add_parser(
+        "export",
+        help="Export memories to file (works with all backends)"
+    )
     export_parser.add_argument(
         "--format",
         type=str,
         choices=["json", "markdown"],
         required=True,
-        help="Export format"
+        help="Export format (json or markdown)"
     )
     export_parser.add_argument(
         "--output",
@@ -315,7 +420,10 @@ Environment Variables:
     )
 
     # Import command
-    import_parser = subparsers.add_parser("import", help="Import memories from file")
+    import_parser = subparsers.add_parser(
+        "import",
+        help="Import memories from file (works with all backends)"
+    )
     import_parser.add_argument(
         "--format",
         type=str,
@@ -333,6 +441,68 @@ Environment Variables:
         "--skip-duplicates",
         action="store_true",
         help="Skip memories with existing IDs instead of overwriting"
+    )
+
+    # Migrate command
+    migrate_parser = subparsers.add_parser(
+        "migrate",
+        help="Migrate memories between backends"
+    )
+    migrate_parser.add_argument(
+        "--from",
+        dest="source_backend",
+        type=str,
+        choices=["sqlite", "neo4j", "memgraph", "falkordb", "falkordblite", "turso", "cloud"],
+        help="Source backend type (defaults to current MEMORY_BACKEND)"
+    )
+    migrate_parser.add_argument(
+        "--from-path",
+        type=str,
+        help="Source database path (for sqlite/falkordblite/turso)"
+    )
+    migrate_parser.add_argument(
+        "--from-uri",
+        type=str,
+        help="Source database URI (for neo4j/memgraph/falkordb/turso/cloud)"
+    )
+    migrate_parser.add_argument(
+        "--to",
+        dest="target_backend",
+        type=str,
+        required=True,
+        choices=["sqlite", "neo4j", "memgraph", "falkordb", "falkordblite", "turso", "cloud"],
+        help="Target backend type"
+    )
+    migrate_parser.add_argument(
+        "--to-path",
+        type=str,
+        help="Target database path (for sqlite/falkordblite/turso)"
+    )
+    migrate_parser.add_argument(
+        "--to-uri",
+        type=str,
+        help="Target database URI (for neo4j/memgraph/falkordb/turso/cloud)"
+    )
+    migrate_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate migration without making changes"
+    )
+    migrate_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show detailed progress information"
+    )
+    migrate_parser.add_argument(
+        "--skip-duplicates",
+        action="store_true",
+        default=True,
+        help="Skip memories that already exist in target"
+    )
+    migrate_parser.add_argument(
+        "--no-verify",
+        action="store_true",
+        help="Skip post-migration verification (faster but less safe)"
     )
 
     args = parser.parse_args()
@@ -403,13 +573,17 @@ Environment Variables:
         # Exit with appropriate status code
         sys.exit(0 if result['status'] == 'healthy' else 1)
 
-    # Handle export/import commands
+    # Handle export/import/migrate commands
     if args.command == "export":
         asyncio.run(handle_export(args))
         sys.exit(0)
 
     if args.command == "import":
         asyncio.run(handle_import(args))
+        sys.exit(0)
+
+    if args.command == "migrate":
+        asyncio.run(handle_migrate(args))
         sys.exit(0)
 
     # Start the server

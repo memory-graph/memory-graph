@@ -10,11 +10,11 @@
 
 ## Prerequisites
 
-- [ ] 1-WORKPLAN completed (critical fixes)
-- [ ] 2-WORKPLAN completed (test coverage solid)
-- [ ] 3-WORKPLAN completed (error handling, type hints)
-- [ ] 4-WORKPLAN completed (server.py refactored)
-- [ ] ADR 009 reviewed and approved
+- [x] 1-WORKPLAN completed (critical fixes)
+- [x] 2-WORKPLAN completed (test coverage solid)
+- [x] 3-WORKPLAN completed (error handling, type hints)
+- [x] 4-WORKPLAN completed (server.py refactored)
+- [x] ADR 009 reviewed and approved
 
 ---
 

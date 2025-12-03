@@ -84,6 +84,8 @@ MemoryGraph works with any MCP-compliant AI coding tool:
 | Client | Type | Quick Start |
 |--------|------|-------------|
 | **Claude Code** | CLI/IDE | [Setup Guide](docs/CLAUDE_CODE_SETUP.md) |
+| **Claude Desktop** | Desktop App | [Setup Guide](docs/quickstart/CLAUDE_DESKTOP.md) |
+| **ChatGPT Desktop** | Desktop App | [Setup Guide](docs/quickstart/CHATGPT_DESKTOP.md) |
 | **Cursor AI** | IDE | [Setup Guide](docs/quickstart/CURSOR_SETUP.md) |
 | **Windsurf** | IDE | [Setup Guide](docs/quickstart/WINDSURF_SETUP.md) |
 | **VS Code + Copilot** | IDE (1.102+) | [Setup Guide](docs/quickstart/VSCODE_COPILOT_SETUP.md) |
@@ -222,6 +224,41 @@ uvx memorygraph --version  # No install needed
 | uvx | Quick testing | No |
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed options.
+
+---
+
+## Claude Code Web Support
+
+MemoryGraph works in Claude Code Web (remote) environments via project hooks.
+
+### Quick Setup
+
+Copy the hook files to your project:
+
+```bash
+# From memorygraph repo
+cp -r examples/claude-code-hooks/.claude /path/to/your/project/
+
+# Commit to your repo
+cd /path/to/your/project
+git add .claude/
+git commit -m "Add MemoryGraph auto-install hooks"
+```
+
+When you open this project in Claude Code Web, MemoryGraph installs automatically.
+
+### Persistent Storage (Optional)
+
+Remote environments are ephemeral. For persistent memories, configure cloud storage
+in your Claude Code Web environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `MEMORYGRAPH_API_KEY` | API key from memorygraph.dev (coming soon) |
+| `MEMORYGRAPH_TURSO_URL` | Your Turso database URL |
+| `MEMORYGRAPH_TURSO_TOKEN` | Your Turso auth token |
+
+See [Claude Code Web Setup](docs/claude-code-web.md) for detailed instructions.
 
 ---
 
@@ -583,8 +620,13 @@ claude mcp list          # Check connection status
 
 **Multiple version conflict?**
 ```bash
-# Use full path to avoid venv conflicts
+# Option A: Use full path to avoid venv conflicts (recommended)
 claude mcp add memorygraph -- ~/.local/bin/memorygraph
+
+# Option B: Create symlink for cleaner config (requires sudo once)
+sudo ln -s ~/.local/bin/memorygraph /usr/local/bin/memorygraph
+# Then use simple command
+claude mcp add memorygraph -- memorygraph
 ```
 
 See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for more solutions.

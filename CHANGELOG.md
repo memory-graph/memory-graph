@@ -7,11 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Claude Code Web support via project hooks
+- Auto-installation in remote environments
+- Turso backend for cloud-persistent SQLite-compatible storage
+- Cloud backend placeholder (coming soon)
+- Example hook files in `examples/claude-code-hooks/`
+- Documentation for Claude Code Web setup (`docs/claude-code-web.md`)
+- Copy helper script for easy project integration
+
+### Changed
+- Backend factory now supports `turso` backend type
+- Environment variables support both `TURSO_*` and `MEMORYGRAPH_TURSO_*` prefixes
+
 ### Planned (v2.1+)
 - Web visualization dashboard
 - PostgreSQL backend support (pg_graph)
 - Enhanced embedding support
 - Workflow automation templates
+- MemoryGraph Cloud API (memorygraph.dev)
 
 ## [0.8.1] - 2025-12-01
 

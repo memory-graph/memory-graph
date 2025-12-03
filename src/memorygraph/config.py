@@ -15,6 +15,10 @@ class BackendType(Enum):
     NEO4J = "neo4j"
     MEMGRAPH = "memgraph"
     SQLITE = "sqlite"
+    TURSO = "turso"
+    CLOUD = "cloud"
+    FALKORDB = "falkordb"
+    FALKORDBLITE = "falkordblite"
     AUTO = "auto"
 
 
@@ -59,7 +63,7 @@ class Config:
     Configuration class for the memory server.
 
     Environment Variables:
-        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|auto) [default: sqlite]
+        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|turso|cloud|falkordb|falkordblite|auto) [default: sqlite]
 
         Neo4j Configuration:
             MEMORY_NEO4J_URI or NEO4J_URI: Connection URI [default: bolt://localhost:7687]
@@ -73,6 +77,16 @@ class Config:
 
         SQLite Configuration:
             MEMORY_SQLITE_PATH: Database file path [default: ~/.memorygraph/memory.db]
+
+        Turso Configuration:
+            MEMORY_TURSO_PATH: Local database file path [default: ~/.memorygraph/memory.db]
+            TURSO_DATABASE_URL: Turso database URL (e.g., libsql://your-db.turso.io)
+            TURSO_AUTH_TOKEN: Turso authentication token
+
+        Cloud Configuration:
+            MEMORYGRAPH_API_KEY: API key for MemoryGraph Cloud (required for cloud backend)
+            MEMORYGRAPH_API_URL: Cloud API base URL [default: https://graph-api.memorygraph.dev]
+            MEMORYGRAPH_TIMEOUT: Request timeout in seconds [default: 30]
 
         Tool Profile Configuration:
             MEMORY_TOOL_PROFILE: Tool profile (core|extended) [default: core]
@@ -97,6 +111,16 @@ class Config:
 
     # SQLite Configuration
     SQLITE_PATH: str = os.getenv("MEMORY_SQLITE_PATH", os.path.expanduser("~/.memorygraph/memory.db"))
+
+    # Turso Configuration
+    TURSO_PATH: str = os.getenv("MEMORY_TURSO_PATH", os.path.expanduser("~/.memorygraph/memory.db"))
+    TURSO_DATABASE_URL: Optional[str] = os.getenv("TURSO_DATABASE_URL")
+    TURSO_AUTH_TOKEN: Optional[str] = os.getenv("TURSO_AUTH_TOKEN")
+
+    # Cloud Configuration
+    MEMORYGRAPH_API_KEY: Optional[str] = os.getenv("MEMORYGRAPH_API_KEY")
+    MEMORYGRAPH_API_URL: str = os.getenv("MEMORYGRAPH_API_URL", "https://graph-api.memorygraph.dev")
+    MEMORYGRAPH_TIMEOUT: int = int(os.getenv("MEMORYGRAPH_TIMEOUT", "30"))
 
     # Tool Profile Configuration
     TOOL_PROFILE: str = os.getenv("MEMORY_TOOL_PROFILE", "core")
@@ -178,6 +202,16 @@ class Config:
             },
             "sqlite": {
                 "path": cls.SQLITE_PATH
+            },
+            "turso": {
+                "path": cls.TURSO_PATH,
+                "database_url": cls.TURSO_DATABASE_URL,
+                "auth_token_configured": bool(cls.TURSO_AUTH_TOKEN)
+            },
+            "cloud": {
+                "api_url": cls.MEMORYGRAPH_API_URL,
+                "api_key_configured": bool(cls.MEMORYGRAPH_API_KEY),
+                "timeout": cls.MEMORYGRAPH_TIMEOUT
             },
             "logging": {
                 "level": cls.LOG_LEVEL

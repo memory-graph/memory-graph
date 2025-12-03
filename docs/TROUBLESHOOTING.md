@@ -81,8 +81,13 @@ source ~/.bashrc
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 
-# Option 3: Use full path in MCP config
+# Option 3: Use full path in MCP config (recommended for Claude Desktop)
 claude mcp add --transport stdio memorygraph -- /full/path/to/memorygraph
+
+# Option 4: Create symlink for system-wide access (requires sudo)
+sudo ln -s ~/.local/bin/memorygraph /usr/local/bin/memorygraph
+# Then use simple command
+claude mcp add memorygraph -- memorygraph
 ```
 
 ### MCP Server Connection Failed
@@ -261,58 +266,33 @@ memorygraph --backend neo4j --import backup.json
 memorygraph --backend neo4j --show-config
 ```
 
-### Cycle Detection Errors (v0.9.0+)
+## Cycle Detection Errors
 
-**Error**: `ValidationError: Creating this relationship would create a cycle`
+### Error: "Cannot create relationship ... Would create a cycle"
 
-This error occurs when trying to create a relationship that would form a circular dependency.
-
-```bash
-# Example scenario:
-# Memory A --DEPENDS_ON--> Memory B --DEPENDS_ON--> Memory C --DEPENDS_ON--> Memory A
-#                                                                             ^ Cycle!
-```
+**Cause**: You're trying to create a circular relationship chain (e.g., A → B → C → A). By default, MemoryGraph prevents cycles to avoid infinite loops during relationship traversal.
 
 **Solutions**:
 
-1. **Redesign the relationship** (recommended):
-   - Review the relationship chain to identify the circular dependency
-   - Remove or restructure relationships to avoid cycles
-   - Use different relationship types that don't imply dependency
+1. **Review your relationship chain**: Check if the cycle is intentional or a mistake
+   ```
+   # Example cycle: memory_1 → memory_2 → memory_3 → memory_1
+   # This would be blocked
+   ```
 
-2. **Allow cycles** (use with caution):
+2. **Use a different relationship type**: Some relationship types may not imply ordering
+   ```python
+   # Instead of: A CAUSES B, B CAUSES C, C CAUSES A (cycle)
+   # Consider: A RELATED_TO B, B RELATED_TO C, C RELATED_TO A
+   ```
+
+3. **Enable cycles** (use with caution):
    ```bash
-   # Set environment variable
    export MEMORY_ALLOW_CYCLES=true
-
-   # Or configure in MCP settings
-   claude mcp add --scope user memorygraph \
-     --env MEMORY_ALLOW_CYCLES=true \
-     -- memorygraph
    ```
+   Warning: Enabling cycles may cause infinite loops in `get_related_memories()` with high depth values.
 
-   **Warning**: Allowing cycles can lead to:
-   - Infinite loops in traversal operations
-   - Ambiguous dependency resolution
-   - Harder to reason about memory graphs
-
-   Only enable if you have a specific use case requiring bidirectional relationships.
-
-3. **Check existing relationships**:
-   ```bash
-   # Use get_related_memories to trace the chain
-   # Find where the cycle would close
-   ```
-
-**Common cycle patterns**:
-- `A DEPENDS_ON B DEPENDS_ON A` - Mutual dependency
-- `A SOLVES B CAUSES A` - Circular problem/solution
-- `A BUILDS_ON B BUILDS_ON C BUILDS_ON A` - Circular learning chain
-
-**Valid alternatives**:
-- Use `RELATED_TO` for non-directional associations
-- Use `SIMILAR_TO` for equivalent patterns
-- Use bidirectional relationships with `bidirectional=true` flag
+**Configuration**: Set `MEMORY_ALLOW_CYCLES=true` environment variable to allow circular relationships.
 
 ## MCP Configuration Issues
 

@@ -560,10 +560,12 @@ class TestMemoryDatabase:
     async def test_get_related_memories(self, database, connection, mock_driver, mock_session):
         """Test getting related memories with depth traversal."""
         # Mock related memories data
+        memory_id = str(uuid.uuid4())
+        related_id = str(uuid.uuid4())
         related_data = [
             {
                 "related": {
-                    "id": str(uuid.uuid4()),
+                    "id": related_id,
                     "type": "problem",
                     "title": "Related Problem",
                     "content": "Related content",
@@ -578,13 +580,14 @@ class TestMemoryDatabase:
                     "strength": 0.9,
                     "confidence": 0.8,
                     "evidence_count": 1
-                }
+                },
+                "from_id": memory_id,
+                "to_id": related_id
             }
         ]
         mock_session.execute_read = create_mock_execute(related_data)
         mock_driver.session = MagicMock(return_value=mock_session)
 
-        memory_id = str(uuid.uuid4())
         related = await database.get_related_memories(
             memory_id=memory_id,
             relationship_types=[RelationshipType.SOLVES],

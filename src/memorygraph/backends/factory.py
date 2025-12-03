@@ -65,6 +65,14 @@ class BackendFactory:
             logger.info("Explicit backend selection: SQLite")
             return await BackendFactory._create_sqlite()
 
+        elif backend_type == "turso":
+            logger.info("Explicit backend selection: Turso")
+            return await BackendFactory._create_turso()
+
+        elif backend_type == "cloud":
+            logger.info("Explicit backend selection: Cloud (MemoryGraph Cloud)")
+            return await BackendFactory._create_cloud()
+
         elif backend_type == "auto":
             logger.info("Auto-selecting backend...")
             return await BackendFactory._auto_select_backend()
@@ -72,7 +80,7 @@ class BackendFactory:
         else:
             raise DatabaseConnectionError(
                 f"Unknown backend type: {backend_type}. "
-                f"Valid options: neo4j, memgraph, falkordb, falkordblite, sqlite, auto"
+                f"Valid options: neo4j, memgraph, falkordb, falkordblite, sqlite, turso, cloud, auto"
             )
 
     @staticmethod
@@ -235,6 +243,256 @@ class BackendFactory:
         return backend
 
     @staticmethod
+    async def _create_turso() -> GraphBackend:
+        """
+        Create and connect to Turso backend.
+
+        Returns:
+            Connected TursoBackend instance
+
+        Raises:
+            DatabaseConnectionError: If connection fails
+        """
+        # Lazy import - only load turso backend when needed
+        from .turso import TursoBackend
+
+        db_path = os.getenv("MEMORY_TURSO_PATH")
+        sync_url = os.getenv("TURSO_DATABASE_URL") or os.getenv("MEMORYGRAPH_TURSO_URL")
+        auth_token = os.getenv("TURSO_AUTH_TOKEN") or os.getenv("MEMORYGRAPH_TURSO_TOKEN")
+
+        backend = TursoBackend(
+            db_path=db_path,
+            sync_url=sync_url,
+            auth_token=auth_token
+        )
+        await backend.connect()
+        await backend.initialize_schema()
+        return backend
+
+    @staticmethod
+    async def _create_cloud() -> GraphBackend:
+        """
+        Create and connect to MemoryGraph Cloud backend.
+
+        Returns:
+            Connected CloudBackend instance
+
+        Raises:
+            DatabaseConnectionError: If connection fails or API key not configured
+        """
+        # Lazy import - only load cloud backend when needed
+        from .cloud_backend import CloudBackend
+
+        api_key = os.getenv("MEMORYGRAPH_API_KEY")
+        api_url = os.getenv("MEMORYGRAPH_API_URL")
+        timeout_str = os.getenv("MEMORYGRAPH_TIMEOUT")
+        timeout = int(timeout_str) if timeout_str else None
+
+        if not api_key:
+            raise DatabaseConnectionError(
+                "MEMORYGRAPH_API_KEY is required for cloud backend. "
+                "Get your API key at https://app.memorygraph.dev"
+            )
+
+        backend = CloudBackend(
+            api_key=api_key,
+            api_url=api_url,
+            timeout=timeout
+        )
+        await backend.connect()
+        return backend
+
+    @staticmethod
+    async def create_from_config(config: 'BackendConfig') -> GraphBackend:
+        """
+        Create backend from explicit configuration without using environment variables.
+
+        This is a thread-safe alternative to create_backend() that doesn't mutate
+        global environment variables.
+
+        Args:
+            config: BackendConfig with backend type and connection details
+
+        Returns:
+            Connected GraphBackend instance
+
+        Raises:
+            DatabaseConnectionError: If backend creation or connection fails
+
+        Example:
+            config = BackendConfig(
+                backend_type=BackendType.SQLITE,
+                path="/path/to/db.sqlite"
+            )
+            backend = await BackendFactory.create_from_config(config)
+        """
+        from ..migration.models import BackendConfig  # Import here to avoid circular dependency
+
+        backend_type = config.backend_type.value
+
+        try:
+            if backend_type == "sqlite":
+                return await BackendFactory._create_sqlite_with_path(config.path)
+
+            elif backend_type == "falkordblite":
+                return await BackendFactory._create_falkordblite_with_path(config.path)
+
+            elif backend_type == "neo4j":
+                return await BackendFactory._create_neo4j_with_config(
+                    uri=config.uri,
+                    user=config.username,
+                    password=config.password
+                )
+
+            elif backend_type == "memgraph":
+                return await BackendFactory._create_memgraph_with_config(
+                    uri=config.uri,
+                    user=config.username or "",
+                    password=config.password or ""
+                )
+
+            elif backend_type == "falkordb":
+                # Parse host and port from URI (format: redis://host:port)
+                import re
+                if config.uri:
+                    match = re.match(r'redis://([^:]+):(\d+)', config.uri)
+                    if match:
+                        host, port_str = match.groups()
+                        port = int(port_str)
+                    else:
+                        raise DatabaseConnectionError(f"Invalid FalkorDB URI format: {config.uri}")
+                else:
+                    raise DatabaseConnectionError("FalkorDB requires URI")
+
+                return await BackendFactory._create_falkordb_with_config(
+                    host=host,
+                    port=port,
+                    password=config.password
+                )
+
+            elif backend_type == "turso":
+                return await BackendFactory._create_turso_with_config(
+                    db_path=config.path,
+                    sync_url=config.uri,
+                    auth_token=config.password
+                )
+
+            elif backend_type == "cloud":
+                return await BackendFactory._create_cloud_with_config(
+                    api_key=config.password,  # Use password field for API key
+                    api_url=config.uri
+                )
+
+            else:
+                raise DatabaseConnectionError(
+                    f"Unknown backend type: {backend_type}. "
+                    f"Valid options: neo4j, memgraph, falkordb, falkordblite, sqlite, turso, cloud"
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to create backend from config: {e}")
+            raise DatabaseConnectionError(f"Failed to create backend: {e}")
+
+    @staticmethod
+    async def _create_sqlite_with_path(db_path: Optional[str] = None) -> GraphBackend:
+        """Create SQLite backend with explicit path (thread-safe)."""
+        from .sqlite_fallback import SQLiteFallbackBackend
+
+        backend = SQLiteFallbackBackend(db_path=db_path)
+        await backend.connect()
+        await backend.initialize_schema()
+        return backend
+
+    @staticmethod
+    async def _create_falkordblite_with_path(db_path: Optional[str] = None) -> GraphBackend:
+        """Create FalkorDBLite backend with explicit path (thread-safe)."""
+        from .falkordblite_backend import FalkorDBLiteBackend
+
+        backend = FalkorDBLiteBackend(db_path=db_path)
+        await backend.connect()
+        return backend
+
+    @staticmethod
+    async def _create_neo4j_with_config(
+        uri: Optional[str] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None
+    ) -> GraphBackend:
+        """Create Neo4j backend with explicit config (thread-safe)."""
+        from .neo4j_backend import Neo4jBackend
+
+        if not password:
+            raise DatabaseConnectionError("Neo4j password is required")
+
+        backend = Neo4jBackend(uri=uri, user=user, password=password)
+        await backend.connect()
+        return backend
+
+    @staticmethod
+    async def _create_memgraph_with_config(
+        uri: Optional[str] = None,
+        user: str = "",
+        password: str = ""
+    ) -> GraphBackend:
+        """Create Memgraph backend with explicit config (thread-safe)."""
+        from .memgraph_backend import MemgraphBackend
+
+        backend = MemgraphBackend(uri=uri, user=user, password=password)
+        await backend.connect()
+        return backend
+
+    @staticmethod
+    async def _create_falkordb_with_config(
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        password: Optional[str] = None
+    ) -> GraphBackend:
+        """Create FalkorDB backend with explicit config (thread-safe)."""
+        from .falkordb_backend import FalkorDBBackend
+
+        backend = FalkorDBBackend(host=host, port=port, password=password)
+        await backend.connect()
+        return backend
+
+    @staticmethod
+    async def _create_turso_with_config(
+        db_path: Optional[str] = None,
+        sync_url: Optional[str] = None,
+        auth_token: Optional[str] = None
+    ) -> GraphBackend:
+        """Create Turso backend with explicit config (thread-safe)."""
+        from .turso import TursoBackend
+
+        backend = TursoBackend(
+            db_path=db_path,
+            sync_url=sync_url,
+            auth_token=auth_token
+        )
+        await backend.connect()
+        await backend.initialize_schema()
+        return backend
+
+    @staticmethod
+    async def _create_cloud_with_config(
+        api_key: Optional[str] = None,
+        api_url: Optional[str] = None,
+        timeout: Optional[int] = None
+    ) -> GraphBackend:
+        """Create Cloud backend with explicit config (thread-safe)."""
+        from .cloud_backend import CloudBackend
+
+        if not api_key:
+            raise DatabaseConnectionError("MEMORYGRAPH_API_KEY is required for cloud backend")
+
+        backend = CloudBackend(
+            api_key=api_key,
+            api_url=api_url,
+            timeout=timeout
+        )
+        await backend.connect()
+        return backend
+
+    @staticmethod
     def get_configured_backend_type() -> str:
         """
         Get the configured backend type without connecting.
@@ -271,5 +529,13 @@ class BackendFactory:
             return True  # FalkorDBLite is always available (embedded, like SQLite)
         elif backend_type == "sqlite":
             return True  # SQLite is always available if NetworkX is installed
+        elif backend_type == "turso":
+            return bool(
+                os.getenv("TURSO_DATABASE_URL") or
+                os.getenv("MEMORYGRAPH_TURSO_URL") or
+                os.getenv("MEMORY_TURSO_PATH")
+            )
+        elif backend_type == "cloud":
+            return bool(os.getenv("MEMORYGRAPH_API_KEY"))
         else:
             return False

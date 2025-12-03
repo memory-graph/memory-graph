@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "memorygraphMCP"
-version = "0.9.4"
+version = "0.9.5"
 description = "Graph-based MCP memory server for AI coding agents with intelligent relationship tracking and multi-backend support"
 authors = [
     {name = "Gregory Dickson", email = "gregory@example.com"}
@@ -47,6 +47,9 @@ falkordb = [
 falkordblite = [
     "falkordblite>=0.4.0",
 ]
+turso = [
+    "libsql-experimental>=0.0.30",
+]
 intelligence = [
     "sentence-transformers>=5.0.0",
     "spacy>=3.0.0",
@@ -65,6 +68,7 @@ all = [
     "neo4j>=6.0.0",
     "falkordb>=1.0.0",
     "falkordblite>=0.4.0",
+    "libsql-experimental>=0.0.30",
     "sentence-transformers>=5.0.0",
     "spacy>=3.0.0",
 ]

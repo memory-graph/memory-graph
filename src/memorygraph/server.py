@@ -160,8 +160,13 @@ NOTE: For advanced queries (boolean operators, exact matches, multi-term), use s
                         "limit": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 100,
-                            "description": "Maximum number of results (default: 20)"
+                            "maximum": 1000,
+                            "description": "Maximum number of results per page (default: 20)"
+                        },
+                        "offset": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Number of results to skip for pagination (default: 0)"
                         }
                     }
                 }
@@ -343,8 +348,13 @@ RESULTS INCLUDE:
                         "limit": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 100,
-                            "description": "Maximum number of results"
+                            "maximum": 1000,
+                            "description": "Maximum number of results per page (default: 50)"
+                        },
+                        "offset": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Number of results to skip for pagination (default: 0)"
                         },
                         "search_tolerance": {
                             "type": "string",

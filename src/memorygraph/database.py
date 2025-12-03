@@ -699,15 +699,20 @@ class MemoryDatabase:
                 rel_types = "|".join([rt.value for rt in relationship_types])
                 rel_filter = f":{rel_types}"
 
-            # Fixed query to properly extract relationship metadata
+            # Query to capture both outgoing and incoming relationships with proper direction
+            # We query in both directions and capture the actual source/target nodes
             query = f"""
             MATCH (start:Memory {{id: $memory_id}})
-            MATCH (start)-[r{rel_filter}*1..{max_depth}]-(related:Memory)
+            MATCH path = (start)-[r{rel_filter}*1..{max_depth}]-(related:Memory)
             WHERE related.id <> start.id
-            WITH DISTINCT related, r[0] as rel
+            WITH DISTINCT related, r[0] as rel,
+                 startNode(rel) as source,
+                 endNode(rel) as target
             RETURN related,
                    type(rel) as rel_type,
-                   properties(rel) as rel_props
+                   properties(rel) as rel_props,
+                   source.id as from_id,
+                   target.id as to_id
             ORDER BY rel.strength DESC, related.importance DESC
             LIMIT 20
             """
@@ -718,9 +723,22 @@ class MemoryDatabase:
             for record in result:
                 memory = self._neo4j_to_memory(record["related"])
                 if memory:
-                    # Fixed: Properly extract relationship type and properties
+                    # Properly extract relationship type, properties, and direction
                     rel_type_str = record.get("rel_type", "RELATED_TO")
                     rel_props = record.get("rel_props", {})
+                    from_id = record.get("from_id")
+                    to_id = record.get("to_id")
+
+                    # Fallback: if from_id/to_id are not provided, infer from query
+                    # This happens in older implementations or mocked tests
+                    if not from_id or not to_id:
+                        # We don't know the direction, so skip this relationship
+                        # or use a conservative approach and assume outgoing
+                        logger.warning(
+                            f"Relationship direction not provided in query result, "
+                            f"skipping relationship to {memory.id}"
+                        )
+                        continue
 
                     try:
                         rel_type = RelationshipType(rel_type_str)
@@ -728,8 +746,8 @@ class MemoryDatabase:
                         rel_type = RelationshipType.RELATED_TO
 
                     relationship = Relationship(
-                        from_memory_id=memory_id,
-                        to_memory_id=memory.id,
+                        from_memory_id=from_id,
+                        to_memory_id=to_id,
                         type=rel_type,
                         properties=RelationshipProperties(
                             strength=rel_props.get("strength", 0.5),
