@@ -338,6 +338,22 @@ If you need Cypher query support on macOS:
 1. Use FalkorDB with Docker: `docker run -p 6379:6379 falkordb/falkordb:latest`
 2. Or use Neo4j: `docker run -p 7687:7687 neo4j:latest`
 
+### macOS Runtime Requirement
+
+**Important**: On macOS, the FalkorDB module requires the OpenMP runtime library (`libomp`). If you encounter an error like:
+
+```
+Library not loaded: /opt/homebrew/opt/libomp/lib/libomp.dylib
+```
+
+Install it using Homebrew:
+
+```bash
+brew install libomp
+```
+
+This applies to both FalkorDBLite (when macOS binaries become available) and any native FalkorDB integrations.
+
 ## Best Practices
 
 1. **Use `claude mcp add`** - Let the CLI manage configuration files
