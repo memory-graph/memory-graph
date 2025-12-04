@@ -18,7 +18,20 @@
 
 **Priority: CRITICAL** - Must complete for successful launch
 
-### 1.1 Official MCP Repository
+### 1.1 Anthropic Connectors Directory (MCPB Bundle)
+
+- [x] Create manifest.json for MCPB bundle specification v0.3
+- [x] Create build script (scripts/build_mcpb.py)
+- [ ] Create icon assets (16x16, 32x32, 128x128 PNG)
+- [ ] Build .mcpb bundle: `python scripts/build_mcpb.py`
+- [ ] Test bundle installation in Claude Desktop
+- [ ] Submit to Anthropic Connectors Directory
+- [ ] Monitor submission for feedback, respond within 24 hours
+
+**Why critical**: Official Anthropic directory for Claude Desktop extensions.
+**Reference**: https://support.claude.com/en/articles/12922929-building-desktop-extensions-with-mcpb
+
+### 1.2 Official MCP Repository
 
 - [ ] Submit PR to https://github.com/modelcontextprotocol/servers
 - [ ] Add to community servers section
@@ -27,7 +40,7 @@
 
 **Why critical**: Official Anthropic repository, highest trust and visibility.
 
-### 1.2 Top Awesome List
+### 1.3 Top Awesome List
 
 - [ ] Submit PR to https://github.com/appcypher/awesome-mcp-servers (7000+ stars)
 - [ ] Add under "Memory" or "Knowledge Graph" section
