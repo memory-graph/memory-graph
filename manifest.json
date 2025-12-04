@@ -1,0 +1,113 @@
+{
+  "manifest_version": "0.3",
+  "name": "memorygraph",
+  "version": "0.9.6",
+  "display_name": "MemoryGraph",
+  "description": "Graph-based memory server for AI coding agents with intelligent relationship tracking",
+  "long_description": "MemoryGraph provides persistent memory capabilities for Claude and other AI assistants. Store memories, create relationships between them, and recall relevant context using fuzzy search. Supports multiple backends including SQLite (default), Neo4j, Memgraph, FalkorDB, and Turso.",
+  "author": {
+    "name": "Gregory Dickson",
+    "url": "https://github.com/gregorydickson"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/gregorydickson/memory-graph",
+  "homepage": "https://memorygraph.dev",
+  "documentation": "https://github.com/gregorydickson/memory-graph#readme",
+  "keywords": [
+    "memory",
+    "knowledge-graph",
+    "sqlite",
+    "neo4j",
+    "coding-agent",
+    "context",
+    "relationships"
+  ],
+  "server": {
+    "type": "uv",
+    "entry_point": "src/memorygraph/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "memorygraph"],
+      "env": {
+        "MEMORY_BACKEND": "${user_config.backend}",
+        "MEMORY_SQLITE_PATH": "${user_config.sqlite_path}",
+        "MEMORY_TOOL_PROFILE": "${user_config.tool_profile}"
+      }
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "python": ">=3.10,<4.0"
+    }
+  },
+  "user_config": {
+    "backend": {
+      "type": "string",
+      "title": "Database Backend",
+      "description": "Storage backend to use (sqlite is recommended for most users)",
+      "default": "sqlite",
+      "enum": ["sqlite", "neo4j", "memgraph", "falkordb", "turso", "cloud"],
+      "required": false
+    },
+    "sqlite_path": {
+      "type": "string",
+      "title": "SQLite Database Path",
+      "description": "Path to SQLite database file (default: ~/.memorygraph/memory.db)",
+      "default": "~/.memorygraph/memory.db",
+      "required": false
+    },
+    "tool_profile": {
+      "type": "string",
+      "title": "Tool Profile",
+      "description": "Which tools to enable: core (9 tools) or extended (11 tools)",
+      "default": "core",
+      "enum": ["core", "extended"],
+      "required": false
+    }
+  },
+  "tools": [
+    {
+      "name": "store_memory",
+      "description": "Store a new memory with context and metadata"
+    },
+    {
+      "name": "get_memory",
+      "description": "Retrieve a specific memory by ID"
+    },
+    {
+      "name": "search_memories",
+      "description": "Search memories with advanced filtering"
+    },
+    {
+      "name": "recall_memories",
+      "description": "Natural language search with fuzzy matching"
+    },
+    {
+      "name": "update_memory",
+      "description": "Update an existing memory"
+    },
+    {
+      "name": "delete_memory",
+      "description": "Delete a memory and its relationships"
+    },
+    {
+      "name": "create_relationship",
+      "description": "Create a relationship between two memories"
+    },
+    {
+      "name": "get_related_memories",
+      "description": "Find memories connected to a specific memory"
+    },
+    {
+      "name": "get_recent_activity",
+      "description": "Get summary of recent memory activity"
+    }
+  ],
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "128": "assets/icon-128.png"
+  }
+}

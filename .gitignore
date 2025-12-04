@@ -186,3 +186,6 @@ logs/
 *.temp
 .DS_Store
 Thumbs.db
+
+# MCPB bundles (built artifacts)
+*.mcpb
