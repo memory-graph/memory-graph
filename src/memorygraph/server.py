@@ -45,6 +45,7 @@ from .advanced_tools import ADVANCED_RELATIONSHIP_TOOLS, AdvancedRelationshipHan
 from .intelligence_tools import INTELLIGENCE_TOOLS
 from .integration_tools import INTEGRATION_TOOLS
 from .proactive_tools import PROACTIVE_TOOLS
+from .migration_tools_module import MIGRATION_TOOLS, MIGRATION_TOOL_HANDLERS
 from .config import Config
 from .tools import (
     handle_store_memory,
@@ -645,7 +646,8 @@ WHY IT MATTERS:
             ADVANCED_RELATIONSHIP_TOOLS +
             INTELLIGENCE_TOOLS +
             INTEGRATION_TOOLS +
-            PROACTIVE_TOOLS
+            PROACTIVE_TOOLS +
+            MIGRATION_TOOLS
         )
 
         return all_tools
@@ -746,6 +748,27 @@ WHY IT MATTERS:
                     else:
                         return CallToolResult(
                             content=[TextContent(type="text", text=f"Proactive handler not found: {name}")],
+                            isError=True
+                        )
+
+                # Migration tools
+                elif name in ["migrate_database", "validate_migration"]:
+                    handler = MIGRATION_TOOL_HANDLERS.get(name)
+                    if handler:
+                        # Migration tools don't need memory_db parameter - they create their own connections
+                        result = await handler(**arguments)
+                        # Format result as MCP response
+                        import json
+                        return CallToolResult(
+                            content=[TextContent(
+                                type="text",
+                                text=json.dumps(result, indent=2)
+                            )],
+                            isError=not result.get("success", False)
+                        )
+                    else:
+                        return CallToolResult(
+                            content=[TextContent(type="text", text=f"Migration handler not found: {name}")],
                             isError=True
                         )
 
