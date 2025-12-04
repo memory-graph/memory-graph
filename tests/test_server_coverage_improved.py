@@ -12,7 +12,6 @@ import pytest
 import asyncio
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
 from mcp.server import Server
-from mcp.types import CallToolResult, TextContent
 
 from memorygraph.server import ClaudeMemoryServer, main
 from memorygraph.models import DatabaseConnectionError
@@ -111,10 +110,14 @@ class TestToolCollection:
         assert "recall_memories" in tool_names
 
         # Should include advanced relationship tools
-        assert "find_memory_path" in tool_names or len(all_tools) > 10
+        assert "find_memory_path" in tool_names, f"find_memory_path not found in {tool_names}"
+        assert "create_relationship" in tool_names, f"create_relationship not found in {tool_names}"
 
         # Should include intelligence tools
-        assert "find_similar_solutions" in tool_names or len(all_tools) > 15
+        assert "find_similar_solutions" in tool_names, f"find_similar_solutions not found in {tool_names}"
+
+        # Verify we have a reasonable total count
+        assert len(all_tools) >= 10, f"Expected at least 10 tools, got {len(all_tools)}"
 
     def test_tool_profile_full_includes_all(self):
         """Test that FULL profile includes all tools."""
@@ -243,16 +246,6 @@ class TestMainEntryPoint:
 
 class TestServerHandlerEdgeCases:
     """Test edge cases in server handler logic."""
-
-    def test_server_has_registered_handlers(self):
-        """Test that server registers handlers during initialization."""
-        server = ClaudeMemoryServer()
-
-        # The server should have handlers registered via decorators
-        # We can't easily test the internal handler registration without
-        # actually calling them, but we can verify the server object exists
-        assert server.server is not None
-        assert isinstance(server.server, Server)
 
     def test_server_initialization_creates_required_objects(self):
         """Test server __init__ creates required objects."""

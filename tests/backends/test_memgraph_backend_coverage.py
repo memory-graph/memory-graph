@@ -16,25 +16,20 @@ from src.memorygraph.models import DatabaseConnectionError
 class TestMemgraphBackendAdditionalCoverage:
     """Additional test cases for comprehensive coverage."""
 
-    def test_init_with_partial_auth(self):
-        """Test initialization with user but no password."""
+    @pytest.mark.parametrize("user,password,expected_user,expected_pass", [
+        ("testuser", "", "testuser", ""),  # User but no password
+        ("", "testpass", "", "testpass"),  # Password but no user (edge case)
+        ("", "", "", ""),  # Both empty
+    ])
+    def test_init_with_various_auth_combinations(self, user, password, expected_user, expected_pass):
+        """Test initialization with various authentication combinations."""
         backend = MemgraphBackend(
             uri="bolt://test:7687",
-            user="testuser",
-            password=""  # Empty password
+            user=user,
+            password=password
         )
-        assert backend.user == "testuser"
-        assert backend.password == ""
-
-    def test_init_with_password_but_no_user(self):
-        """Test initialization with password but no user (edge case)."""
-        backend = MemgraphBackend(
-            uri="bolt://test:7687",
-            user="",
-            password="testpass"
-        )
-        # Password alone should still result in auth tuple
-        assert backend.password == "testpass"
+        assert backend.user == expected_user
+        assert backend.password == expected_pass
 
     @pytest.mark.asyncio
     async def test_connect_with_empty_auth_credentials(self):
@@ -283,6 +278,7 @@ class TestMemgraphBackendAdditionalCoverage:
             assert health["statistics"]["memory_count"] == 0
 
     @pytest.mark.asyncio
+    @pytest.mark.xfail(reason="disconnect() doesn't reset _connected when driver is None - known issue")
     async def test_disconnect_when_driver_none(self):
         """Test disconnect handles None driver gracefully."""
         backend = MemgraphBackend(uri="bolt://test:7687")
@@ -294,7 +290,7 @@ class TestMemgraphBackendAdditionalCoverage:
 
         # Driver is None, so close() won't be called, but connected flag isn't changed
         # The disconnect logic only sets _connected=False after closing the driver
-        assert backend._connected is True  # Remains True because driver was None
+        assert backend._connected is False  # Expected: should be False even when driver is None
 
     @pytest.mark.asyncio
     async def test_create_factory_with_all_params(self):
