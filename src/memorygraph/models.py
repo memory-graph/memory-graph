@@ -82,8 +82,24 @@ class RelationshipType(str, Enum):
 
 
 class MemoryContext(BaseModel):
-    """Context information for a memory."""
+    """Context information for a memory.
 
+    This model supports both single-tenant (default) and multi-tenant deployments.
+    Multi-tenancy fields are optional and only validated/used when MEMORY_MULTI_TENANT_MODE=true.
+
+    Single-Tenant Mode (default):
+        - project_path provides memory scoping
+        - tenant_id, team_id, created_by are ignored
+        - visibility defaults to "project"
+
+    Multi-Tenant Mode (MEMORY_MULTI_TENANT_MODE=true):
+        - tenant_id is required for memory isolation
+        - team_id provides team-level scoping
+        - visibility controls access levels: private | project | team | public
+        - created_by tracks memory ownership for access control
+    """
+
+    # === Existing fields (unchanged for backward compatibility) ===
     project_path: Optional[str] = None
     files_involved: List[str] = Field(default_factory=list)
     languages: List[str] = Field(default_factory=list)
@@ -96,6 +112,43 @@ class MemoryContext(BaseModel):
     session_id: Optional[str] = None
     user_id: Optional[str] = None
     additional_metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    # === New optional multi-tenancy fields (Phase 1) ===
+    tenant_id: Optional[str] = Field(
+        None,
+        description="Tenant/organization identifier. Required in multi-tenant mode."
+    )
+    team_id: Optional[str] = Field(
+        None,
+        description="Team identifier within tenant"
+    )
+    visibility: str = Field(
+        "project",
+        description="Memory visibility level: private | project | team | public"
+    )
+    created_by: Optional[str] = Field(
+        None,
+        description="User ID who created this memory (for audit/access control)"
+    )
+
+    @field_validator('visibility')
+    @classmethod
+    def validate_visibility(cls, v: str) -> str:
+        """Ensure visibility is one of the allowed values.
+
+        Args:
+            v: Visibility value to validate
+
+        Returns:
+            Validated visibility value
+
+        Raises:
+            ValueError: If visibility is not one of: private, project, team, public
+        """
+        valid_values = ["private", "project", "team", "public"]
+        if v not in valid_values:
+            raise ValueError(f"visibility must be one of {valid_values}, got '{v}'")
+        return v
 
 
 class Memory(BaseModel):
@@ -119,6 +172,8 @@ class Memory(BaseModel):
         created_at: Timestamp when memory was created
         updated_at: Timestamp when memory was last updated
         last_accessed: Timestamp when memory was last accessed (optional)
+        version: Version number for optimistic concurrency control (Phase 1)
+        updated_by: User ID who last updated this memory (Phase 1)
         relationships: Enriched field with related memory IDs by type
         match_info: Enriched field with search match information
         context_summary: Enriched field with relationship context
@@ -138,6 +193,17 @@ class Memory(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_accessed: Optional[datetime] = None
+
+    # Concurrency control fields (Phase 1 - Multi-tenancy support)
+    version: int = Field(
+        default=1,
+        ge=1,
+        description="Version number for optimistic concurrency control"
+    )
+    updated_by: Optional[str] = Field(
+        None,
+        description="User ID who last updated this memory"
+    )
 
     # Enriched search result fields (populated by search operations)
     relationships: Optional[Dict[str, List[str]]] = None

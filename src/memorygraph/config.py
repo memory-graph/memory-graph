@@ -93,6 +93,19 @@ class Config:
 
         Logging Configuration:
             MEMORY_LOG_LEVEL: Log level (DEBUG|INFO|WARNING|ERROR) [default: INFO]
+
+        Multi-Tenancy Configuration (Phase 1):
+            MEMORY_MULTI_TENANT_MODE: Enable multi-tenant features [default: false]
+            MEMORY_DEFAULT_TENANT: Default tenant ID for single-tenant mode [default: default]
+            MEMORY_REQUIRE_AUTH: Require authentication for operations [default: false]
+
+        Authentication Configuration (Future - Phase 3):
+            MEMORY_AUTH_PROVIDER: Authentication provider (none|jwt|oauth2) [default: none]
+            MEMORY_JWT_SECRET: JWT signing secret (required if auth_provider=jwt)
+            MEMORY_JWT_ALGORITHM: JWT algorithm [default: HS256]
+
+        Audit Configuration (Future - Phase 4):
+            MEMORY_ENABLE_AUDIT_LOG: Log all access events [default: false]
     """
 
     # Backend Selection
@@ -137,6 +150,19 @@ class Config:
     # Relationship Configuration
     ALLOW_RELATIONSHIP_CYCLES: bool = os.getenv("MEMORY_ALLOW_CYCLES", "false").lower() == "true"
 
+    # Multi-Tenancy Configuration (Phase 1)
+    MULTI_TENANT_MODE: bool = os.getenv("MEMORY_MULTI_TENANT_MODE", "false").lower() == "true"
+    DEFAULT_TENANT: str = os.getenv("MEMORY_DEFAULT_TENANT", "default")
+    REQUIRE_AUTH: bool = os.getenv("MEMORY_REQUIRE_AUTH", "false").lower() == "true"
+
+    # Authentication Configuration (Future Phase 3)
+    AUTH_PROVIDER: str = os.getenv("MEMORY_AUTH_PROVIDER", "none")
+    JWT_SECRET: Optional[str] = os.getenv("MEMORY_JWT_SECRET")
+    JWT_ALGORITHM: str = os.getenv("MEMORY_JWT_ALGORITHM", "HS256")
+
+    # Audit Configuration (Future Phase 4)
+    ENABLE_AUDIT_LOG: bool = os.getenv("MEMORY_ENABLE_AUDIT_LOG", "false").lower() == "true"
+
     @classmethod
     def get_backend_type(cls) -> BackendType:
         """
@@ -160,6 +186,26 @@ class Config:
     def is_memgraph_configured(cls) -> bool:
         """Check if Memgraph backend is configured."""
         return bool(cls.MEMGRAPH_URI)
+
+    @classmethod
+    def is_multi_tenant_mode(cls) -> bool:
+        """
+        Check if multi-tenant mode is enabled.
+
+        Returns:
+            True if MEMORY_MULTI_TENANT_MODE=true, False otherwise
+        """
+        return cls.MULTI_TENANT_MODE
+
+    @classmethod
+    def get_default_tenant(cls) -> str:
+        """
+        Get default tenant ID for single-tenant mode.
+
+        Returns:
+            The default tenant identifier
+        """
+        return cls.DEFAULT_TENANT
 
     @classmethod
     def get_enabled_tools(cls) -> Optional[List[str]]:
@@ -224,6 +270,14 @@ class Config:
             },
             "relationships": {
                 "allow_cycles": cls.ALLOW_RELATIONSHIP_CYCLES
+            },
+            "multi_tenancy": {
+                "enabled": cls.MULTI_TENANT_MODE,
+                "default_tenant": cls.DEFAULT_TENANT,
+                "require_auth": cls.REQUIRE_AUTH,
+                "auth_provider": cls.AUTH_PROVIDER,
+                "jwt_secret_configured": bool(cls.JWT_SECRET),
+                "audit_log_enabled": cls.ENABLE_AUDIT_LOG
             }
         }
 

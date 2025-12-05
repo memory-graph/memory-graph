@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 
 from .base import GraphBackend
 from ..models import DatabaseConnectionError, SchemaError
+from ..config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +215,18 @@ class MemgraphBackend(GraphBackend):
             "CREATE INDEX ON :Memory(confidence)",
             # Note: Memgraph doesn't support multi-property indexes the same way
         ]
+
+        # Conditional multi-tenant indexes (Phase 1)
+        if Config.is_multi_tenant_mode():
+            multitenant_indexes = [
+                "CREATE INDEX ON :Memory(context_tenant_id)",
+                "CREATE INDEX ON :Memory(context_team_id)",
+                "CREATE INDEX ON :Memory(context_visibility)",
+                "CREATE INDEX ON :Memory(context_created_by)",
+                "CREATE INDEX ON :Memory(version)",
+            ]
+            indexes.extend(multitenant_indexes)
+            logger.info("Multi-tenant mode enabled, adding tenant indexes")
 
         # Execute schema creation
         for constraint in constraints:

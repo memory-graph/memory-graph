@@ -77,9 +77,9 @@ class MemoryContext(BaseModel):
 ```
 
 **Tasks**:
-- [ ] Add new fields to `MemoryContext` class
-- [ ] Add validation for visibility field (must be one of: private, project, team, public)
-- [ ] Update docstrings with multi-tenancy field explanations
+- [x] Add new fields to `MemoryContext` class
+- [x] Add validation for visibility field (must be one of: private, project, team, public)
+- [x] Update docstrings with multi-tenancy field explanations
 - [ ] Add `model_config` with examples
 
 ### 1.2 Add Concurrency Control Fields to Memory
@@ -104,22 +104,22 @@ class Memory(BaseModel):
 ```
 
 **Tasks**:
-- [ ] Add `version` field with default=1
-- [ ] Add `updated_by` field
-- [ ] Update Memory serialization/deserialization
+- [x] Add `version` field with default=1
+- [x] Add `updated_by` field
+- [x] Update Memory serialization/deserialization
 
 ### 1.3 Write Model Tests
 
 **File**: `/Users/gregorydickson/claude-code-memory/tests/test_multitenant_models.py`
 
-- [ ] Test MemoryContext with tenant_id
-- [ ] Test MemoryContext with team_id
-- [ ] Test MemoryContext visibility validation
-- [ ] Test MemoryContext backward compatibility (no tenant fields)
-- [ ] Test Memory version field initialization
-- [ ] Test Memory version increment on update
-- [ ] Test model serialization includes new fields
-- [ ] Test model deserialization handles missing fields (backward compat)
+- [x] Test MemoryContext with tenant_id
+- [x] Test MemoryContext with team_id
+- [x] Test MemoryContext visibility validation
+- [x] Test MemoryContext backward compatibility (no tenant fields)
+- [x] Test Memory version field initialization
+- [x] Test Memory version increment on update
+- [x] Test model serialization includes new fields
+- [x] Test model deserialization handles missing fields (backward compat)
 
 ---
 
@@ -163,21 +163,21 @@ class Config:
 ```
 
 **Tasks**:
-- [ ] Create `Config` class with environment variable loading
-- [ ] Add multi-tenant mode flag (default: False)
-- [ ] Add default tenant configuration
-- [ ] Add helper methods for configuration access
-- [ ] Add validation for configuration values
+- [x] Create `Config` class with environment variable loading
+- [x] Add multi-tenant mode flag (default: False)
+- [x] Add default tenant configuration
+- [x] Add helper methods for configuration access
+- [x] Add validation for configuration values
 
 ### 2.2 Write Configuration Tests
 
 **File**: `/Users/gregorydickson/claude-code-memory/tests/test_config.py`
 
-- [ ] Test default configuration (single-tenant mode)
-- [ ] Test multi-tenant mode enabled
-- [ ] Test environment variable loading
-- [ ] Test configuration validation
-- [ ] Test backward compatibility (no env vars set)
+- [x] Test default configuration (single-tenant mode)
+- [x] Test multi-tenant mode enabled
+- [x] Test environment variable loading
+- [x] Test configuration validation
+- [x] Test backward compatibility (no env vars set)
 
 ---
 
@@ -237,14 +237,14 @@ def _create_multitenant_indexes(self):
 ```
 
 **Tasks**:
-- [ ] Add conditional index creation logic
-- [ ] Add tenant_id index
-- [ ] Add team_id index
-- [ ] Add visibility index
-- [ ] Add created_by index
-- [ ] Add composite index for tenant+visibility
-- [ ] Test index creation
-- [ ] Verify indexes not created in single-tenant mode
+- [x] Add conditional index creation logic
+- [x] Add tenant_id index
+- [x] Add team_id index
+- [x] Add visibility index
+- [x] Add created_by index
+- [x] Add composite index for tenant+visibility
+- [x] Test index creation
+- [x] Verify indexes not created in single-tenant mode
 
 ### 3.2 Neo4j/Memgraph Backend Indexes
 
@@ -274,10 +274,10 @@ FOR (m:Memory) ON (m.version);
 ```
 
 **Tasks**:
-- [ ] Add conditional Cypher index creation to Neo4j backend
-- [ ] Add conditional Cypher index creation to Memgraph backend
-- [ ] Test index creation
-- [ ] Verify backward compatibility
+- [x] Add conditional Cypher index creation to Neo4j backend
+- [x] Add conditional Cypher index creation to Memgraph backend
+- [x] Test index creation
+- [x] Verify backward compatibility
 
 ### 3.3 FalkorDB Backend Indexes
 
@@ -286,9 +286,9 @@ FOR (m:Memory) ON (m.version);
 - `/Users/gregorydickson/claude-code-memory/src/memorygraph/backends/falkordblite_backend.py`
 
 **Tasks**:
-- [ ] Add conditional index creation to FalkorDB backend
-- [ ] Add conditional index creation to FalkorDBLite backend
-- [ ] Test index creation
+- [x] Add conditional index creation to FalkorDB backend
+- [x] Add conditional index creation to FalkorDBLite backend
+- [x] Test index creation
 
 ### 3.4 Write Index Tests
 

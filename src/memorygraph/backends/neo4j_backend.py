@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 
 from .base import GraphBackend
 from ..models import DatabaseConnectionError, SchemaError
+from ..config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +187,18 @@ class Neo4jBackend(GraphBackend):
             "CREATE INDEX memory_confidence_index IF NOT EXISTS FOR (m:Memory) ON (m.confidence)",
             "CREATE INDEX memory_project_path_index IF NOT EXISTS FOR (m:Memory) ON (m.context_project_path)",
         ]
+
+        # Conditional multi-tenant indexes (Phase 1)
+        if Config.is_multi_tenant_mode():
+            multitenant_indexes = [
+                "CREATE INDEX memory_tenant_index IF NOT EXISTS FOR (m:Memory) ON (m.context_tenant_id)",
+                "CREATE INDEX memory_team_index IF NOT EXISTS FOR (m:Memory) ON (m.context_team_id)",
+                "CREATE INDEX memory_visibility_index IF NOT EXISTS FOR (m:Memory) ON (m.context_visibility)",
+                "CREATE INDEX memory_created_by_index IF NOT EXISTS FOR (m:Memory) ON (m.context_created_by)",
+                "CREATE INDEX memory_version_index IF NOT EXISTS FOR (m:Memory) ON (m.version)",
+            ]
+            indexes.extend(multitenant_indexes)
+            logger.info("Multi-tenant mode enabled, adding tenant indexes")
 
         # Execute schema creation
         for constraint in constraints:

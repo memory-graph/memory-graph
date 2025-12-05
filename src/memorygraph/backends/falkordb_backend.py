@@ -24,6 +24,7 @@ from ..models import (
     ValidationError,
     RelationshipError,
 )
+from ..config import Config
 from datetime import datetime, timezone
 import uuid
 import json
@@ -165,6 +166,18 @@ class FalkorDBBackend(GraphBackend):
             "CREATE INDEX ON :Memory(importance)",
             "CREATE INDEX ON :Memory(confidence)",
         ]
+
+        # Conditional multi-tenant indexes (Phase 1)
+        if Config.is_multi_tenant_mode():
+            multitenant_indexes = [
+                "CREATE INDEX ON :Memory(context_tenant_id)",
+                "CREATE INDEX ON :Memory(context_team_id)",
+                "CREATE INDEX ON :Memory(context_visibility)",
+                "CREATE INDEX ON :Memory(context_created_by)",
+                "CREATE INDEX ON :Memory(version)",
+            ]
+            indexes.extend(multitenant_indexes)
+            logger.info("Multi-tenant mode enabled, adding tenant indexes")
 
         # Execute schema creation
         for constraint in constraints:

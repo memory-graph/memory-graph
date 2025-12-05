@@ -21,6 +21,7 @@ except ImportError:
 
 from .base import GraphBackend
 from ..models import DatabaseConnectionError, SchemaError
+from ..config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +186,10 @@ class SQLiteFallbackBackend(GraphBackend):
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_rel_to ON relationships(to_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_rel_type ON relationships(rel_type)")
 
+            # Conditional multi-tenant indexes (Phase 1)
+            if Config.is_multi_tenant_mode():
+                self._create_multitenant_indexes(cursor)
+
             # Create FTS5 virtual table for full-text search
             try:
                 cursor.execute("""
@@ -207,6 +212,75 @@ class SQLiteFallbackBackend(GraphBackend):
         except sqlite3.Error as e:
             self.conn.rollback()
             raise SchemaError(f"Failed to initialize schema: {e}")
+
+    def _create_multitenant_indexes(self, cursor: sqlite3.Cursor) -> None:
+        """
+        Create indexes for multi-tenant queries.
+
+        Only called when MEMORY_MULTI_TENANT_MODE=true. These indexes optimize
+        queries filtering by tenant_id, team_id, visibility, and created_by.
+
+        Args:
+            cursor: SQLite cursor for executing index creation
+
+        Note:
+            Context fields are stored as JSON in properties column, so we use
+            JSON extraction for indexing (requires SQLite 3.9.0+)
+        """
+        logger.info("Creating multi-tenant indexes...")
+
+        try:
+            # Tenant index - for tenant isolation queries
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_tenant
+                ON nodes(json_extract(properties, '$.context.tenant_id'))
+                WHERE label = 'Memory'
+            """)
+
+            # Team index - for team-scoped queries
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_team
+                ON nodes(json_extract(properties, '$.context.team_id'))
+                WHERE label = 'Memory'
+            """)
+
+            # Visibility index - for access control filtering
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_visibility
+                ON nodes(json_extract(properties, '$.context.visibility'))
+                WHERE label = 'Memory'
+            """)
+
+            # Created_by index - for user-specific queries
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_created_by
+                ON nodes(json_extract(properties, '$.context.created_by'))
+                WHERE label = 'Memory'
+            """)
+
+            # Composite index for common query pattern (tenant + visibility)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_tenant_visibility
+                ON nodes(
+                    json_extract(properties, '$.context.tenant_id'),
+                    json_extract(properties, '$.context.visibility')
+                )
+                WHERE label = 'Memory'
+            """)
+
+            # Version index for optimistic locking
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_version
+                ON nodes(json_extract(properties, '$.version'))
+                WHERE label = 'Memory'
+            """)
+
+            logger.info("Multi-tenant indexes created successfully")
+
+        except sqlite3.Error as e:
+            logger.warning(f"Could not create some multi-tenant indexes: {e}")
+            # Don't fail schema initialization if indexes fail
+            # (e.g., older SQLite versions without JSON support)
 
     async def _load_graph_to_memory(self) -> None:
         """Load graph data from SQLite into NetworkX graph."""
