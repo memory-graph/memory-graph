@@ -56,9 +56,15 @@ from .tools import (
     handle_get_related_memories,
     handle_search_memories,
     handle_recall_memories,
+    handle_contextual_search,
     handle_get_memory_statistics,
     handle_get_recent_activity,
     handle_search_relationships_by_context,
+    handle_browse_memory_types,
+    handle_browse_by_project,
+    handle_browse_domains,
+    handle_find_chain,
+    handle_trace_dependencies,
 )
 
 
@@ -637,6 +643,188 @@ WHY IT MATTERS:
                         }
                     }
                 }
+            ),
+            # Navigation tools for semantic graph traversal
+            Tool(
+                name="browse_memory_types",
+                description="""List all memory types with counts and percentages for high-level discovery.
+
+Shows entity types to understand what kinds of information are stored.
+
+WHEN TO USE:
+- Getting overview of memory types
+- Understanding database composition
+- Finding dominant memory types
+
+RETURNS:
+- Memory types with counts and percentages
+- Total memories count""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {}
+                }
+            ),
+            Tool(
+                name="browse_by_project",
+                description="""Navigate memories scoped to specific project paths.
+
+Lists all memories for a given project with statistics and type breakdown.
+
+WHEN TO USE:
+- Exploring project-specific knowledge
+- Finding all memories for a codebase
+- Understanding project context
+
+HOW TO USE:
+- Provide project_path (supports fuzzy matching)
+
+RETURNS:
+- Memories filtered by project
+- Type breakdown statistics
+- Total count""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "project_path": {
+                            "type": "string",
+                            "description": "Project identifier or path (required)"
+                        }
+                    },
+                    "required": ["project_path"]
+                }
+            ),
+            Tool(
+                name="browse_domains",
+                description="""List high-level domains auto-inferred from tags and content clustering.
+
+Domains are clusters of related memories identified by common tags. No embeddings needed.
+
+WHEN TO USE:
+- High-level knowledge exploration
+- Finding thematic clusters
+- Understanding knowledge organization
+
+RETURNS:
+- Discovered domains with memory counts
+- Related tags for each domain
+- Clustering statistics""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {}
+                }
+            ),
+            Tool(
+                name="find_chain",
+                description="""Auto-traverse relationship chains (SOLVES/CAUSES/DEPENDS_ON) from a starting memory.
+
+Follows relationship chains using BFS traversal with cycle detection.
+
+WHEN TO USE:
+- Following solution chains
+- Tracing causality
+- Understanding dependency flows
+
+HOW TO USE:
+- Specify memory_id (starting point)
+- Specify relationship_type (SOLVES, CAUSES, DEPENDS_ON, etc.)
+- Optional: max_depth (default: 3)
+
+RETURNS:
+- Complete chain of related memories
+- Relationship details with strength scores
+- Chain depth information""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "memory_id": {
+                            "type": "string",
+                            "description": "Starting memory ID (required)"
+                        },
+                        "relationship_type": {
+                            "type": "string",
+                            "enum": [t.value for t in RelationshipType],
+                            "description": "Type of chain to follow (required)"
+                        },
+                        "max_depth": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5,
+                            "description": "Maximum traversal depth (default: 3)"
+                        }
+                    },
+                    "required": ["memory_id", "relationship_type"]
+                }
+            ),
+            Tool(
+                name="trace_dependencies",
+                description="""Trace all dependencies for a given memory (DEPENDS_ON + REQUIRES relationships).
+
+Builds complete dependency tree with cycle detection.
+
+WHEN TO USE:
+- Understanding what a solution depends on
+- Finding prerequisite knowledge
+- Analyzing dependency trees
+
+HOW TO USE:
+- Provide memory_id to trace dependencies for
+
+RETURNS:
+- Complete dependency tree by depth level
+- Circular dependency warnings if detected
+- Relationship details""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "memory_id": {
+                            "type": "string",
+                            "description": "Memory ID to trace dependencies for (required)"
+                        }
+                    },
+                    "required": ["memory_id"]
+                }
+            ),
+            Tool(
+                name="contextual_search",
+                description="""Search only within the context of a given memory (scoped search).
+
+Two-phase process: (1) Find related memories, (2) Search only within that set.
+Provides semantic scoping without embeddings.
+
+WHEN TO USE:
+- Searching within a specific problem context
+- Finding solutions in related knowledge
+- Scoped discovery
+
+HOW TO USE:
+- Specify memory_id (context root)
+- Provide query (search term)
+- Optional: max_depth (default: 2)
+
+RETURNS:
+- Matches found only within related memories
+- Context information
+- No leakage outside context""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "memory_id": {
+                            "type": "string",
+                            "description": "Memory ID to use as context root (required)"
+                        },
+                        "query": {
+                            "type": "string",
+                            "description": "Search query within context (required)"
+                        },
+                        "max_depth": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5,
+                            "description": "Maximum relationship traversal depth (default: 2)"
+                        }
+                    },
+                    "required": ["memory_id", "query"]
+                }
             )
         ]
 
@@ -695,6 +883,19 @@ WHY IT MATTERS:
                     return await handle_get_recent_activity(self.memory_db, arguments)
                 elif name == "search_relationships_by_context":
                     return await handle_search_relationships_by_context(self.memory_db, arguments)
+                # Navigation tools
+                elif name == "browse_memory_types":
+                    return await handle_browse_memory_types(self.memory_db, arguments)
+                elif name == "browse_by_project":
+                    return await handle_browse_by_project(self.memory_db, arguments)
+                elif name == "browse_domains":
+                    return await handle_browse_domains(self.memory_db, arguments)
+                elif name == "find_chain":
+                    return await handle_find_chain(self.memory_db, arguments)
+                elif name == "trace_dependencies":
+                    return await handle_trace_dependencies(self.memory_db, arguments)
+                elif name == "contextual_search":
+                    return await handle_contextual_search(self.memory_db, arguments)
                 # Advanced relationship tools
                 elif name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
                                        "suggest_relationship_type", "reinforce_relationship",
