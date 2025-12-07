@@ -328,7 +328,7 @@ class CloudBackend(GraphBackend):
                 f"Cannot connect to Graph API at {self.api_url}: {e}"
             )
 
-        except (AuthenticationError, UsageLimitExceeded, RateLimitExceeded):
+        except (AuthenticationError, UsageLimitExceeded, RateLimitExceeded, MemoryNotFoundError):
             raise
 
         except httpx.HTTPStatusError as e:

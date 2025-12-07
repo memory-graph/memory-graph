@@ -290,7 +290,14 @@ claude mcp add --scope user memorygraph \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=password \
   -- memorygraph --profile extended --backend neo4j
+
+# Cloud backend (multi-device sync, zero setup)
+claude mcp add --scope user memorygraph \
+  --env MEMORYGRAPH_API_KEY=mg_your_key_here \
+  -- memorygraph --backend cloud
 ```
+
+> **Get your API key**: Sign up at [memorygraph.dev](https://memorygraph.dev) to get your free API key.
 
 ### Other MCP Clients
 
@@ -583,13 +590,19 @@ MemoryGraph supports 7 backend options to fit your deployment needs:
 | **neo4j** | Client-server | URI | ✅ Cypher | ❌ | Enterprise features |
 | **memgraph** | Client-server | Host:port | ✅ Cypher | ❌ | Real-time analytics |
 | **turso** | Cloud | URL + Token | No (simulated) | ❌ | Distributed SQLite, edge deployments |
-| **cloud** | Cloud | API Key | ✅ Cypher | ❌ | MemoryGraph Cloud (coming soon) |
+| **cloud** | Cloud | API Key | ✅ Cypher | ❌ | MemoryGraph Cloud (production ready) |
 
 **New: FalkorDB Options**
 - **FalkorDBLite**: Zero-config embedded database with native Cypher support, perfect upgrade from SQLite
 - **FalkorDB**: Redis-based graph DB with 500x faster p99 than Neo4j ([docs](https://docs.falkordb.com/))
 
-See [CONFIGURATION.md](docs/CONFIGURATION.md) for setup details.
+**New: Cloud Backend**
+- **Multi-device sync**: Access your memories from anywhere
+- **Team collaboration**: Share memories with your team
+- **Automatic backups**: Never lose your knowledge graph
+- **Zero maintenance**: No database setup required
+
+See [CONFIGURATION.md](docs/CONFIGURATION.md) for setup details and [Cloud Backend Guide](docs/CLOUD_BACKEND.md) for cloud-specific configuration.
 
 ---
 
