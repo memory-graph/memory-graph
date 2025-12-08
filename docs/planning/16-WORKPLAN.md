@@ -1,16 +1,14 @@
 # Workplan 16: SDK Development (v1.0.0)
 
-> ⏸️ **STATUS: DEFERRED** (2025-12-07)
+> 🚧 **STATUS: IN PROGRESS** (2025-12-08)
 >
-> This workplan is deferred pending:
-> 1. v0.10.0 release completion
-> 2. Cloud backend stabilization
-> 3. Business decision on SDK priority vs other features
+> **Section 1 (SDK Core)**: ✅ COMPLETE - 23 tests passing
+> **Section 2-5 (Integrations)**: 🔄 IN PROGRESS - 4 parallel agents working
 >
-> **Reason**: Focus on releasing v0.10.0 and completing WP20 release first.
+> **Priority Update (2025-12-08)**: LlamaIndex and LangChain elevated to 🔴 CRITICAL per PRODUCT_ROADMAP.md
 
 **Version Target**: v1.0.0
-**Priority**: HIGH (Competitive Differentiation) - DEFERRED
+**Priority**: 🔴 CRITICAL (Competitive Differentiation) - DEFERRED
 **Prerequisites**:
 - Workplans 14-15 complete (Cloud API + Auth) - in memorygraph.dev
 - WP20 (Cloud Backend) release complete
@@ -18,11 +16,64 @@
 
 ---
 
+## Parallel Execution Guide
+
+This workplan can be executed with **4 parallel agents** after Section 1 (SDK Core) is complete.
+
+### Dependency Graph
+
+```
+Section 1: SDK Core (SEQUENTIAL - must complete first)
+    │
+    ├──► Section 2: LlamaIndex ──┐
+    │                            │
+    ├──► Section 3: LangChain ───┼──► Section 6: Testing ──► Section 7: Docs ──► Section 8: Publishing
+    │                            │
+    ├──► Section 4: CrewAI ──────┤
+    │                            │
+    └──► Section 5: AutoGen ─────┘
+```
+
+### Parallel Work Units
+
+| Agent | Section | Dependencies | Can Run With |
+|-------|---------|--------------|--------------|
+| **Agent 1** | Section 1: SDK Core | None | Solo (prerequisite) |
+| **Agent 2** | Section 2: LlamaIndex | Section 1 | Agents 3, 4, 5 |
+| **Agent 3** | Section 3: LangChain | Section 1 | Agents 2, 4, 5 |
+| **Agent 4** | Section 4: CrewAI | Section 1 | Agents 2, 3, 5 |
+| **Agent 5** | Section 5: AutoGen | Section 1 | Agents 2, 3, 4 |
+| **Agent 6** | Section 6: Testing | Sections 2-5 | Solo (integration) |
+| **Agent 7** | Section 7: Documentation | Section 6 | Agent 8 |
+| **Agent 8** | Section 8: Publishing | Section 6 | Agent 7 |
+| **Agent 9** | Section 9: Marketing | Section 8 | Solo |
+
+### Recommended Execution Order
+
+**Phase A** (1 agent): Section 1 - SDK Core setup
+**Phase B** (4 agents parallel): Sections 2, 3, 4, 5 - Framework integrations
+**Phase C** (1 agent): Section 6 - Integration testing
+**Phase D** (2 agents parallel): Sections 7, 8 - Docs and publishing
+**Phase E** (1 agent): Section 9 - Marketing
+
+---
+
 ## Overview
 
-Create `memorygraphsdk` - a Python SDK for integrating MemoryGraph with agent frameworks (LangChain, CrewAI, AutoGen, etc.). This differentiates us from Cipher (MCP-only).
+Create `memorygraphsdk` - a Python SDK for integrating MemoryGraph with agent frameworks. This differentiates us from Cipher (MCP-only).
 
 **Philosophy**: MCP is great for Claude, but other frameworks need native integrations. Our SDK makes MemoryGraph the universal memory layer.
+
+---
+
+## Integration Priorities (Updated 2025-12-08)
+
+| # | Integration | Priority | Rationale |
+|---|-------------|----------|-----------|
+| 1 | **LlamaIndex** | 🔴 Critical | Dominant in RAG/retrieval - perfect fit for memory-graph |
+| 2 | **LangChain/LangGraph** | 🔴 Critical | Massive ecosystem (100K+ stars) - huge market capture |
+| 3 | **CrewAI** | 🟡 Medium | Multi-agent workflows, growing ecosystem |
+| 4 | **AutoGen** | 🟢 Low | Microsoft ecosystem, smaller adoption |
 
 ---
 
@@ -30,9 +81,10 @@ Create `memorygraphsdk` - a Python SDK for integrating MemoryGraph with agent fr
 
 Python SDK that works with:
 - MCP (already supported)
-- LangChain (BaseMemory integration)
-- CrewAI (Memory interface)
-- AutoGen (message history)
+- **LlamaIndex** (MemoryVectorStore integration) - 🔴 CRITICAL
+- **LangChain** (BaseMemory integration) - 🔴 CRITICAL
+- CrewAI (Memory interface) - 🟡 MEDIUM
+- AutoGen (message history) - 🟢 LOW
 - Direct API usage (for custom integrations)
 
 ---
@@ -40,8 +92,9 @@ Python SDK that works with:
 ## Success Criteria
 
 - [ ] SDK package published to PyPI as `memorygraphsdk`
-- [ ] LangChain integration working
-- [ ] CrewAI integration working
+- [ ] **LlamaIndex integration working** (🔴 Critical)
+- [ ] **LangChain integration working** (🔴 Critical)
+- [ ] CrewAI integration working (🟡 Medium - can defer)
 - [ ] Comprehensive documentation with examples
 - [ ] 30+ tests passing
 - [ ] Type hints and docstrings for all public APIs
@@ -62,9 +115,10 @@ memorygraphsdk/
 │   ├── async_.py           # Async client
 │   ├── integrations/
 │   │   ├── __init__.py
-│   │   ├── langchain.py    # LangChain memory
-│   │   ├── crewai.py       # CrewAI memory
-│   │   └── autogen.py      # AutoGen history
+│   │   ├── llamaindex.py   # LlamaIndex integration (🔴 CRITICAL)
+│   │   ├── langchain.py    # LangChain memory (🔴 CRITICAL)
+│   │   ├── crewai.py       # CrewAI memory (🟡 MEDIUM)
+│   │   └── autogen.py      # AutoGen history (🟢 LOW)
 │   └── exceptions.py
 ├── tests/
 ├── docs/
@@ -74,9 +128,9 @@ memorygraphsdk/
 ```
 
 **Tasks**:
-- [ ] Create repository: `memorygraph-sdk` (or in monorepo under `/sdk`)
-- [ ] Set up project structure
-- [ ] Configure Poetry or setuptools
+- [x] Create repository: `memorygraph-sdk` (or in monorepo under `/sdk`)
+- [x] Set up project structure
+- [x] Configure Poetry or setuptools
 - [ ] Add pre-commit hooks (black, mypy, ruff)
 
 ### 1.2 Core Client
@@ -220,12 +274,12 @@ class MemoryGraphClient:
 ```
 
 **Tasks**:
-- [ ] Implement synchronous client
-- [ ] Implement all CRUD operations
-- [ ] Add proper error handling
-- [ ] Add context manager support
-- [ ] Add type hints
-- [ ] Add docstrings
+- [x] Implement synchronous client
+- [x] Implement all CRUD operations
+- [x] Add proper error handling
+- [x] Add context manager support
+- [x] Add type hints
+- [x] Add docstrings
 
 ### 1.3 Async Client
 
@@ -283,9 +337,9 @@ class AsyncMemoryGraphClient:
 ```
 
 **Tasks**:
-- [ ] Implement async client (mirror sync client)
-- [ ] Use httpx.AsyncClient
-- [ ] Add async context manager
+- [x] Implement async client (mirror sync client)
+- [x] Use httpx.AsyncClient
+- [x] Add async context manager
 - [ ] Test async operations
 
 ### 1.4 Models
@@ -342,16 +396,184 @@ class Relationship(BaseModel):
 ```
 
 **Tasks**:
-- [ ] Create Pydantic models for all API types
-- [ ] Add validation
-- [ ] Add JSON serialization helpers
-- [ ] Add type hints
+- [x] Create Pydantic models for all API types
+- [x] Add validation
+- [x] Add JSON serialization helpers
+- [x] Add type hints
 
 ---
 
-## Section 2: LangChain Integration
+## Section 2: LlamaIndex Integration (🔴 CRITICAL)
 
-### 2.1 LangChain Memory Class
+> **Priority**: This is the #1 integration priority per PRODUCT_ROADMAP.md
+
+### 2.1 LlamaIndex Memory Store
+
+**File**: `/Users/gregorydickson/claude-code-memory/sdk/memorygraphsdk/integrations/llamaindex.py`
+
+```python
+"""
+LlamaIndex integration for MemoryGraph.
+
+Provides a custom memory module that integrates with LlamaIndex's
+chat memory and retrieval systems.
+"""
+from typing import Any, Dict, List, Optional
+from llama_index.core.memory import BaseMemory
+from llama_index.core.bridge.pydantic import Field
+from ..client import MemoryGraphClient
+
+
+class MemoryGraphChatMemory(BaseMemory):
+    """
+    LlamaIndex chat memory backed by MemoryGraph.
+
+    Usage:
+        from memorygraphsdk.integrations.llamaindex import MemoryGraphChatMemory
+        from llama_index.core.chat_engine import SimpleChatEngine
+
+        memory = MemoryGraphChatMemory(api_key="mgraph_...")
+        chat_engine = SimpleChatEngine.from_defaults(memory=memory)
+    """
+
+    client: MemoryGraphClient = Field(exclude=True)
+    session_id: str = Field(default="default")
+
+    def __init__(self, api_key: str, session_id: str = "default", **kwargs):
+        super().__init__(**kwargs)
+        object.__setattr__(self, 'client', MemoryGraphClient(api_key=api_key))
+        self.session_id = session_id
+
+    def get(self, input: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
+        """Get relevant memories for the input."""
+        if input:
+            memories = self.client.search_memories(
+                query=input,
+                tags=[f"session:{self.session_id}"],
+                limit=10
+            )
+        else:
+            memories = self.client.search_memories(
+                tags=[f"session:{self.session_id}"],
+                limit=10
+            )
+
+        return [
+            {"role": m.context.get("role", "user"), "content": m.content}
+            for m in memories
+        ]
+
+    def put(self, message: Dict[str, Any]) -> None:
+        """Store a message in memory."""
+        role = message.get("role", "user")
+        content = message.get("content", "")
+
+        self.client.create_memory(
+            type="conversation",
+            title=f"{role}: {content[:50]}...",
+            content=content,
+            tags=[f"session:{self.session_id}", f"role:{role}"],
+            context={"role": role, "session_id": self.session_id}
+        )
+
+    def reset(self) -> None:
+        """Reset memory (no-op - memories are permanent)."""
+        pass
+
+    @classmethod
+    def class_name(cls) -> str:
+        return "MemoryGraphChatMemory"
+
+
+class MemoryGraphRetriever:
+    """
+    LlamaIndex-compatible retriever using MemoryGraph.
+
+    Enables using MemoryGraph as a knowledge base for RAG pipelines.
+
+    Usage:
+        from memorygraphsdk.integrations.llamaindex import MemoryGraphRetriever
+
+        retriever = MemoryGraphRetriever(api_key="mgraph_...")
+        nodes = retriever.retrieve("What solved the timeout issue?")
+    """
+
+    def __init__(self, api_key: str, memory_types: List[str] = None):
+        self.client = MemoryGraphClient(api_key=api_key)
+        self.memory_types = memory_types or ["solution", "code_pattern", "fix"]
+
+    def retrieve(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Retrieve relevant memories as nodes."""
+        memories = self.client.search_memories(
+            query=query,
+            memory_types=self.memory_types,
+            limit=limit
+        )
+
+        # Convert to LlamaIndex-compatible format
+        return [
+            {
+                "id": m.id,
+                "text": f"{m.title}\n\n{m.content}",
+                "metadata": {
+                    "type": m.type,
+                    "tags": m.tags,
+                    "importance": m.importance
+                },
+                "score": m.importance  # Use importance as relevance score
+            }
+            for m in memories
+        ]
+```
+
+**Tasks**:
+- [x] Implement LlamaIndex BaseMemory interface
+- [x] Implement MemoryGraphRetriever for RAG pipelines
+- [x] Support both chat memory and retrieval use cases
+- [ ] Test with LlamaIndex chat engines
+- [x] Add example usage
+
+### 2.2 LlamaIndex Example
+
+**File**: `sdk/examples/llamaindex_example.py`
+
+```python
+"""
+Example: Using MemoryGraph with LlamaIndex.
+"""
+from llama_index.core import Settings
+from llama_index.core.chat_engine import SimpleChatEngine
+from llama_index.llms.openai import OpenAI
+from memorygraphsdk.integrations.llamaindex import MemoryGraphChatMemory
+
+# Configure LlamaIndex
+Settings.llm = OpenAI(model="gpt-4")
+
+# Create memory
+memory = MemoryGraphChatMemory(api_key="mgraph_your_key_here")
+
+# Create chat engine with memory
+chat_engine = SimpleChatEngine.from_defaults(memory=memory)
+
+# Have a conversation
+response = chat_engine.chat("I'm working on a Redis timeout issue")
+print(response)
+
+response = chat_engine.chat("What was I just working on?")
+print(response)  # Should remember Redis timeout
+```
+
+**Tasks**:
+- [x] Create working example
+- [ ] Test with OpenAI
+- [x] Add RAG example with MemoryGraphRetriever
+- [ ] Test memory persistence across sessions
+
+---
+
+## Section 3: LangChain Integration (🔴 CRITICAL)
+
+### 3.1 LangChain Memory Class
 
 **File**: `/Users/gregorydickson/claude-code-memory/sdk/memorygraphsdk/integrations/langchain.py`
 
@@ -439,13 +661,13 @@ class MemoryGraphMemory(BaseMemory):
 ```
 
 **Tasks**:
-- [ ] Implement LangChain BaseMemory interface
-- [ ] Support both message and string formats
-- [ ] Add session management
+- [x] Implement LangChain BaseMemory interface
+- [x] Support both message and string formats
+- [x] Add session management
 - [ ] Test with LangChain chains
-- [ ] Add example usage
+- [x] Add example usage
 
-### 2.2 LangChain Example
+### 3.2 LangChain Example
 
 **File**: `sdk/examples/langchain_example.py`
 
@@ -473,16 +695,16 @@ print(response)  # Should remember Redis timeout
 ```
 
 **Tasks**:
-- [ ] Create working example
+- [x] Create working example
 - [ ] Test with OpenAI
 - [ ] Add to documentation
 - [ ] Test memory persistence across sessions
 
 ---
 
-## Section 3: CrewAI Integration
+## Section 4: CrewAI Integration (🟡 MEDIUM)
 
-### 3.1 CrewAI Memory Implementation
+### 4.1 CrewAI Memory Implementation
 
 **File**: `/Users/gregorydickson/claude-code-memory/sdk/memorygraphsdk/integrations/crewai.py`
 
@@ -538,12 +760,12 @@ class MemoryGraphCrewMemory(CrewAIMemory):
 ```
 
 **Tasks**:
-- [ ] Implement CrewAI Memory interface
+- [x] Implement CrewAI Memory interface
 - [ ] Test with CrewAI agents
-- [ ] Add example
+- [x] Add example
 - [ ] Document in README
 
-### 3.2 CrewAI Example
+### 4.2 CrewAI Example
 
 **File**: `sdk/examples/crewai_example.py`
 
@@ -578,15 +800,15 @@ print(result)
 ```
 
 **Tasks**:
-- [ ] Create working example
+- [x] Create working example
 - [ ] Test with CrewAI
 - [ ] Add to documentation
 
 ---
 
-## Section 4: AutoGen Integration
+## Section 5: AutoGen Integration (🟢 LOW)
 
-### 4.1 AutoGen Message History
+### 5.1 AutoGen Message History
 
 **File**: `/Users/gregorydickson/claude-code-memory/sdk/memorygraphsdk/integrations/autogen.py`
 
@@ -646,16 +868,16 @@ class MemoryGraphAutoGenHistory:
 ```
 
 **Tasks**:
-- [ ] Implement AutoGen message history
+- [x] Implement AutoGen message history
 - [ ] Test with AutoGen agents
-- [ ] Add example
-- [ ] Document integration
+- [x] Add example
+- [x] Document integration
 
 ---
 
-## Section 5: Testing
+## Section 6: Testing
 
-### 5.1 Unit Tests
+### 6.1 Unit Tests
 
 **File**: `sdk/tests/test_client.py`
 
@@ -704,7 +926,7 @@ def client():
 - [ ] Mock HTTP responses for faster tests
 - [ ] Achieve 90%+ coverage
 
-### 5.2 Integration Tests
+### 6.2 Integration Tests
 
 **File**: `sdk/tests/test_integrations.py`
 
@@ -737,9 +959,9 @@ def test_langchain_memory():
 
 ---
 
-## Section 6: Documentation
+## Section 7: Documentation
 
-### 6.1 SDK README
+### 7.1 SDK README
 
 **File**: `sdk/README.md`
 
@@ -808,7 +1030,7 @@ Full docs: https://memorygraph.dev/docs/sdk
 - [ ] Add quick start examples
 - [ ] Link to full documentation
 
-### 6.2 API Documentation
+### 7.2 API Documentation
 
 **File**: `sdk/docs/api.md`
 
@@ -819,10 +1041,11 @@ Full docs: https://memorygraph.dev/docs/sdk
 - [ ] Add type hints to all examples
 - [ ] Generate API docs with Sphinx or mkdocs
 
-### 6.3 Integration Guides
+### 7.3 Integration Guides
 
 **Files**:
-- `sdk/docs/langchain.md`
+- `sdk/docs/llamaindex.md` (🔴 Critical)
+- `sdk/docs/langchain.md` (🔴 Critical)
 - `sdk/docs/crewai.md`
 - `sdk/docs/autogen.md`
 
@@ -834,9 +1057,9 @@ Full docs: https://memorygraph.dev/docs/sdk
 
 ---
 
-## Section 7: Publishing
+## Section 8: Publishing
 
-### 7.1 PyPI Configuration
+### 8.1 PyPI Configuration
 
 **File**: `sdk/pyproject.toml`
 
@@ -855,10 +1078,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+llamaindex = ["llama-index>=0.10.0"]
 langchain = ["langchain>=0.1.0"]
 crewai = ["crewai>=0.1.0"]
 autogen = ["pyautogen>=0.2.0"]
-all = ["langchain>=0.1.0", "crewai>=0.1.0", "pyautogen>=0.2.0"]
+all = ["llama-index>=0.10.0", "langchain>=0.1.0", "crewai>=0.1.0", "pyautogen>=0.2.0"]
 
 [project.urls]
 Homepage = "https://memorygraph.dev"
@@ -876,7 +1100,7 @@ build-backend = "setuptools.build_meta"
 - [ ] Add all dependencies
 - [ ] Add optional dependencies for integrations
 
-### 7.2 Build and Publish
+### 8.2 Build and Publish
 
 **Tasks**:
 - [ ] Build package: `python -m build`
@@ -887,7 +1111,7 @@ build-backend = "setuptools.build_meta"
 - [ ] Verify package on PyPI
 - [ ] Test install: `pip install memorygraphsdk`
 
-### 7.3 CI/CD for SDK
+### 8.3 CI/CD for SDK
 
 **File**: `.github/workflows/sdk-release.yml`
 
@@ -928,9 +1152,9 @@ jobs:
 
 ---
 
-## Section 8: Marketing
+## Section 9: Marketing
 
-### 8.1 Announcement
+### 9.1 Announcement
 
 **Tasks**:
 - [ ] Blog post: "Introducing MemoryGraph SDK"
@@ -939,7 +1163,7 @@ jobs:
 - [ ] Post on Twitter, LinkedIn, Reddit
 - [ ] Submit to framework communities
 
-### 8.2 Framework-Specific Outreach
+### 9.2 Framework-Specific Outreach
 
 **Tasks**:
 - [ ] Post in LangChain Discord/forums
@@ -1032,6 +1256,7 @@ jobs:
 
 ---
 
-**Last Updated**: 2025-12-05
-**Status**: NOT STARTED
-**Next Step**: Set up SDK project structure
+**Last Updated**: 2025-12-08
+**Status**: DEFERRED (pending v0.10.0 release)
+**Priority Update**: LlamaIndex and LangChain elevated to 🔴 CRITICAL
+**Next Step**: After v0.10.0 release, set up SDK project structure with LlamaIndex integration first

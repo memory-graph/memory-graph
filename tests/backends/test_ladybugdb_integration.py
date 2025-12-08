@@ -28,6 +28,10 @@ except ImportError:
 except Exception as e:
     SKIP_REASON = f"real_ladybug import failed: {e}"
 
+# Import LadybugDBBackend only if real_ladybug is available
+if LADYBUGDB_AVAILABLE:
+    from memorygraph.backends.ladybugdb_backend import LadybugDBBackend
+
 
 @pytest.mark.skipif(not LADYBUGDB_AVAILABLE, reason=SKIP_REASON)
 class TestLadybugDBIntegration:

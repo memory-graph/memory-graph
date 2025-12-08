@@ -11,7 +11,22 @@ from datetime import datetime, timezone
 import uuid
 import sys
 
-from memorygraph.backends.ladybugdb_backend import LadybugDBBackend
+# Check if real_ladybug is available
+try:
+    import real_ladybug
+    LADYBUGDB_AVAILABLE = True
+except ImportError:
+    LADYBUGDB_AVAILABLE = False
+
+# Skip all tests in this module if real_ladybug is not installed
+pytestmark = pytest.mark.skipif(
+    not LADYBUGDB_AVAILABLE,
+    reason="real_ladybug package not installed"
+)
+
+if LADYBUGDB_AVAILABLE:
+    from memorygraph.backends.ladybugdb_backend import LadybugDBBackend
+
 from memorygraph.models import (
     Memory,
     MemoryType,

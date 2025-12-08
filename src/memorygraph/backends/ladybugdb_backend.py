@@ -10,7 +10,12 @@ import os
 from typing import Any, Optional, List, Tuple, Dict
 from pathlib import Path
 
-import real_ladybug as lb
+try:
+    import real_ladybug as lb
+    LADYBUGDB_AVAILABLE = True
+except ImportError:
+    lb = None  # type: ignore
+    LADYBUGDB_AVAILABLE = False
 
 from .base import GraphBackend
 from ..models import (
@@ -45,7 +50,15 @@ class LadybugDBBackend(GraphBackend):
         Args:
             db_path: Path to database file (defaults to LADYBUGDB_PATH env var or ~/.memorygraph/ladybugdb.db)
             graph_name: Name of the graph database (defaults to 'memorygraph')
+
+        Raises:
+            ImportError: If real_ladybug package is not installed.
         """
+        if not LADYBUGDB_AVAILABLE:
+            raise ImportError(
+                "LadybugDB backend requires real_ladybug package. "
+                "Install it with: pip install real-ladybug"
+            )
         if db_path is None:
             db_path = os.getenv("LADYBUGDB_PATH")
             if db_path is None:
