@@ -47,6 +47,9 @@ falkordb = [
 falkordblite = [
     "falkordblite>=0.4.0",
 ]
+ladybugdb = [
+    "real-ladybug>=0.12.2",
+]
 turso = [
     "libsql-experimental>=0.0.30",
 ]
@@ -68,6 +71,7 @@ all = [
     "neo4j>=6.0.0",
     "falkordb>=1.0.0",
     "falkordblite>=0.4.0",
+    "real-ladybug>=0.12.2",
     "libsql-experimental>=0.0.30",
     "sentence-transformers>=5.0.0",
     "spacy>=3.0.0",

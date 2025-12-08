@@ -40,7 +40,7 @@ class BackendFactory:
 
         Selection logic:
         - Default: SQLite (zero-config, no external dependencies)
-        - Explicit: Use MEMORY_BACKEND env var if set (neo4j, memgraph, falkordb, falkordblite, sqlite, auto)
+        - Explicit: Use MEMORY_BACKEND env var if set (neo4j, memgraph, falkordb, falkordblite, sqlite, ladybugdb, auto)
         - Auto: Try backends in order until one connects successfully
         """
         backend_type = os.getenv("MEMORY_BACKEND", "sqlite").lower()
@@ -73,6 +73,10 @@ class BackendFactory:
             logger.info("Explicit backend selection: Cloud (MemoryGraph Cloud)")
             return await BackendFactory._create_cloud()
 
+        elif backend_type == "ladybugdb":
+            logger.info("Explicit backend selection: LadybugDB")
+            return await BackendFactory._create_ladybugdb()
+
         elif backend_type == "auto":
             logger.info("Auto-selecting backend...")
             return await BackendFactory._auto_select_backend()
@@ -80,7 +84,7 @@ class BackendFactory:
         else:
             raise DatabaseConnectionError(
                 f"Unknown backend type: {backend_type}. "
-                f"Valid options: neo4j, memgraph, falkordb, falkordblite, sqlite, turso, cloud, auto"
+                f"Valid options: neo4j, memgraph, falkordb, falkordblite, sqlite, turso, ladybugdb, cloud, auto"
             )
 
     @staticmethod
@@ -223,6 +227,26 @@ class BackendFactory:
         return backend
 
     @staticmethod
+    async def _create_ladybugdb() -> GraphBackend:
+        """
+        Create and connect to LadybugDB backend.
+
+        Returns:
+            Connected LadybugDBBackend instance
+
+        Raises:
+            DatabaseConnectionError: If connection fails
+        """
+        # Lazy import - only load ladybugdb backend when needed
+        from .ladybugdb_backend import LadybugDBBackend
+
+        db_path = os.getenv("MEMORY_LADYBUGDB_PATH") or os.getenv("LADYBUGDB_PATH")
+
+        backend = LadybugDBBackend(db_path=db_path)
+        await backend.connect()
+        return backend
+
+    @staticmethod
     async def _create_sqlite() -> GraphBackend:
         """
         Create and connect to SQLite fallback backend.
@@ -337,6 +361,9 @@ class BackendFactory:
             elif backend_type == "falkordblite":
                 return await BackendFactory._create_falkordblite_with_path(config.path)
 
+            elif backend_type == "ladybugdb":
+                return await BackendFactory._create_ladybugdb_with_path(config.path)
+
             elif backend_type == "neo4j":
                 return await BackendFactory._create_neo4j_with_config(
                     uri=config.uri,
@@ -409,6 +436,15 @@ class BackendFactory:
         from .falkordblite_backend import FalkorDBLiteBackend
 
         backend = FalkorDBLiteBackend(db_path=db_path)
+        await backend.connect()
+        return backend
+
+    @staticmethod
+    async def _create_ladybugdb_with_path(db_path: Optional[str] = None) -> GraphBackend:
+        """Create LadybugDB backend with explicit path (thread-safe)."""
+        from .ladybugdb_backend import LadybugDBBackend
+
+        backend = LadybugDBBackend(db_path=db_path)
         await backend.connect()
         return backend
 
