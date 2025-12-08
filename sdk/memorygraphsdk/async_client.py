@@ -14,7 +14,7 @@ from .exceptions import (
     ServerError,
     ValidationError,
 )
-from .models import Memory, Relationship, RelatedMemory
+from .models import Memory, RelatedMemory, Relationship
 
 
 class AsyncMemoryGraphClient:

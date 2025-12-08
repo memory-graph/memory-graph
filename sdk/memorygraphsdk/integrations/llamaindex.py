@@ -7,25 +7,27 @@ chat memory and retrieval systems.
 This integration requires llama-index to be installed:
     pip install memorygraphsdk[llamaindex]
 """
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 try:
     from llama_index.core.base.llms.types import ChatMessage, MessageRole
-    from llama_index.core.memory import BaseMemory
     from llama_index.core.bridge.pydantic import Field
+    from llama_index.core.memory import BaseMemory
 
     LLAMAINDEX_AVAILABLE = True
 except ImportError:
     LLAMAINDEX_AVAILABLE = False
     # Create stub classes for type checking
     BaseMemory = object  # type: ignore
-    Field = lambda **kwargs: None  # type: ignore
     ChatMessage = dict  # type: ignore
     MessageRole = object  # type: ignore
 
+    def Field(**kwargs: Any) -> Any:  # type: ignore  # noqa: N802
+        """Stub for pydantic Field when llama-index not installed."""
+        return None
+
 from ..client import MemoryGraphClient
 from ..exceptions import MemoryGraphError, NotFoundError
-from ..models import Memory
 
 
 class MemoryGraphChatMemory(BaseMemory):
@@ -86,7 +88,7 @@ class MemoryGraphChatMemory(BaseMemory):
         object.__setattr__(self, "client", MemoryGraphClient(api_key=api_key, api_url=api_url))
         object.__setattr__(self, "session_id", session_id)
 
-    def get(self, input: Optional[str] = None, **kwargs: Any) -> List[ChatMessage]:
+    def get(self, input: Optional[str] = None, **kwargs: Any) -> list[ChatMessage]:
         """
         Get relevant memories for the input.
 
@@ -126,7 +128,7 @@ class MemoryGraphChatMemory(BaseMemory):
 
         return messages
 
-    def get_all(self) -> List[ChatMessage]:
+    def get_all(self) -> list[ChatMessage]:
         """
         Get all messages in this session.
 
@@ -153,7 +155,7 @@ class MemoryGraphChatMemory(BaseMemory):
             context={"role": role, "session_id": self.session_id},
         )
 
-    def set(self, messages: List[ChatMessage]) -> None:
+    def set(self, messages: list[ChatMessage]) -> None:
         """
         Set messages (overwrite existing memory).
 
@@ -214,7 +216,7 @@ class MemoryGraphRetriever:
     def __init__(
         self,
         api_key: str | None = None,
-        memory_types: Optional[List[str]] = None,
+        memory_types: Optional[list[str]] = None,
         api_url: str = "https://api.memorygraph.dev",
         min_importance: Optional[float] = None,
     ):
@@ -232,7 +234,7 @@ class MemoryGraphRetriever:
         self.memory_types = memory_types or ["solution", "code_pattern", "fix"]
         self.min_importance = min_importance
 
-    def retrieve(self, query: str, limit: int = 5, **kwargs: Any) -> List[dict[str, Any]]:
+    def retrieve(self, query: str, limit: int = 5, **kwargs: Any) -> list[dict[str, Any]]:
         """
         Retrieve relevant memories as nodes.
 
@@ -288,7 +290,7 @@ class MemoryGraphRetriever:
         include_related: bool = True,
         max_depth: int = 1,
         **kwargs: Any,
-    ) -> List[dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Retrieve memories with their relationships.
 
