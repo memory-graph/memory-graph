@@ -11,6 +11,10 @@ from datetime import datetime, timezone
 import uuid
 import sys
 
+# Create proper mock structure for real_ladybug
+mock_real_ladybug = MagicMock()
+sys.modules['real_ladybug'] = mock_real_ladybug
+
 from memorygraph.backends.ladybugdb_backend import LadybugDBBackend
 from memorygraph.models import (
     Memory,
@@ -32,7 +36,7 @@ def setup_mock_ladybug(result_set=None):
         result_set: The result set to return from queries
 
     Returns:
-        Tuple of (mock_client, mock_connection, mock_Database_class)
+        Tuple of (mock_client, mock_connection, mock_Database_class, mock_Connection_class)
     """
     mock_client = Mock()
     mock_connection = Mock()
@@ -50,32 +54,25 @@ def setup_mock_ladybug(result_set=None):
     mock_Database_class = Mock(return_value=mock_client)
     mock_Connection_class = Mock(return_value=mock_connection)
 
-    return (
-        mock_client,
-        mock_connection,
-        mock_Database_class,
-        mock_Database_class,
-        mock_Connection_class,
-    )
+    # Set attributes on the mock module
+    mock_real_ladybug.Database = mock_Database_class
+    mock_real_ladybug.Connection = mock_Connection_class
+
+    return mock_client, mock_connection, mock_Database_class, mock_Connection_class
 
 
 class TestLadybugDBConnection:
     """Test LadybugDB connection management."""
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_connect_success(self, mock_lb):
+    async def test_connect_success(self):
         """Test successful connection to LadybugDB."""
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug()
-
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend(db_path="/tmp/test.db")
         result = await backend.connect()
@@ -88,11 +85,10 @@ class TestLadybugDBConnection:
         mock_Connection_class.assert_called_once_with(mock_client)
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_connect_failure(self, mock_lb):
+    async def test_connect_failure(self):
         """Test connection failure handling."""
         mock_Database = Mock(side_effect=Exception("Database file not accessible"))
-        mock_lb.Database = mock_Database
+        mock_real_ladybug.Database = mock_Database
 
         backend = LadybugDBBackend(db_path="/invalid/path/test.db")
 
@@ -102,19 +98,15 @@ class TestLadybugDBConnection:
             await backend.connect()
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_disconnect(self, mock_lb):
+    async def test_disconnect(self):
         """Test disconnection from LadybugDB."""
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug()
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend(db_path="/tmp/test.db")
         await backend.connect()
@@ -124,19 +116,15 @@ class TestLadybugDBConnection:
         mock_client.close.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_default_path(self, mock_lb):
+    async def test_default_path(self):
         """Test default database path is used when none specified."""
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug()
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend()
         await backend.connect()
@@ -147,19 +135,15 @@ class TestLadybugDBConnection:
         assert call_args[0].endswith(".memorygraph/ladybugdb.db")
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_custom_graph_name(self, mock_lb):
+    async def test_custom_graph_name(self):
         """Test custom graph name is stored (though not currently used in connection)."""
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug()
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend(db_path="/tmp/test.db", graph_name="custom_graph")
         await backend.connect()
@@ -174,20 +158,16 @@ class TestLadybugDBQueryExecution:
     """Test LadybugDB query execution."""
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_execute_query_success(self, mock_lb):
+    async def test_execute_query_success(self):
         """Test successful query execution."""
         mock_result_data = [{"id": 1, "name": "test"}, {"id": 2, "name": "test2"}]
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug(mock_result_data)
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend(db_path="/tmp/test.db")
         await backend.connect()
@@ -198,20 +178,16 @@ class TestLadybugDBQueryExecution:
         mock_connection.execute.assert_called_once_with("MATCH (n) RETURN n")
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_execute_query_with_parameters(self, mock_lb):
+    async def test_execute_query_with_parameters(self):
         """Test query execution with parameters (note: LadybugDB doesn't support parameterized queries)."""
         mock_result_data = [{"count": 5}]
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug(mock_result_data)
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend(db_path="/tmp/test.db")
         await backend.connect()
@@ -230,20 +206,16 @@ class TestLadybugDBQueryExecution:
         )
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_execute_query_write_operation(self, mock_lb):
+    async def test_execute_query_write_operation(self):
         """Test write query execution."""
         mock_result_data = []
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug(mock_result_data)
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend(db_path="/tmp/test.db")
         await backend.connect()
@@ -266,19 +238,15 @@ class TestLadybugDBQueryExecution:
             await backend.execute_query("MATCH (n) RETURN n")
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_execute_query_error(self, mock_lb):
+    async def test_execute_query_error(self):
         """Test query execution error handling."""
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug()
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         mock_connection.execute.side_effect = Exception("Query syntax error")
 
@@ -317,19 +285,15 @@ class TestLadybugDBBackendInitialization:
         # db_path will be set to default in connect()
 
     @pytest.mark.asyncio
-    @patch("memorygraph.backends.ladybugdb_backend.lb")
-    async def test_connect_sets_default_path(self, mock_lb):
+    async def test_connect_sets_default_path(self):
         """Test that connect sets default path when none provided."""
         (
             mock_client,
             mock_connection,
-            mock_Database,
             mock_Database_class,
             mock_Connection_class,
         ) = setup_mock_ladybug()
 
-        mock_lb.Database = mock_Database_class
-        mock_lb.Connection = mock_Connection_class
 
         backend = LadybugDBBackend()
         await backend.connect()
