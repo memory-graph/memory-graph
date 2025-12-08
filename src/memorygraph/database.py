@@ -223,9 +223,113 @@ class MemoryDatabase:
                        Must provide execute_write_query and execute_read_query methods.
         """
         self.connection = connection
-    
+
     async def initialize_schema(self) -> None:
         """Create database schema, constraints, and indexes.
+
+        Raises:
+            SchemaError: If schema creation fails
+        """
+        # Check backend type and use appropriate schema initialization
+        backend_name_attr = getattr(self.connection, "backend_name", lambda: "unknown")
+        if callable(backend_name_attr):
+            backend_name = backend_name_attr()
+        else:
+            backend_name = backend_name_attr
+
+        if isinstance(backend_name, str) and backend_name.lower() == "ladybugdb":
+            await self.initialize_ladybugdb_schema()
+        else:
+            await self.initialize_neo4j_schema()
+
+    async def initialize_ladybugdb_schema(self) -> None:
+        """Create LadybugDB schema, constraints, and indexes.
+
+        LadybugDB uses different Cypher syntax than Neo4j.
+        LadybugDB requires NODE TABLE before REL TABLE.
+
+        Raises:
+            SchemaError: If schema creation fails
+        """
+        logger.info("Initializing LadybugDB schema for Claude Memory...")
+
+        # LadybugDB cannot create unique constraints beyond primary key and not null
+        # Create NODE TABLE first, then REL TABLE
+
+        # Create Memory node table using LadybugDB syntax
+        create_memory_table = """
+        CREATE NODE TABLE Memory(
+            id STRING PRIMARY KEY,
+            type STRING,
+            title STRING,
+            content STRING,
+            summary STRING,
+            tags STRING,
+            importance DOUBLE,
+            confidence DOUBLE,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            context_project_path STRING,
+            context_file_path STRING,
+            context_line_start INT,
+            context_line_end INT,
+            context_commit_hash STRING,
+            context_branch STRING,
+            metadata STRING
+        )
+        """
+
+        # Create REL table for relationships using LadybugDB syntax
+        # This requires the Memory node table to exist first
+        create_relationship_table = """
+        CREATE REL TABLE REL(
+            FROM Memory TO Memory,
+            id STRING,
+            type STRING,
+            properties STRING,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            metadata STRING
+        )
+        """
+
+        # LadybugDB doesn't support CREATE INDEX at all, so we skip indexes
+        # The primary keys will provide indexing automatically
+
+        # Install and load FTS extension, then create fulltext index using LadybugDB syntax
+        fulltext_setup = [
+            "INSTALL FTS",
+            "LOAD EXTENSION FTS",
+            "CALL CREATE_FTS_INDEX('Memory', 'memory_content_index', ['title', 'content', 'summary'])",
+        ]
+
+        # Execute schema creation
+        try:
+            await self.connection.execute_write_query(create_memory_table)
+            logger.debug("Created Memory node table")
+        except Exception as e:
+            if "already exists" not in str(e).lower():
+                logger.warning(f"Failed to create Memory node table: {e}")
+
+        try:
+            await self.connection.execute_write_query(create_relationship_table)
+            logger.debug("Created REL table for relationships")
+        except Exception as e:
+            if "already exists" not in str(e).lower():
+                logger.warning(f"Failed to create REL table: {e}")
+
+        for fts_index in fulltext_setup:
+            try:
+                await self.connection.execute_write_query(fts_index)
+                logger.debug(f"Created fulltext index: {fts_index}")
+            except Exception as e:
+                if "already exists" not in str(e).lower():
+                    logger.warning(f"Failed to create fulltext index: {e}")
+
+        logger.info("LadybugDB schema initialization completed")
+
+    async def initialize_neo4j_schema(self) -> None:
+        """Create Neo4j database schema, constraints, and indexes.
 
         Raises:
             SchemaError: If schema creation fails
@@ -266,8 +370,8 @@ class MemoryDatabase:
                 if "already exists" not in str(e).lower():
                     logger.warning(f"Failed to create index: {e}")
 
-        logger.info("Schema initialization completed")
-    
+        logger.info("Neo4j schema initialization completed")
+
     async def store_memory(self, memory: Memory) -> str:
         """Store a memory in the database and return its ID.
 
