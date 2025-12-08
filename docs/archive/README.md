@@ -2,15 +2,46 @@
 
 This directory contains historical documentation, completed work archives, and consolidation reports.
 
-**Last Updated**: November 30, 2025
+**Last Updated**: December 8, 2025
 
 ## Active Documents
 
 **For current project status and active work**, see:
-- `/docs/WORKPLAN.md` (v2.0) - Active tasks only, consolidated from multiple workplans
+- `/docs/planning/WORKPLAN_INDEX.md` - Master index of all workplans
+- `/docs/planning/` - Active workplans (0, 6, 16, 19, 20)
 - `/docs/` - Current documentation (API, architecture, guides)
 
-## Recent Additions (November 30, 2025)
+## Recent Additions (December 8, 2025)
+
+### Completed Workplans (v0.9.x - v0.10.0)
+
+| Workplan | Title | Status | Completed |
+|----------|-------|--------|-----------|
+| `1-WORKPLAN.md` | Critical Fixes | ✅ COMPLETE | 2025-12-04 |
+| `2-WORKPLAN.md` | Test Coverage | ✅ COMPLETE | 2025-12-04 |
+| `3-WORKPLAN.md` | Code Quality | ✅ COMPLETE | 2025-12-04 |
+| `4-WORKPLAN.md` | Server Refactoring | ✅ COMPLETE | 2025-12-04 |
+| `5-WORKPLAN.md` | Pagination & Cycles | ✅ COMPLETE | 2025-12-04 |
+| `8-WORKPLAN.md` | Claude Code Web | ✅ COMPLETE | 2025-12-03 |
+| `9-WORKPLAN.md` | Universal Export | ✅ COMPLETE | 2025-12-04 |
+| `10-WORKPLAN.md` | Migration Manager | ✅ COMPLETE | 2025-12-04 |
+| `11-WORKPLAN.md` | MCP Migration Tools | ✅ COMPLETE | 2025-12-04 |
+| `12-WORKPLAN.md` | Semantic Navigation | ✅ COMPLETE | 2025-12-07 |
+| `13-WORKPLAN.md` | Bi-Temporal Schema | ✅ COMPLETE | 2025-12-07 |
+
+### Deprecated Workplans (moved to memorygraph.dev)
+
+| Workplan | Title | Status | Reason |
+|----------|-------|--------|--------|
+| `7-WEBSITE-WORKPLAN.md` | Website | ❌ DEPRECATED | Merged into 17 |
+| `14-WORKPLAN.md` | Cloud Infrastructure | ❌ DEPRECATED | → memorygraph.dev |
+| `15-WORKPLAN.md` | Authentication | ❌ DEPRECATED | → memorygraph.dev |
+| `17-WORKPLAN.md` | Marketing Site | ❌ DEPRECATED | → memorygraph.dev |
+| `18-WORKPLAN.md` | Team Sync | ❌ DEPRECATED | → memorygraph.dev |
+
+---
+
+## Historical Additions (November 30, 2025)
 
 ### Workplan Consolidation
 - `WORKPLAN_CONSOLIDATION_2025-11-30.md` - Consolidation process documentation

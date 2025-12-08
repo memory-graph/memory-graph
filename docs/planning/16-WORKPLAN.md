@@ -1,9 +1,19 @@
 # Workplan 16: SDK Development (v1.0.0)
 
+> ⏸️ **STATUS: DEFERRED** (2025-12-07)
+>
+> This workplan is deferred pending:
+> 1. v0.10.0 release completion
+> 2. Cloud backend stabilization
+> 3. Business decision on SDK priority vs other features
+>
+> **Reason**: Focus on releasing v0.10.0 and completing WP20 release first.
+
 **Version Target**: v1.0.0
-**Priority**: HIGH (Competitive Differentiation)
+**Priority**: HIGH (Competitive Differentiation) - DEFERRED
 **Prerequisites**:
-- Workplans 14-15 complete (Cloud API + Auth)
+- Workplans 14-15 complete (Cloud API + Auth) - in memorygraph.dev
+- WP20 (Cloud Backend) release complete
 **Estimated Effort**: 12-16 hours
 
 ---

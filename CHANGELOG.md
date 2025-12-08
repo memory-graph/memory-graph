@@ -7,29 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- Upgraded MCP Python SDK from 1.22.0 to 1.23.1
-- Now supports MCP specification 2025-11-25
-
-### Added
-- Claude Code Web support via project hooks
-- Auto-installation in remote environments
-- Turso backend for cloud-persistent SQLite-compatible storage
-- Cloud backend placeholder (coming soon)
-- Example hook files in `examples/claude-code-hooks/`
-- Documentation for Claude Code Web setup (`docs/claude-code-web.md`)
-- Copy helper script for easy project integration
-
-### Changed
-- Backend factory now supports `turso` backend type
-- Environment variables support both `TURSO_*` and `MEMORYGRAPH_TURSO_*` prefixes
-
-### Planned (v2.1+)
+### Planned (v0.11+)
 - Web visualization dashboard
 - PostgreSQL backend support (pg_graph)
 - Enhanced embedding support
 - Workflow automation templates
-- MemoryGraph Cloud API (memorygraph.dev)
+
+## [0.10.0] - 2025-12-08
+
+### Added
+- **Cloud Backend**: Production-ready cloud backend with circuit breaker pattern
+  - Multi-device sync via memorygraph.dev
+  - Team collaboration support
+  - Automatic retry with exponential backoff
+  - Health monitoring and connection pooling
+- **Bi-Temporal Tracking**: Track knowledge evolution over time
+  - `valid_from`, `valid_until`, `recorded_at`, `invalidated_by` fields
+  - Point-in-time queries via Python API
+  - Migration support for existing databases
+  - Temporal query tools for historical analysis
+- **Context Budget Optimization**: 60-70% token reduction
+  - Removed 29 unimplemented tools
+  - ADR-017: Context budget as architectural constraint
+  - Core profile: 9 tools, Extended: 12 tools
+  - Improved token efficiency for Claude Code
+- **Semantic Navigation**: Contextual search without embeddings
+  - Natural language query understanding
+  - Entity-based relationship traversal
+  - Pattern matching for code concepts
+- **MCP SDK Upgrade**: Updated to MCP Python SDK 1.23.1
+  - Full support for MCP specification 2025-11-25
+  - Claude Code Web compatibility via project hooks
+  - Auto-installation in remote environments
+- **Turso Backend**: Cloud-persistent SQLite-compatible storage
+  - Environment variables support both `TURSO_*` and `MEMORYGRAPH_TURSO_*` prefixes
+  - Seamless migration from SQLite
+  - Example configurations in `examples/claude-code-hooks/`
+
+### Changed
+- Tool profiles simplified: Core (9 tools) and Extended (12 tools)
+- Backend factory now supports `turso` and `cloud` backend types
+- Test count: 1,068 tests passing (improved from 910)
+- Documentation reorganization (completed workplans archived)
+- Deprecated temporal MCP tools in favor of Python API access
+
+### Removed
+- 29 vaporware (unimplemented) tools moved to experimental/
+- Temporal MCP tools deferred to Python API only (ADR-017)
+
+### Documentation
+- Added `docs/claude-code-web.md` for Claude Code Web setup
+- Updated deployment guide with cloud backend configuration
+- Workplan tracking moved to memorygraph.dev
 
 ## [0.8.1] - 2025-12-01
 

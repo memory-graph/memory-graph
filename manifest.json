@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "memorygraph",
-  "version": "0.9.6",
+  "version": "0.10.0",
   "display_name": "MemoryGraph",
   "description": "Graph-based memory server for AI coding agents with intelligent relationship tracking",
   "long_description": "MemoryGraph provides persistent memory capabilities for Claude and other AI assistants. Store memories, create relationships between them, and recall relevant context using fuzzy search. Supports multiple backends including SQLite (default), Neo4j, Memgraph, FalkorDB, and Turso.",

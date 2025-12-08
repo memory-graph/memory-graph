@@ -450,6 +450,37 @@ MCP servers can be configured at two different scopes:
 
 **Default behavior**: Without `--scope`, servers are added at **user** scope (global).
 
+#### Backend Comparison: Local vs Cloud
+
+When choosing your backend, consider these trade-offs:
+
+| Feature | Local (SQLite) | Cloud |
+|---------|---------------|-------|
+| **Setup** | Zero-config | API key required |
+| **Data Location** | `~/.memorygraph/` | memorygraph.dev |
+| **Multi-device** | No | Yes |
+| **Team sharing** | No | Yes |
+| **Offline** | Yes | No (with fallback planned) |
+| **Cost** | Free | Free tier + paid plans |
+| **Backups** | Manual | Automatic |
+| **Maintenance** | None | None |
+| **Performance** | Local disk speed | Network dependent |
+| **Privacy** | Fully local | Encrypted in transit |
+
+**When to use Local (SQLite)**:
+- You work on a single device
+- You need offline access
+- You prefer data stored locally
+- You're just getting started
+
+**When to use Cloud**:
+- You work across multiple devices (laptop, desktop, remote)
+- You're collaborating with a team
+- You want automatic backups
+- You don't want to manage database files
+
+**Migration**: You can export from local and import to cloud at any time. See [CLOUD_BACKEND.md](CLOUD_BACKEND.md#migration-from-local-backend) for step-by-step migration instructions.
+
 #### User/Global Scope Configuration
 
 **Recommended for**: Servers you want available everywhere (memory, filesystem, time, etc.)
@@ -591,6 +622,32 @@ claude mcp add --transport stdio memorygraph memorygraph --scope project \
   --env MEMORY_SQLITE_PATH=./.memory/memory.db \
   --env MEMORY_LOG_LEVEL=DEBUG
 ```
+
+#### Cloud Backend Configuration
+
+**Recommended for**: Multi-device sync, team collaboration, zero-maintenance deployments
+
+```bash
+# Prerequisite: Sign up at https://app.memorygraph.dev to get your API key
+# User scope with cloud backend
+claude mcp add --transport stdio memorygraph memorygraph --scope user \
+  --env MEMORYGRAPH_API_KEY=mg_your_key_here \
+  -- --backend cloud
+
+# Or project scope for team-specific configuration
+claude mcp add --transport stdio memorygraph memorygraph --scope project \
+  --env MEMORYGRAPH_API_KEY=mg_your_key_here \
+  -- --backend cloud
+```
+
+This configuration:
+- Syncs memories across all your devices
+- Enables team collaboration (shared API key)
+- Provides automatic backups
+- Zero database maintenance required
+- Requires active internet connection
+
+See [CLOUD_BACKEND.md](CLOUD_BACKEND.md) for detailed cloud configuration, migration from local backend, and troubleshooting.
 
 #### Additional MCP Server Examples
 
@@ -1539,6 +1596,6 @@ For more information:
 
 ---
 
-**Last Updated**: November 28, 2025
+**Last Updated**: December 8, 2025
 
 Happy remembering! 🧠

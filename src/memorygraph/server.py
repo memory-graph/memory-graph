@@ -42,10 +42,8 @@ from .models import (
     DatabaseConnectionError,
 )
 from .advanced_tools import ADVANCED_RELATIONSHIP_TOOLS, AdvancedRelationshipHandlers
-from .intelligence_tools import INTELLIGENCE_TOOLS
-from .integration_tools import INTEGRATION_TOOLS
-from .proactive_tools import PROACTIVE_TOOLS
 from .migration_tools_module import MIGRATION_TOOLS, MIGRATION_TOOL_HANDLERS
+# Removed: intelligence_tools, integration_tools, proactive_tools (moved to experimental/)
 from .config import Config
 from .tools import (
     handle_store_memory,
@@ -60,14 +58,8 @@ from .tools import (
     handle_get_memory_statistics,
     handle_get_recent_activity,
     handle_search_relationships_by_context,
-    handle_browse_memory_types,
-    handle_browse_by_project,
-    handle_browse_domains,
-    handle_find_chain,
-    handle_trace_dependencies,
-    handle_query_as_of,
-    handle_get_relationship_history,
-    handle_what_changed,
+    # Temporal handlers deferred (backend methods available via Python API):
+    # handle_query_as_of, handle_get_relationship_history, handle_what_changed
 )
 
 
@@ -647,146 +639,7 @@ WHY IT MATTERS:
                     }
                 }
             ),
-            # Navigation tools for semantic graph traversal
-            Tool(
-                name="browse_memory_types",
-                description="""List all memory types with counts and percentages for high-level discovery.
-
-Shows entity types to understand what kinds of information are stored.
-
-WHEN TO USE:
-- Getting overview of memory types
-- Understanding database composition
-- Finding dominant memory types
-
-RETURNS:
-- Memory types with counts and percentages
-- Total memories count""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {}
-                }
-            ),
-            Tool(
-                name="browse_by_project",
-                description="""Navigate memories scoped to specific project paths.
-
-Lists all memories for a given project with statistics and type breakdown.
-
-WHEN TO USE:
-- Exploring project-specific knowledge
-- Finding all memories for a codebase
-- Understanding project context
-
-HOW TO USE:
-- Provide project_path (supports fuzzy matching)
-
-RETURNS:
-- Memories filtered by project
-- Type breakdown statistics
-- Total count""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "project_path": {
-                            "type": "string",
-                            "description": "Project identifier or path (required)"
-                        }
-                    },
-                    "required": ["project_path"]
-                }
-            ),
-            Tool(
-                name="browse_domains",
-                description="""List high-level domains auto-inferred from tags and content clustering.
-
-Domains are clusters of related memories identified by common tags. No embeddings needed.
-
-WHEN TO USE:
-- High-level knowledge exploration
-- Finding thematic clusters
-- Understanding knowledge organization
-
-RETURNS:
-- Discovered domains with memory counts
-- Related tags for each domain
-- Clustering statistics""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {}
-                }
-            ),
-            Tool(
-                name="find_chain",
-                description="""Auto-traverse relationship chains (SOLVES/CAUSES/DEPENDS_ON) from a starting memory.
-
-Follows relationship chains using BFS traversal with cycle detection.
-
-WHEN TO USE:
-- Following solution chains
-- Tracing causality
-- Understanding dependency flows
-
-HOW TO USE:
-- Specify memory_id (starting point)
-- Specify relationship_type (SOLVES, CAUSES, DEPENDS_ON, etc.)
-- Optional: max_depth (default: 3)
-
-RETURNS:
-- Complete chain of related memories
-- Relationship details with strength scores
-- Chain depth information""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "memory_id": {
-                            "type": "string",
-                            "description": "Starting memory ID (required)"
-                        },
-                        "relationship_type": {
-                            "type": "string",
-                            "enum": [t.value for t in RelationshipType],
-                            "description": "Type of chain to follow (required)"
-                        },
-                        "max_depth": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 5,
-                            "description": "Maximum traversal depth (default: 3)"
-                        }
-                    },
-                    "required": ["memory_id", "relationship_type"]
-                }
-            ),
-            Tool(
-                name="trace_dependencies",
-                description="""Trace all dependencies for a given memory (DEPENDS_ON + REQUIRES relationships).
-
-Builds complete dependency tree with cycle detection.
-
-WHEN TO USE:
-- Understanding what a solution depends on
-- Finding prerequisite knowledge
-- Analyzing dependency trees
-
-HOW TO USE:
-- Provide memory_id to trace dependencies for
-
-RETURNS:
-- Complete dependency tree by depth level
-- Circular dependency warnings if detected
-- Relationship details""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "memory_id": {
-                            "type": "string",
-                            "description": "Memory ID to trace dependencies for (required)"
-                        }
-                    },
-                    "required": ["memory_id"]
-                }
-            ),
+            # Contextual search tool for semantic graph traversal
             Tool(
                 name="contextual_search",
                 description="""Search only within the context of a given memory (scoped search).
@@ -829,143 +682,16 @@ RETURNS:
                     "required": ["memory_id", "query"]
                 }
             ),
-            Tool(
-                name="query_as_of",
-                description="""Query relationships as they existed at a specific point in time.
-
-Enables time-travel queries to see what knowledge existed at any past date.
-Part of bi-temporal tracking system.
-
-WHEN TO USE:
-- "What solutions were we using on date X?"
-- "What dependencies existed when bug Y appeared?"
-- Debugging historical issues
-- Understanding knowledge evolution
-
-HOW TO USE:
-- Provide memory_id to query
-- Provide as_of timestamp (ISO 8601 format: "2024-12-01T00:00:00Z")
-- Optional: Filter by relationship_types
-
-EXAMPLES:
-- query_as_of(memory_id="problem-123", as_of="2024-06-01T00:00:00Z")
-- query_as_of(memory_id="service-a", as_of="2024-01-15T00:00:00Z", relationship_types=["DEPENDS_ON"])
-
-RETURNS:
-- Relationships that were valid at the specified time
-- Valid from/until timestamps
-- Current vs historical status""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "memory_id": {
-                            "type": "string",
-                            "description": "Memory ID to query relationships for"
-                        },
-                        "as_of": {
-                            "type": "string",
-                            "description": "ISO 8601 timestamp (e.g., '2024-12-01T00:00:00Z')"
-                        },
-                        "relationship_types": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "enum": [t.value for t in RelationshipType]
-                            },
-                            "description": "Optional filter by relationship types"
-                        }
-                    },
-                    "required": ["memory_id", "as_of"]
-                }
-            ),
-            Tool(
-                name="get_relationship_history",
-                description="""Get full history of relationships for a memory, including invalidated ones.
-
-Shows how understanding evolved over time, tracking both current and superseded relationships.
-
-WHEN TO USE:
-- "How did our solution for this problem evolve?"
-- "What dependencies changed over time?"
-- Understanding knowledge evolution
-- Auditing relationship changes
-
-HOW TO USE:
-- Provide memory_id to get history for
-- Optional: Filter by relationship_types
-
-EXAMPLES:
-- get_relationship_history(memory_id="problem-123")
-- get_relationship_history(memory_id="service-a", relationship_types=["DEPENDS_ON", "REQUIRES"])
-
-RETURNS:
-- Chronological timeline of all relationships
-- Current vs invalidated status
-- Supersession chains (what replaced what)
-- Valid from/until timestamps""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "memory_id": {
-                            "type": "string",
-                            "description": "Memory ID to get relationship history for"
-                        },
-                        "relationship_types": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "enum": [t.value for t in RelationshipType]
-                            },
-                            "description": "Optional filter by relationship types"
-                        }
-                    },
-                    "required": ["memory_id"]
-                }
-            ),
-            Tool(
-                name="what_changed",
-                description="""Show all relationship changes (creations and invalidations) since a specific time.
-
-Useful for catching up after being away or understanding recent knowledge updates.
-
-WHEN TO USE:
-- "What changed while I was away?"
-- "Show me updates from last week"
-- Auditing recent changes
-- Understanding recent knowledge evolution
-
-HOW TO USE:
-- Provide since timestamp (ISO 8601 format: "2024-12-01T00:00:00Z")
-
-EXAMPLES:
-- what_changed(since="2024-12-01T00:00:00Z")
-- what_changed(since="2024-11-15T00:00:00Z")
-
-RETURNS:
-- New relationships created since the timestamp
-- Relationships invalidated since the timestamp
-- Recorded timestamps for all changes
-- Supersession information""",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "since": {
-                            "type": "string",
-                            "description": "ISO 8601 timestamp to query from (e.g., '2024-12-01T00:00:00Z')"
-                        }
-                    },
-                    "required": ["since"]
-                }
-            )
+            # Temporal tools deferred per ADR-017 (Context Budget Constraint)
+            # Backend methods available via Python API:
+            # - query_as_of, get_relationship_history, what_changed
+            # MCP tool registration deferred until usage data justifies context cost
         ]
 
         # Combine all tools from all modules
         all_tools = (
             basic_tools +
             ADVANCED_RELATIONSHIP_TOOLS +
-            INTELLIGENCE_TOOLS +
-            INTEGRATION_TOOLS +
-            PROACTIVE_TOOLS +
             MIGRATION_TOOLS
         )
 
@@ -1014,26 +740,10 @@ RETURNS:
                     return await handle_get_recent_activity(self.memory_db, arguments)
                 elif name == "search_relationships_by_context":
                     return await handle_search_relationships_by_context(self.memory_db, arguments)
-                # Navigation tools
-                elif name == "browse_memory_types":
-                    return await handle_browse_memory_types(self.memory_db, arguments)
-                elif name == "browse_by_project":
-                    return await handle_browse_by_project(self.memory_db, arguments)
-                elif name == "browse_domains":
-                    return await handle_browse_domains(self.memory_db, arguments)
-                elif name == "find_chain":
-                    return await handle_find_chain(self.memory_db, arguments)
-                elif name == "trace_dependencies":
-                    return await handle_trace_dependencies(self.memory_db, arguments)
+                # Contextual search tool
                 elif name == "contextual_search":
                     return await handle_contextual_search(self.memory_db, arguments)
-                # Temporal tools
-                elif name == "query_as_of":
-                    return await handle_query_as_of(self.memory_db, arguments)
-                elif name == "get_relationship_history":
-                    return await handle_get_relationship_history(self.memory_db, arguments)
-                elif name == "what_changed":
-                    return await handle_what_changed(self.memory_db, arguments)
+                # Temporal tools deferred (backend methods available via Python API)
                 # Advanced relationship tools
                 elif name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
                                        "suggest_relationship_type", "reinforce_relationship",
@@ -1046,47 +756,6 @@ RETURNS:
                     else:
                         return CallToolResult(
                             content=[TextContent(type="text", text=f"Handler not found: {name}")],
-                            isError=True
-                        )
-
-                # Intelligence tools
-                elif name in ["find_similar_solutions", "suggest_patterns_for_context",
-                                      "get_intelligent_context", "get_project_summary",
-                                      "get_session_briefing", "get_memory_history", "track_entity_timeline"]:
-                    from .intelligence_tools import INTELLIGENCE_HANDLERS
-                    handler = INTELLIGENCE_HANDLERS.get(name)
-                    if handler:
-                        return await handler(self.memory_db, arguments)
-                    else:
-                        return CallToolResult(
-                            content=[TextContent(type="text", text=f"Intelligence handler not found: {name}")],
-                            isError=True
-                        )
-
-                # Integration tools
-                elif name in ["capture_task", "capture_command", "track_error_solution",
-                                      "detect_project", "analyze_project", "track_file_changes",
-                                      "identify_patterns", "track_workflow", "suggest_workflow",
-                                      "optimize_workflow", "get_session_state"]:
-                    if hasattr(self, 'integration_handlers'):
-                        return await self.integration_handlers.dispatch(name, arguments)
-                    else:
-                        return CallToolResult(
-                            content=[TextContent(type="text", text="Integration handlers not initialized")],
-                            isError=True
-                        )
-
-                # Proactive tools
-                elif name in ["check_for_issues", "get_suggestions", "predict_solution_effectiveness",
-                                      "suggest_related_memories", "record_outcome", "get_graph_visualization",
-                                      "recommend_learning_paths", "identify_knowledge_gaps", "track_memory_roi"]:
-                    from .proactive_tools import PROACTIVE_TOOL_HANDLERS
-                    handler = PROACTIVE_TOOL_HANDLERS.get(name)
-                    if handler:
-                        return await handler(self.memory_db, arguments)
-                    else:
-                        return CallToolResult(
-                            content=[TextContent(type="text", text=f"Proactive handler not found: {name}")],
                             isError=True
                         )
 
@@ -1149,10 +818,6 @@ RETURNS:
 
             # Initialize advanced relationship handlers
             self.advanced_handlers = AdvancedRelationshipHandlers(self.memory_db)
-
-            # Initialize integration handlers if needed
-            from .integration_tools import IntegrationToolHandlers
-            self.integration_handlers = IntegrationToolHandlers(self.memory_db)
 
             backend_name = getattr(self.db_connection, 'backend_name', lambda: 'Unknown')
             if callable(backend_name):

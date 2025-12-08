@@ -1,16 +1,38 @@
 # Workplan 15: Authentication & API Keys (v1.0.0)
 
+> ## ❌ DEPRECATED (2025-12-06)
+>
+> **This workplan has been superseded by the memorygraph.dev repository.**
+>
+> ### What Happened
+> - Auth service was implemented in `/Users/gregorydickson/memorygraph.dev/`
+> - Different architecture chosen: FastAPI + PostgreSQL + JWT (not Supabase)
+> - Auth service already deployed to Cloud Run
+>
+> ### Where to Find the Active Work
+> - **Replacement**: `memorygraph.dev/docs/planning/2-WORKPLAN-auth-service.md`
+> - **Live Service**: https://auth-service-793446666872.us-central1.run.app
+> - **Status**: PoC Complete (95 tests, 80%+ coverage)
+>
+> ### Do NOT use this workplan for implementation.
+>
+> ---
+
 **Version Target**: v1.0.0
-**Priority**: HIGH
+**Priority**: ~~HIGH~~ DEPRECATED
 **Prerequisites**:
-- Workplan 14 Section 3 (Auth infrastructure) complete
-**Estimated Effort**: 8-12 hours
+- ~~Workplan 14 Section 3 (Auth infrastructure) complete~~
+- See memorygraph.dev workplans instead
+**Estimated Effort**: ~~8-12 hours~~ N/A (already implemented elsewhere)
+**Status**: ❌ DEPRECATED
 
 ---
 
 ## Overview
 
-Implement comprehensive authentication and API key management system for memorygraph.dev. Support email/password, OAuth (GitHub, Google), and long-lived API keys for MCP clients.
+~~Implement comprehensive authentication and API key management system for memorygraph.dev. Support email/password, OAuth (GitHub, Google), and long-lived API keys for MCP clients.~~
+
+**This work was completed in the memorygraph.dev repository with a different architecture.**
 
 **Security First**: Follow OWASP guidelines, use proven libraries, implement rate limiting, enable 2FA.
 

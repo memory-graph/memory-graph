@@ -1,17 +1,40 @@
 # Workplan 18: Real-Time Team Sync (v1.1.0)
 
-**Version Target**: v1.1.0
-**Priority**: MEDIUM (Post-Launch Feature)
-**Prerequisites**:
-- Workplans 14-15 complete (Cloud infrastructure + Auth)
-- Team tier launched
-**Estimated Effort**: 16-24 hours
+> ## ⚠️ DEPRECATED - DO NOT USE
+>
+> **Status**: DEPRECATED (2025-12-07)
+> **Reason**: Superseded by memorygraph.dev project workplans
+>
+> **Real-time team sync belongs in the separate `memorygraph.dev` repository.**
+>
+> ### What to Use Instead
+>
+> See `/Users/gregorydickson/memorygraph.dev/docs/planning/` for:
+> - **Cloud infrastructure** - Already deployed (Workplans 1-4, 6-7)
+> - **Real-time sync** - Server-side implementation required
+> - **Team collaboration** - Workspace management and RBAC
+>
+> ### Why This Workplan Doesn't Belong Here
+>
+> | Component | This Workplan Proposed | Repository Scope |
+> |-----------|----------------------|------------------|
+> | Team Models | `src/memorygraph_cloud/models/team.py` | ❌ Server-side (memorygraph.dev) |
+> | SSE Server | `src/memorygraph_cloud/sync/sse.py` | ❌ Server-side (memorygraph.dev) |
+> | Redis Pub/Sub | `src/memorygraph_cloud/sync/pubsub.py` | ❌ Server-side (memorygraph.dev) |
+> | Cloud Backend Client | `src/memorygraph/backends/cloud_backend.py` | ✅ Already implemented (WP20) |
+>
+> ### Repository Responsibilities
+>
+> - **claude-code-memory** (this repo): Local MCP server + cloud backend **client** adapter
+> - **memorygraph.dev**: Cloud API, auth service, graph service, team sync **server**
+>
+> **The memorygraph.dev decisions prevail.** This workplan is kept for historical reference only.
 
 ---
 
-## Overview
+## ~~Overview~~ (DEPRECATED)
 
-Implement real-time memory synchronization for teams. When one team member creates/updates a memory, others see it immediately without manual sync commands.
+~~Implement real-time memory synchronization for teams. When one team member creates/updates a memory, others see it immediately without manual sync commands.~~
 
 **Competitive Advantage**: Cipher uses manual `brv pull` commands. Our cloud-native approach provides automatic, real-time sync—a superior UX.
 
@@ -973,6 +996,6 @@ async def remove_member(team_id: str, user_id: str, user: User = Depends(...)):
 
 ---
 
-**Last Updated**: 2025-12-05
-**Status**: NOT STARTED
-**Next Step**: Section 1 (Team Models)
+**Last Updated**: 2025-12-07
+**Status**: ❌ DEPRECATED (moved to memorygraph.dev)
+**Next Step**: See memorygraph.dev repository for team sync implementation

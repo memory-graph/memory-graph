@@ -62,9 +62,7 @@ async def mcp_server(mock_database):
     from memorygraph.advanced_tools import AdvancedRelationshipHandlers
     server.advanced_handlers = AdvancedRelationshipHandlers(mock_database)
 
-    # Initialize integration handlers
-    from memorygraph.integration_tools import IntegrationToolHandlers
-    server.integration_handlers = IntegrationToolHandlers(mock_database)
+    # Integration handlers removed (moved to experimental/)
 
     return server
 

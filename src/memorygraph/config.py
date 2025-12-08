@@ -54,6 +54,8 @@ TOOL_PROFILES = {
         # Advanced analytics (2 additional)
         "get_memory_statistics",  # Database stats
         "search_relationships_by_context",  # Complex relationship queries
+        # Contextual search (1 additional)
+        "contextual_search",  # Scoped search within related memories
     ],
 }
 

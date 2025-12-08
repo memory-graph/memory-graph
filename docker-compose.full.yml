@@ -31,7 +31,7 @@ services:
     tty: true         # Required for MCP stdio
     environment:
       - MEMORY_BACKEND=memgraph
-      - MEMORY_TOOL_PROFILE=full
+      - MEMORY_TOOL_PROFILE=extended
       - MEMORY_MEMGRAPH_URI=bolt://memgraph:7687
       - MEMORY_LOG_LEVEL=INFO
     restart: unless-stopped

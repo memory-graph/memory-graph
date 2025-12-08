@@ -157,17 +157,18 @@ MemoryGraph tracks 7 categories of relationships:
 
 | Feature | Core (Default) | Extended |
 |---------|----------------|----------|
-| Memory Storage | 9 tools | 11 tools |
+| Memory Storage | 9 tools | 12 tools |
 | Relationships | Yes | Yes |
 | Session Briefings | Yes | Yes |
 | Database Stats | - | Yes |
 | Complex Queries | - | Yes |
+| Contextual Search | - | Yes |
 | Backend | SQLite | SQLite |
 | Setup Time | 30 sec | 30 sec |
 
 ```bash
 memorygraph                    # Core (default, 9 tools)
-memorygraph --profile extended # Extended (11 tools)
+memorygraph --profile extended # Extended (12 tools)
 ```
 
 ### Core Mode (Default)
@@ -609,7 +610,7 @@ See [CONFIGURATION.md](docs/CONFIGURATION.md) for setup details and [Cloud Backe
 
 ---
 
-## Multi-Tenancy (v0.9.6+)
+## Multi-Tenancy (v0.10.0+)
 
 MemoryGraph now supports optional multi-tenancy for team memory sharing and organizational deployments. Phase 1 provides the foundational schema with 100% backward compatibility.
 
@@ -639,8 +640,8 @@ memorygraph
 See [MULTI_TENANCY.md](docs/MULTI_TENANCY.md) for complete guide including architecture, migration steps, and usage patterns.
 
 **Roadmap:**
-- ✅ Phase 1 (v0.9.6): Schema enhancement with optional tenant fields
-- Phase 2 (v0.10.0): Query filtering and visibility enforcement
+- ✅ Phase 1 (v0.10.0): Schema enhancement with optional tenant fields
+- Phase 2 (v0.11.0): Query filtering and visibility enforcement
 - Phase 3 (v1.0.0): Authentication integration (JWT, OAuth2)
 - Phase 4 (v1.1.0): Advanced RBAC and audit logging
 
@@ -664,7 +665,7 @@ memorygraph/
 │   ├── backends/        # SQLite, Neo4j, Memgraph, FalkorDB, Turso, Cloud
 │   ├── migration/       # Backend-to-backend migration
 │   └── tools/           # Tool implementations
-├── tests/               # 900+ tests
+├── tests/               # 1,068 tests
 └── docs/                # Documentation
 ```
 
@@ -708,6 +709,55 @@ cd memorygraph
 pip install -e ".[dev]"
 pytest tests/ -v --cov=memorygraph
 ```
+
+---
+
+## What's New in v0.10.0
+
+### Context Budget Optimization (60-70% token savings)
+- **Leaner tool profiles** - Removed 29 unimplemented tools, keeping only production-ready features
+- **9 core tools / 12 extended** - Focused toolset that fits in any context window
+- **~40k tokens saved** - More room for your actual work
+- **ADR-017** - Context budget as architectural constraint ([docs/adr/017-context-budget-constraint.md](docs/adr/017-context-budget-constraint.md))
+
+### Cloud Backend (Production Ready)
+- **Multi-device sync** - Access memories from anywhere
+- **Circuit breaker pattern** - Resilient to network failures with automatic recovery
+- **Zero setup** - Just add your API key from [memorygraph.dev](https://memorygraph.dev)
+- **Team collaboration ready** - Share knowledge graphs with your team
+
+```bash
+# Enable cloud backend
+claude mcp add --scope user memorygraph \
+  --env MEMORYGRAPH_API_KEY=mg_your_key_here \
+  -- memorygraph --backend cloud
+```
+
+### Bi-Temporal Memory Tracking
+- **Time-travel queries** - Query what was known at any point in time
+- **Knowledge evolution** - Track how solutions and understanding changed
+- **Four temporal fields** - `valid_from`, `valid_until`, `recorded_at`, `invalidated_by`
+- **Migration support** - Upgrade existing databases with `migrate_to_bitemporal()`
+- **Inspired by Graphiti** - Learned from Zep AI's proven temporal model
+
+```python
+# Query what solutions existed in March 2024
+march_2024 = datetime(2024, 3, 1, tzinfo=timezone.utc)
+relationships = await db.get_related_memories("error_id", as_of=march_2024)
+
+# Get full history of how understanding evolved
+history = await db.get_relationship_history("problem_id")
+
+# See what changed in the last week
+changes = await db.what_changed(since=one_week_ago)
+```
+
+### Semantic Navigation
+- **Contextual search** - LLM-powered graph traversal without embeddings
+- **Graph-first approach** - Validated by Cipher's shift away from vector search
+- **Scoped queries** - Search within related memory contexts
+
+See [temporal-memory.md](docs/temporal-memory.md) for comprehensive temporal tracking guide and [CLOUD_BACKEND.md](docs/CLOUD_BACKEND.md) for cloud setup.
 
 ---
 
@@ -761,18 +811,21 @@ memorygraph import --format json --input backup.json --skip-duplicates
 
 ## Roadmap
 
-### Current (v0.9.5)
+
+### Current (v0.10.0)
+- **Bi-temporal tracking** - Track knowledge evolution over time
+- **Semantic navigation** - LLM-powered contextual search
 - 8 backend options (SQLite, Neo4j, Memgraph, FalkorDB, FalkorDBLite, LadybugDB, Turso, Cloud)
 - Backend-to-backend migration with `memorygraph migrate`
 - Universal export/import (all backends)
 - Circuit breaker for cloud resilience
-- 900+ tests
+- 1,068 tests passing
 - PyPI + Docker
 
 ### Planned (v1.0+)
-- Web visualization dashboard
-- MemoryGraph Cloud general availability
-- Enhanced embeddings
+- SDK integrations (LangChain, CrewAI, AutoGen)
+- MemoryGraph Cloud at memorygraph.dev (already deployed)
+- Real-time team sync
 
 See [PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md) for details.
 

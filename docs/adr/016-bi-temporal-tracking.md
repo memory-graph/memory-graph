@@ -1,8 +1,9 @@
 # ADR 016: Bi-Temporal Tracking for Relationships
 
-**Status**: Proposed
+**Status**: Accepted
 
 **Date**: 2025-12-05
+**Accepted**: 2025-12-07
 
 **Context**: Knowledge evolves over time. Solutions that worked yesterday may not work today. Dependencies change. Error causes get fixed. Currently, MemoryGraph lacks the ability to track when facts became true, when they stopped being true, and when we learned about them. This limits our ability to answer questions like "What solutions were we using when bug X first appeared?" or "How did our understanding of this problem evolve?"
 

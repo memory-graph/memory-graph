@@ -10,7 +10,7 @@ services:
     tty: true         # Required for MCP stdio
     environment:
       - MEMORY_BACKEND=sqlite
-      - MEMORY_TOOL_PROFILE=lite
+      - MEMORY_TOOL_PROFILE=core
       - MEMORY_SQLITE_PATH=/data/memory.db
       - MEMORY_LOG_LEVEL=INFO
     volumes:

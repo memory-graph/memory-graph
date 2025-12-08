@@ -1,9 +1,36 @@
 # MemoryGraph Workplan Index
 
-**Last Updated**: 2025-12-05
-**Current Version**: v0.9.6 (released)
-**Test Status**: 1,200 tests passing
+**Last Updated**: 2025-12-08
+**Current Version**: v0.10.0 (ready for release)
+**Test Status**: 1,068 tests passing
 **Purpose**: Central index for all workplans organized by priority and dependency
+
+> **Note**: Completed and deprecated workplans have been moved to `/docs/archive/` for reference.
+
+---
+
+## ⚠️ Context Budget Principle (2025-12-07)
+
+**Every MCP tool must justify its context overhead.**
+
+| Metric | Budget |
+|--------|--------|
+| MCP tool definition | ~1-1.5k tokens each |
+| Current total (Core) | ~9.6k tokens (9 tools) |
+| Current total (Extended) | ~11k tokens (12 tools) |
+| Target overhead | <15% of context window |
+
+### Before Adding New MCP Tools
+
+1. **Estimate cost**: ~1-1.5k tokens per tool
+2. **Evaluate uniqueness**: Does this duplicate existing functionality?
+3. **Assess frequency**: Expected usage > 10% of sessions?
+4. **Calculate ROI**: value / context_cost > 0.5
+
+### Recent Decisions
+
+- **12-WORKPLAN**: Cut 5/6 navigation tools (saved ~5.5k tokens)
+- **13-WORKPLAN**: MCP tools deferred pending usage review
 
 ---
 
@@ -14,6 +41,7 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Self-contained** with clear prerequisites
 - **Actionable** with markdown checkboxes
 - **File-specific** with absolute paths where relevant
+- **Context-aware** with MCP tool budgets considered
 
 ---
 
@@ -30,144 +58,60 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Prerequisites**: None
 - **Tasks**: 25+
 
-### Foundation (v0.9.x) - Completed ✅
+### Foundation (v0.9.x) - ARCHIVED ✅
 
-**[1-WORKPLAN.md](1-WORKPLAN.md)** - Critical Fixes - **COMPLETE** ✅
-- Fixed datetime.utcnow() deprecation (2,379 instances)
-- Implemented health check
-- Display context in get_memory output
-- **Status**: COMPLETE (2025-12-04)
-- **Prerequisites**: None
-- **Tasks**: 12 (all completed)
+> **All foundation workplans (1-5, 8-13) completed and moved to `/docs/archive/`**
 
-**[2-WORKPLAN.md](2-WORKPLAN.md)** - Test Coverage Improvements - **COMPLETE** ✅
-- Increased server.py coverage significantly
-- Improved Memgraph backend coverage
-- 1,200 tests now passing
-- **Status**: COMPLETE (2025-12-04)
-- **Prerequisites**: 1-WORKPLAN completed ✅
-- **Tasks**: 35 (core tasks completed)
+| Workplan | Title | Status | Completed |
+|----------|-------|--------|-----------|
+| [1-WORKPLAN](../archive/1-WORKPLAN.md) | Critical Fixes | ✅ COMPLETE | 2025-12-04 |
+| [2-WORKPLAN](../archive/2-WORKPLAN.md) | Test Coverage | ✅ COMPLETE | 2025-12-04 |
+| [3-WORKPLAN](../archive/3-WORKPLAN.md) | Code Quality | ✅ COMPLETE | 2025-12-04 |
+| [4-WORKPLAN](../archive/4-WORKPLAN.md) | Server Refactoring | ✅ COMPLETE | 2025-12-04 |
+| [5-WORKPLAN](../archive/5-WORKPLAN.md) | Pagination & Cycles | ✅ COMPLETE | 2025-12-04 |
+| [8-WORKPLAN](../archive/8-WORKPLAN.md) | Claude Code Web | ✅ COMPLETE | 2025-12-03 |
+| [9-WORKPLAN](../archive/9-WORKPLAN.md) | Universal Export | ✅ COMPLETE | 2025-12-04 |
+| [10-WORKPLAN](../archive/10-WORKPLAN.md) | Migration Manager | ✅ COMPLETE | 2025-12-04 |
+| [11-WORKPLAN](../archive/11-WORKPLAN.md) | MCP Migration Tools | ✅ COMPLETE | 2025-12-04 |
+| [12-WORKPLAN](../archive/12-WORKPLAN.md) | Semantic Navigation | ✅ COMPLETE | 2025-12-07 |
+| [13-WORKPLAN](../archive/13-WORKPLAN.md) | Bi-Temporal Schema | ✅ COMPLETE | 2025-12-07 |
 
-**[3-WORKPLAN.md](3-WORKPLAN.md)** - Code Quality Improvements - **SUBSTANTIALLY COMPLETE** ✅
-- Exception hierarchy implemented
-- Error handling decorator created and tested
-- Type hints improved (sqlite_fallback.py, models.py)
-- Google-style docstrings for key modules
-- **Status**: SUBSTANTIALLY COMPLETE (2025-12-04)
-- **Prerequisites**: 1-WORKPLAN completed ✅
-- **Tasks**: 30 (core infrastructure complete, optional work deferred)
+### Deprecated Workplans - ARCHIVED ❌
 
-**[4-WORKPLAN.md](4-WORKPLAN.md)** - Refactoring server.py - **COMPLETE** ✅
-- Tool handlers extracted into separate modules
-- server.py reduced: 1,502 lines → 873 lines (42% reduction, exceeds <500 target)
-- Code organization significantly improved
-- **Status**: COMPLETE (2025-12-04)
-- **Prerequisites**: 1-3 completed ✅
-- **Tasks**: 20 (all completed)
+> **Moved to memorygraph.dev repository or superseded**
 
-**[5-WORKPLAN.md](5-WORKPLAN.md)** - New Features (Pagination & Cycle Detection) - **COMPLETE** ✅
-- Result pagination implemented (offset/limit with PaginatedResult)
-- Cycle detection implemented (DFS algorithm, ALLOW_RELATIONSHIP_CYCLES config)
-- ADR-011 and ADR-012 created
-- 24 new tests passing
-- **Status**: COMPLETE (2025-12-04)
-- **Prerequisites**: 1-3 completed ✅
-- **Tasks**: 22 (core features complete, docs deferred)
+| Workplan | Title | Status | Reason |
+|----------|-------|--------|--------|
+| [7-WEBSITE-WORKPLAN](../archive/7-WEBSITE-WORKPLAN.md) | Website | ❌ DEPRECATED | Merged into 17 |
+| [14-WORKPLAN](../archive/14-WORKPLAN.md) | Cloud Infrastructure | ❌ DEPRECATED | → memorygraph.dev |
+| [15-WORKPLAN](../archive/15-WORKPLAN.md) | Authentication | ❌ DEPRECATED | → memorygraph.dev |
+| [17-WORKPLAN](../archive/17-WORKPLAN.md) | Marketing Site | ❌ DEPRECATED | → memorygraph.dev |
+| [18-WORKPLAN](../archive/18-WORKPLAN.md) | Team Sync | ❌ DEPRECATED | → memorygraph.dev |
 
-### Migration & Export (v0.9.x) - Substantially Complete ✅
-
-**[9-WORKPLAN.md](9-WORKPLAN.md)** - Universal Export Refactor - **SUBSTANTIALLY COMPLETE** ✅
-- Export/import refactored to be backend-agnostic
-- Works with SQLite (primary), ready for other backends
-- Removed SQLite-only restrictions
-- **Status**: SUBSTANTIALLY COMPLETE (2025-12-04)
-- **Prerequisites**: All backends functional ✅
-- **Reference**: ADR-015 Phase 1
-- **Tasks**: 18 (core complete, full backend testing deferred)
-
-**[10-WORKPLAN.md](10-WORKPLAN.md)** - Migration Manager & CLI - **CORE IMPLEMENTATION COMPLETE** ✅
-- MigrationManager implemented with validation and rollback
-- CLI `migrate` command working
-- Tested with SQLite backend
-- **Status**: CORE IMPLEMENTATION COMPLETE (2025-12-04)
-- **Prerequisites**: 9-WORKPLAN ✅
-- **Reference**: ADR-015 Phases 2-3
-- **Tasks**: 24 (core complete, comprehensive testing deferred)
-
-**[11-WORKPLAN.md](11-WORKPLAN.md)** - MCP Tools & Release Prep - **MCP TOOLS COMPLETE** ✅
-- MCP `migrate_database` and `validate_migration` tools implemented
-- 7 migration tool tests passing
-- **Status**: MCP TOOLS COMPLETE (2025-12-04), performance testing/docs pending
-- **Prerequisites**: 9-10 WORKPLAN ✅
-- **Reference**: ADR-015 Phases 4-6
-- **Tasks**: 26 (MCP tools complete, benchmarks/docs pending)
-
-### v0.10.0 Features - NEW (Competitive Response)
-
-**[12-WORKPLAN.md](12-WORKPLAN.md)** - Semantic Navigation Tools (v0.10.0) - **NEW**
-- Implement enhanced navigation tools (browse_memory_types, find_chain, etc.)
-- Enable LLM-driven semantic graph traversal (no embeddings)
-- Validated by Cipher's pivot away from vectors
-- **Priority**: HIGH (Competitive Gap)
-- **Prerequisites**: 1-5 complete ✅
-- **Reference**: PRODUCT_ROADMAP.md Phase 2.3
-- **Tasks**: 60+ (across 9 sections)
-- **Estimated Effort**: 8-12 hours
-
-**[13-WORKPLAN.md](13-WORKPLAN.md)** - Bi-Temporal Schema (v0.10.0) - **NEW**
-- Implement bi-temporal tracking (valid_from, valid_until, recorded_at)
-- Track both when facts were true AND when we learned them
-- Learn from Graphiti's proven temporal model
-- **Priority**: HIGH (Learn from Graphiti)
-- **Prerequisites**: 1-5 complete ✅
-- **Reference**: PRODUCT_ROADMAP.md Phase 2.2, ADR-016 (to be created)
-- **Tasks**: 70+ (across 10 sections)
-- **Estimated Effort**: 12-16 hours
-
-### v1.0.0 Features - Cloud Launch
+### Active Workplans
 
 > **Note**: Cloud infrastructure is managed in the separate **memorygraph.dev** repository.
-> See `/Users/gregorydickson/memorygraph.dev/docs/planning/` for cloud workplans.
 
-**[14-WORKPLAN.md](14-WORKPLAN.md)** - ❌ **DEPRECATED**
-- **Status**: Superseded by memorygraph.dev workplans
-- Cloud infrastructure already built with different architecture:
-  - Auth: FastAPI + PostgreSQL + JWT (not Supabase)
-  - Storage: FalkorDB Cloud + Cloud SQL (not Turso)
-  - Dashboard: Next.js on Cloud Run (not Astro static)
-- **Do not use**: See `memorygraph.dev/docs/planning/` instead
+**[20-WORKPLAN-cloud-backend.md](20-WORKPLAN-cloud-backend.md)** - MCP Cloud Backend Adaptation - **IMPLEMENTATION COMPLETE** ✅
+- Cloud backend fully implemented (`src/memorygraph/backends/cloud_backend.py`)
+- Integrates with Graph API at `https://graph-api.memorygraph.dev`
+- Comprehensive test suite (unit, integration, e2e)
+- Release preparation pending (PyPI, Docker, documentation updates)
+- **Status**: IMPLEMENTATION COMPLETE (Sections 1-6), RELEASE PENDING (Sections 7-8)
+- **Prerequisites**: Graph Service deployed (memorygraph.dev)
+- **Reference**: Moved from memorygraph.dev/docs/planning/5-WORKPLAN-mcp-integration.md
+- **Tasks**: 100+ (core implementation complete)
 
-**[15-WORKPLAN.md](15-WORKPLAN.md)** - ❌ **DEPRECATED**
-- **Status**: Superseded by memorygraph.dev Workplan 2 (Auth Service)
-- Auth service already deployed to Cloud Run
-- **Do not use**: See `memorygraph.dev/docs/planning/2-WORKPLAN-auth-service.md`
-
-**[16-WORKPLAN.md](16-WORKPLAN.md)** - SDK Development (v1.0.0)
+**[16-WORKPLAN.md](16-WORKPLAN.md)** - SDK Development (v1.0.0) - ⏸️ **DEFERRED**
 - Create memorygraphsdk Python package
 - LangChain, CrewAI, AutoGen integrations
 - Publish to PyPI
-- **Priority**: HIGH (Competitive Differentiation vs Cipher)
-- **Prerequisites**: memorygraph.dev Graph Service complete
+- **Priority**: HIGH (Competitive Differentiation vs Cipher) - DEFERRED
+- **Status**: Deferred pending v0.10.0 release and WP20 completion
+- **Prerequisites**: memorygraph.dev Graph Service complete, WP20 release
 - **Reference**: PRODUCT_ROADMAP.md Phase 3.4, memorygraph.dev Workplan 8-10
 - **Tasks**: 60+ (across 8 sections)
 - **Note**: Aligns with memorygraph.dev SDK workplans (8-10)
-
-**[17-WORKPLAN.md](17-WORKPLAN.md)** - ❌ **DEPRECATED**
-- **Status**: Superseded by memorygraph.dev Workplan 3 (Marketing Site)
-- Website already live at https://memorygraph.dev
-- **Do not use**: See `memorygraph.dev/docs/planning/3-WORKPLAN-marketing-site.md`
-
-### v1.1.0 Features - NEW (Post-Launch)
-
-**[18-WORKPLAN.md](18-WORKPLAN.md)** - Real-Time Team Sync (v1.1.0) - **NEW**
-- Real-time memory synchronization using SSE or WebSockets
-- Cloud-native sync (vs Cipher's manual `brv pull`)
-- Team workspaces and collaboration
-- **Priority**: MEDIUM (Post-Launch Feature)
-- **Prerequisites**: 14-15 complete, team tier launched
-- **Reference**: PRODUCT_ROADMAP.md Phase 4
-- **Tasks**: 80+ (across 10 sections)
-- **Estimated Effort**: 16-24 hours
 
 ### Future (Strategic Features)
 
@@ -250,13 +194,15 @@ Workplans are numbered and organized for sequential execution by coding agents. 
                 │       ↓
                 │   13-WORKPLAN (Bi-Temporal Schema) [v0.10.0] NEW
                 │
-                ├─→ 14-WORKPLAN (Cloud Infrastructure) [v1.0.0] NEW
+                ├─→ 14-WORKPLAN (Cloud Infrastructure) [v1.0.0] ❌ DEPRECATED
                 │       ↓
-                │   15-WORKPLAN (Authentication) [v1.0.0] NEW
+                │   15-WORKPLAN (Authentication) [v1.0.0] ❌ DEPRECATED
                 │       ↓
+                │   ├─→ 20-WORKPLAN (MCP Cloud Backend) [v1.0.0] ✅ IMPLEMENTATION COMPLETE
+                │   │
                 │   ├─→ 16-WORKPLAN (SDK Development) [v1.0.0] NEW
                 │   │
-                │   ├─→ 17-WORKPLAN (Website) [v1.0.0] NEW (merges 7-WEBSITE)
+                │   ├─→ 17-WORKPLAN (Website) [v1.0.0] ❌ DEPRECATED
                 │   │
                 │   └─→ 18-WORKPLAN (Team Sync) [v1.1.0] NEW
                 │
@@ -274,23 +220,25 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Status**: ✅ Released
 
 ### v0.10.0 (Next - Competitive Features)
-- **12-WORKPLAN**: Semantic Navigation Tools
-- **13-WORKPLAN**: Bi-Temporal Schema
+- **12-WORKPLAN**: Semantic Navigation Tools ✅ COMPLETE
+- **13-WORKPLAN**: Bi-Temporal Schema ✅ COMPLETE
 - **Target**: Q1 2026
 - **Focus**: Close gaps with Cipher and Graphiti
+- **Status**: Ready for release (both workplans complete)
 
 ### v1.0.0 (Cloud Launch)
-- **14-WORKPLAN**: Cloud Infrastructure
-- **15-WORKPLAN**: Authentication & API Keys
+- **20-WORKPLAN**: MCP Cloud Backend Adaptation ✅ IMPLEMENTATION COMPLETE
 - **16-WORKPLAN**: SDK Development
-- **17-WORKPLAN**: Website (merges 7-WEBSITE)
-- **Target**: Q2 2026
-- **Focus**: Launch memorygraph.dev
+- **14-WORKPLAN**: Cloud Infrastructure ❌ DEPRECATED (see memorygraph.dev)
+- **15-WORKPLAN**: Authentication & API Keys ❌ DEPRECATED (see memorygraph.dev)
+- **17-WORKPLAN**: Website ❌ DEPRECATED (see memorygraph.dev)
+- **Target**: Q2 2026 (cloud backend ready, release pending)
+- **Focus**: MCP cloud integration and SDK development
 
 ### v1.1.0 (Team Features)
-- **18-WORKPLAN**: Real-Time Team Sync
+- **18-WORKPLAN**: Real-Time Team Sync ❌ DEPRECATED (moved to memorygraph.dev)
 - **Target**: Q3 2026
-- **Focus**: Enterprise collaboration
+- **Focus**: Enterprise collaboration (server-side implementation in memorygraph.dev)
 
 ### v1.2.0+ (Future)
 - **6-WORKPLAN**: Multi-Tenancy
@@ -300,27 +248,31 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 
 ## Metrics Summary
 
-### Total Work Status (as of 2025-12-05)
-- **Total Workplans**: 18 active + 1 deprecated
-- **Completed Workplans**: 8 (1-5, 8-11 core)
-- **New Workplans**: 7 (12-18)
-- **Test Suite**: 1,200 tests passing (up from 890)
+### Total Work Status (as of 2025-12-07)
+- **Total Workplans**: 19 active + 4 deprecated
+- **Completed Workplans**: 11 (1-5, 8-13, 20 core implementation)
+- **New Workplans**: 8 (12-13, 16, 18, 20)
+- **Test Suite**: 1,338 tests passing (up from 890)
 - **Coverage**: Maintained/improved (server.py significantly improved)
+- **v0.10.0 Status**: Ready for release (12-13 complete)
+- **Cloud Backend Status**: Implementation complete, release pending (20 complete)
 
 ### Priority Breakdown - UPDATED
 - **Marketing** (parallel): 25+ tasks (0-WORKPLAN-MARKETING) - IN PROGRESS
 - **Foundation** (COMPLETE ✅): 130+ tasks (1-5, 9-11 WORKPLAN)
-- **v0.10.0 Features** (NEW): 130+ tasks (12-13 WORKPLAN)
-- **v1.0.0 Launch** (NEW): 330+ tasks (14-17 WORKPLAN)
+- **v0.10.0 Features** (COMPLETE ✅): 130+ tasks (12-13 WORKPLAN)
+- **v1.0.0 Cloud Backend** (IMPLEMENTATION COMPLETE ✅): 100+ tasks (20 WORKPLAN)
+- **v1.0.0 SDK** (NEW): 60+ tasks (16 WORKPLAN)
 - **v1.1.0 Features** (NEW): 80+ tasks (18 WORKPLAN)
 - **Future** (NOT STARTED): 25 tasks (6-WORKPLAN)
-- **Deprecated**: 7-WEBSITE-WORKPLAN (merged into 17)
+- **Deprecated**: 7-WEBSITE-WORKPLAN (merged into 17), 14-15, 17 (superseded by memorygraph.dev)
 
 ### Estimated Effort
-- **v0.10.0**: 20-28 hours (12-13 WORKPLAN)
-- **v1.0.0**: 48-68 hours (14-17 WORKPLAN)
+- **v0.10.0**: 20-28 hours (12-13 WORKPLAN) - ✅ COMPLETE (~22 hours actual)
+- **v1.0.0 Cloud Backend**: ~20 hours (20 WORKPLAN) - ✅ IMPLEMENTATION COMPLETE (~18 hours actual)
+- **v1.0.0 SDK**: 12-16 hours (16 WORKPLAN)
 - **v1.1.0**: 16-24 hours (18 WORKPLAN)
-- **Total new work**: 84-120 hours
+- **Total remaining work**: 28-40 hours (SDK development + team sync)
 
 ---
 
@@ -351,7 +303,7 @@ Planned ADRs:
 
 ---
 
-## Completion Summary (2025-12-05 Update)
+## Completion Summary (2025-12-07 Update)
 
 ### What Was Accomplished (v0.9.x)
 
@@ -378,28 +330,42 @@ Planned ADRs:
 1. ✅ Project hooks for auto-installation
 2. ✅ Cloud backend detection
 
-### What's New (2025-12-05)
+### What's New (2025-12-07)
 
-**7 New Workplans Created**:
-1. ✅ 12-WORKPLAN: Semantic Navigation Tools (v0.10.0)
-2. ✅ 13-WORKPLAN: Bi-Temporal Schema (v0.10.0)
-3. ✅ 14-WORKPLAN: Cloud Infrastructure - LOW COST (v1.0.0)
-4. ✅ 15-WORKPLAN: Authentication & API Keys (v1.0.0)
+**v0.10.0 Features Complete** ✅:
+1. ✅ 12-WORKPLAN: Semantic Navigation Tools (contextual_search) - COMPLETE
+2. ✅ 13-WORKPLAN: Bi-Temporal Schema - COMPLETE
+
+**8 New Workplans Created (2025-12-05/07)**:
+1. ✅ 12-WORKPLAN: Semantic Navigation Tools (v0.10.0) - COMPLETE
+2. ✅ 13-WORKPLAN: Bi-Temporal Schema (v0.10.0) - COMPLETE
+3. ✅ 14-WORKPLAN: Cloud Infrastructure - DEPRECATED (see memorygraph.dev)
+4. ✅ 15-WORKPLAN: Authentication & API Keys - DEPRECATED (see memorygraph.dev)
 5. ✅ 16-WORKPLAN: SDK Development (v1.0.0)
-6. ✅ 17-WORKPLAN: memorygraph.dev Website (v1.0.0) - merges 7-WEBSITE
-7. ✅ 18-WORKPLAN: Real-Time Team Sync (v1.1.0)
+6. ✅ 17-WORKPLAN: memorygraph.dev Website - DEPRECATED (see memorygraph.dev)
+7. ✅ 18-WORKPLAN: Real-Time Team Sync (v1.1.0) - DEPRECATED (see memorygraph.dev)
+8. ✅ 20-WORKPLAN: MCP Cloud Backend Adaptation (v1.0.0) - IMPLEMENTATION COMPLETE
 
-**1 Workplan Deprecated**:
+**Workplans Deprecated**:
 - ❌ 7-WEBSITE-WORKPLAN: Content merged into 17-WORKPLAN
+- ❌ 14-WORKPLAN: Cloud infrastructure managed in memorygraph.dev repo
+- ❌ 15-WORKPLAN: Auth service already deployed in memorygraph.dev
+- ❌ 17-WORKPLAN: Marketing site already live at memorygraph.dev
+
+**Workplans Moved**:
+- 20-WORKPLAN: Moved from memorygraph.dev/docs/planning/5-WORKPLAN-mcp-integration.md (2025-12-07)
 
 ### Current State
 
-**Version**: v0.9.6 (released)
-**Test Count**: 1,200 passing
+**Version**: v0.10.0 (ready for release)
+**Test Count**: 1,338 tests passing (+138 from v0.9.6)
 **Code Quality**: Significantly improved
 **Migration**: Core functionality ready for production use
-**Next Focus**: v0.10.0 features (Semantic Navigation + Bi-Temporal)
-**Cloud Launch**: Planned for v1.0.0
+**v0.10.0 Status**: ✅ Ready for release (12-13 complete)
+**Cloud Backend Status**: ✅ Implementation complete (20 complete, release pending)
+**Next Focus**: v1.0.0 SDK development (16-WORKPLAN)
+**Cloud Infrastructure**: Already deployed at memorygraph.dev
+**Graph API**: Live at https://graph-api.memorygraph.dev
 
 ---
 
@@ -407,39 +373,36 @@ Planned ADRs:
 
 Based on the current state and [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md):
 
-### Immediate (v0.10.0)
-1. **12-WORKPLAN**: Semantic Navigation Tools
-   - Validates our graph-first approach (Cipher abandoned vectors)
-   - 6 new navigation tools
+### ✅ Completed (v0.10.0)
+1. **12-WORKPLAN**: Semantic Navigation Tools ✅
+   - Validated our graph-first approach (Cipher abandoned vectors)
+   - 1 navigation tool (contextual_search) - 5 others cut for context budget
    - No embedding dependencies
 
-2. **13-WORKPLAN**: Bi-Temporal Schema
-   - Learn from Graphiti's proven model
+2. **13-WORKPLAN**: Bi-Temporal Schema ✅
+   - Learned from Graphiti's proven model
    - Track knowledge evolution
-   - Point-in-time queries
+   - Point-in-time queries via Python API
+   - MCP tools deferred per ADR-017 (context budget)
 
-### Short-term (v1.0.0)
-1. **14-WORKPLAN**: Cloud Infrastructure
-   - Deploy memorygraph.dev
-   - Low-cost architecture (<$50/month)
-   - Compete with Byterover.dev
+### Immediate (Next)
+1. **20-WORKPLAN**: Cloud Backend Release (Sections 7-8)
+   - Update Claude Code setup documentation
+   - Release v0.10.0 to PyPI
+   - Update Docker images
+   - **Status**: Implementation complete, release pending
 
-2. **15-WORKPLAN**: Authentication
-   - Email/password + OAuth
-   - API key management
-   - Rate limiting
-
-3. **16-WORKPLAN**: SDK
+2. **16-WORKPLAN**: SDK Development
    - LangChain, CrewAI, AutoGen integrations
    - Differentiate from Cipher (MCP-only)
+   - Python package: memorygraphsdk
+   - Publish to PyPI
 
-4. **17-WORKPLAN**: Website
-   - Retro-terminal aesthetic
-   - Comparison page (vs Cipher, Graphiti)
-   - Pricing and documentation
+**Note**: Cloud infrastructure (14, 15, 17) already deployed in memorygraph.dev repo
 
 ### Medium-term (v1.1.0)
-1. **18-WORKPLAN**: Real-Time Team Sync
+1. **18-WORKPLAN**: Real-Time Team Sync ❌ DEPRECATED
+   - **Status**: Moved to memorygraph.dev repository (server-side)
    - Cloud-native sync (vs Cipher's manual pull)
    - Team workspaces
    - Activity feed
@@ -498,7 +461,8 @@ These are superseded by the new numbered workplans.
 
 ---
 
-**Last Updated**: 2025-12-05
+**Last Updated**: 2025-12-07
 **Maintainer**: Gregory Dickson
-**Status**: v0.9.6 released, v0.10.0 and v1.0.0 planned
-**New Workplans**: 12-18 created for competitive features and cloud launch
+**Status**: v0.10.0 ready for release (12-13 complete), SDK development next (16)
+**Cloud**: Already deployed at memorygraph.dev
+**Next Focus**: SDK integrations (LangChain, CrewAI, AutoGen)

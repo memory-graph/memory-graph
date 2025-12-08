@@ -7,7 +7,9 @@ This document provides a complete inventory of all implemented MCP tools in Memo
 | Profile | Tool Count | Description | Use Case |
 |---------|------------|-------------|----------|
 | **core** | 9 | Essential memory operations | Default for 95% of users, zero-config |
-| **extended** | 11 | Core + advanced analytics | Power users needing stats & complex queries |
+| **extended** | 12 | Core + analytics + contextual search | Power users needing stats & scoped queries |
+
+**Note**: As of v0.10.0+, 29 unimplemented "vaporware" tools and 3 temporal MCP tools were removed from the active codebase, saving ~40-45k context tokens. See [ADR-017](adr/017-context-budget-constraint.md) for details.
 
 ## Quick Comparison
 
@@ -18,6 +20,7 @@ This document provides a complete inventory of all implemented MCP tools in Memo
 | Discovery | ✅ 2 tools | ✅ 2 tools |
 | Database Stats | ❌ | ✅ 1 tool |
 | Complex Queries | ❌ | ✅ 1 tool |
+| Contextual Search | ❌ | ✅ 1 tool |
 | Setup | Zero-config | Zero-config |
 | Backend | SQLite | SQLite |
 
@@ -87,9 +90,9 @@ This document provides a complete inventory of all implemented MCP tools in Memo
 
 ---
 
-## Extended Profile (11 tools)
+## Extended Profile (12 tools)
 
-**Core + advanced analytics**. For power users who need database statistics and complex relationship queries.
+**Core + advanced analytics + contextual search**. For power users who need database statistics, complex relationship queries, and scoped search.
 
 ### All Core Tools (9)
 - All tools from Core profile above
@@ -109,6 +112,15 @@ This document provides a complete inventory of all implemented MCP tools in Memo
     - Query by components and temporal information
     - Advanced relationship analytics
 
+### Contextual Search (1 additional)
+
+12. **contextual_search** - Scoped search within related memories
+    - Two-phase search: find related memories, then search within that set
+    - Semantic scoping without embeddings
+    - Search within a specific problem context
+    - Find solutions in related knowledge
+    - No leakage outside context boundary
+
 ---
 
 ## Tool Categories
@@ -122,6 +134,7 @@ This document provides a complete inventory of all implemented MCP tools in Memo
 | Discovery | recall_memories, get_recent_activity | 2 | core |
 | Statistics | get_memory_statistics | 1 | extended |
 | Advanced Queries | search_relationships_by_context | 1 | extended |
+| Contextual Search | contextual_search | 1 | extended |
 
 ### By Use Case
 
@@ -133,6 +146,7 @@ This document provides a complete inventory of all implemented MCP tools in Memo
 | Advanced search | search_memories, search_relationships_by_context | core, extended |
 | Database insights | get_memory_statistics | extended |
 | Complex analytics | search_relationships_by_context, get_memory_statistics | extended |
+| Scoped discovery | contextual_search | extended |
 
 ---
 
@@ -150,6 +164,7 @@ This document provides a complete inventory of all implemented MCP tools in Memo
 - ✅ You want advanced relationship queries
 - ✅ You're analyzing patterns across large memory sets
 - ✅ You need scope/evidence-based relationship filtering
+- ✅ You want contextual/scoped search within related memories
 - ✅ You're a power user who wants all capabilities
 
 ---
@@ -198,9 +213,9 @@ memorygraph --profile extended
 
 | Backend | Compatible Tools | Notes |
 |---------|------------------|-------|
-| **SQLite** | All 11 tools | Default backend, zero configuration |
-| **Neo4j** | All 11 tools | Requires setup, optimal for large graphs |
-| **Memgraph** | All 11 tools | Requires setup, fastest analytics |
+| **SQLite** | All 12 tools | Default backend, zero configuration |
+| **Neo4j** | All 12 tools | Requires setup, optimal for large graphs |
+| **Memgraph** | All 12 tools | Requires setup, fastest analytics |
 
 All profiles work with all backends. The profile controls *which tools are exposed*, not *which backend is used*.
 
@@ -218,26 +233,37 @@ Previous versions used three profiles (lite/standard/full). The system now uses 
 Legacy profile names are still supported but will be automatically mapped to the new profiles.
 
 **What Changed:**
-- **Removed**: 33 unimplemented "vaporware" tools that were documented but not built
-- **Kept**: All 11 actually implemented and tested tools
+- **Removed**: 29 unimplemented "vaporware" tools (intelligence/integration/proactive) → moved to `experimental/`
+- **Deferred**: 3 temporal MCP tools (still available via Python API) → saves ~3k tokens
+- **Kept**: All 12 actually implemented and tested tools (9 core + 3 extended)
+- **Fixed**: Added missing `contextual_search` to Extended profile
 - **Simplified**: From 3 tiers to 2 tiers (Core/Extended)
 - **Focused**: Core mode is now the default, works for 95% of users
+- **Context Savings**: ~40-45k tokens (~60-70% reduction)
 
 ---
 
 ## Implementation Status
 
-**Current Status (v0.7.1+)**
-- ✅ All 11 tools fully implemented and tested
-- ✅ 409 tests with 93% coverage
+**Current Status (v0.10.0+)**
+- ✅ All 12 tools fully implemented and tested
+- ✅ 1,068 tests passing (29 vaporware tool tests moved to experimental/)
 - ✅ Profile filtering system working
 - ✅ Core/Extended profiles defined
 - ✅ Legacy profile compatibility (lite/standard/full → core/extended)
+- ✅ Context budget optimization complete (~40-45k tokens saved)
 
-**Tools Removed from Documentation**
-- 33 unimplemented tools removed (intelligence, integration, proactive categories)
-- Tools were either redundant (Claude already does it) or YAGNI (not needed)
-- Focus shifted to stable, tested, production-ready tools
+**Tools Removed/Deferred**
+- **Removed (moved to experimental/)**: 29 vaporware tools
+  - 7 intelligence tools (intelligence_tools.py)
+  - 11 integration tools (integration_tools.py)
+  - 11 proactive tools (proactive_tools.py)
+- **Deferred (Python API only)**: 3 temporal MCP tools
+  - query_as_of (backend method available)
+  - get_relationship_history (backend method available)
+  - what_changed (backend method available)
+- **Retained in Extended**: contextual_search for scoped search use cases
+- **Focus**: Stable, tested, production-ready tools only
 
 ---
 
@@ -284,8 +310,10 @@ Legacy profile names are still supported but will be automatically mapped to the
 
 ---
 
-**Last Updated**: December 1, 2025
-**Total Implemented Tools**: 11
+**Last Updated**: December 7, 2025
+**Total Implemented Tools**: 12 (9 core + 3 extended)
+**Admin-Only Tools**: 5 (2 migration + 3 temporal backend methods)
 **Profiles**: 2 (core/extended)
 **Default Profile**: core
 **Backends**: 3 (SQLite/Neo4j/Memgraph)
+**Context Budget Impact**: ~40-45k tokens saved (60-70% reduction from previous 44 tools)

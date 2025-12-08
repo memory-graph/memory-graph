@@ -113,21 +113,22 @@ class TestToolCollection:
         assert "find_memory_path" in tool_names, f"find_memory_path not found in {tool_names}"
         assert "create_relationship" in tool_names, f"create_relationship not found in {tool_names}"
 
-        # Should include intelligence tools
-        assert "find_similar_solutions" in tool_names, f"find_similar_solutions not found in {tool_names}"
+        # Should include migration tools
+        assert "migrate_database" in tool_names, f"migrate_database not found in {tool_names}"
 
-        # Verify we have a reasonable total count
-        assert len(all_tools) >= 10, f"Expected at least 10 tools, got {len(all_tools)}"
+        # Verify we have a reasonable total count (after removing vaporware)
+        # Expected: ~12 basic + ~7 advanced + ~2 migration = ~21 tools
+        assert len(all_tools) >= 15, f"Expected at least 15 tools, got {len(all_tools)}"
 
     def test_tool_profile_full_includes_all(self):
-        """Test that FULL profile includes all tools."""
+        """Test that when get_enabled_tools returns None, all tools are included."""
         with patch('memorygraph.server.Config.get_enabled_tools', return_value=None):
             server = ClaudeMemoryServer()
             all_tools = server._collect_all_tools()
 
-            # Full profile should have all tools
+            # When get_enabled_tools returns None, all tools should be available
             assert len(server.tools) == len(all_tools)
-            assert len(server.tools) > 20  # Should have many tools
+            assert len(server.tools) >= 15  # Should have at least 15 tools (post-vaporware cleanup)
 
     def test_tool_profile_filtering(self):
         """Test that tool profile filtering works."""

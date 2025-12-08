@@ -35,7 +35,7 @@ services:
     tty: true         # Required for MCP stdio
     environment:
       - MEMORY_BACKEND=neo4j
-      - MEMORY_TOOL_PROFILE=full
+      - MEMORY_TOOL_PROFILE=extended
       - MEMORY_NEO4J_URI=bolt://neo4j:7687
       - MEMORY_NEO4J_USER=neo4j
       - MEMORY_NEO4J_PASSWORD=password

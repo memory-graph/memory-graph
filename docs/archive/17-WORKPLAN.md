@@ -1,17 +1,39 @@
 # Workplan 17: memorygraph.dev Website (v1.0.0)
 
+> ## ❌ DEPRECATED (2025-12-06)
+>
+> **This workplan has been superseded by the memorygraph.dev repository.**
+>
+> ### What Happened
+> - Marketing website was built in `/Users/gregorydickson/memorygraph.dev/`
+> - Website is live at https://memorygraph.dev
+> - Spanish translations complete
+>
+> ### Where to Find the Active Work
+> - **Replacement**: `memorygraph.dev/docs/planning/3-WORKPLAN-marketing-site.md`
+> - **Live Site**: https://memorygraph.dev
+> - **Status**: ✅ COMPLETE
+>
+> ### Do NOT use this workplan for implementation.
+>
+> ---
+
 **Version Target**: v1.0.0
-**Priority**: HIGH
+**Priority**: ~~HIGH~~ DEPRECATED
 **Prerequisites**:
-- Domain registered (memorygraph.dev)
-- Workplan 14 Section 2 (Cloudflare Pages setup)
-**Estimated Effort**: 12-16 hours
+- ~~Domain registered (memorygraph.dev)~~
+- ~~Workplan 14 Section 2 (Cloudflare Pages setup)~~
+- See memorygraph.dev workplans instead
+**Estimated Effort**: ~~12-16 hours~~ N/A (already implemented)
+**Status**: ❌ DEPRECATED
 
 ---
 
 ## Overview
 
-Build the marketing website for memorygraph.dev with retro-terminal aesthetic. Merge content from deprecated 7-WEBSITE-WORKPLAN and add cloud-specific sections.
+~~Build the marketing website for memorygraph.dev with retro-terminal aesthetic. Merge content from deprecated 7-WEBSITE-WORKPLAN and add cloud-specific sections.~~
+
+**This work was completed in the memorygraph.dev repository. Site is live at https://memorygraph.dev**
 
 **Design Philosophy**: 90s terminal/BBS aesthetic meets modern developer tool. Memorable, personality-driven, stands out from sterile SaaS landing pages.
 

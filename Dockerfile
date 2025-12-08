@@ -23,7 +23,7 @@ RUN mkdir -p /data
 # Set default environment variables
 ENV MEMORY_BACKEND=sqlite \
     MEMORY_SQLITE_PATH=/data/memory.db \
-    MEMORY_TOOL_PROFILE=lite \
+    MEMORY_TOOL_PROFILE=core \
     MEMORY_LOG_LEVEL=INFO
 
 # Expose port (not used for MCP stdio, but useful for future web UI)

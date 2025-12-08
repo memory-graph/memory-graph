@@ -4,10 +4,8 @@ Tool handlers for the MCP server.
 This package contains modular tool handlers organized by functionality:
 - memory_tools: CRUD operations for memories
 - relationship_tools: Create and query relationships
-- search_tools: Search and recall memories
+- search_tools: Search, recall, and contextual search for memories
 - activity_tools: Activity summaries and statistics
-- browse_tools: Browse and discover memories by type, project, and domain
-- chain_tools: Traverse relationship chains and dependency trees
 - temporal_tools: Bi-temporal queries and time-travel operations
 """
 
@@ -30,15 +28,6 @@ from .activity_tools import (
     handle_get_memory_statistics,
     handle_get_recent_activity,
     handle_search_relationships_by_context,
-)
-from .browse_tools import (
-    handle_browse_memory_types,
-    handle_browse_by_project,
-    handle_browse_domains,
-)
-from .chain_tools import (
-    handle_find_chain,
-    handle_trace_dependencies,
 )
 from .temporal_tools import (
     handle_query_as_of,
@@ -63,13 +52,6 @@ __all__ = [
     "handle_get_memory_statistics",
     "handle_get_recent_activity",
     "handle_search_relationships_by_context",
-    # Browse operations
-    "handle_browse_memory_types",
-    "handle_browse_by_project",
-    "handle_browse_domains",
-    # Chain operations
-    "handle_find_chain",
-    "handle_trace_dependencies",
     # Temporal operations
     "handle_query_as_of",
     "handle_get_relationship_history",

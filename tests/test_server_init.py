@@ -122,7 +122,7 @@ class TestServerInitialization:
                 assert server.db_connection is mock_backend
                 assert server.memory_db is not None
                 assert server.advanced_handlers is not None
-                assert server.integration_handlers is not None
+                # integration_handlers removed (moved to experimental/)
 
     @pytest.mark.asyncio
     async def test_initialize_server_failure(self):
