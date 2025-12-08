@@ -1,6 +1,6 @@
 # memory-graph Product Roadmap
 
-**Document Version**: 3.4
+**Document Version**: 4.0
 **Last Updated**: December 2025
 **Author**: Gregory Dickson
 **Status**: Strategic Plan - ALIGNED WITH MEMORYGRAPH.DEV IMPLEMENTATION
@@ -84,6 +84,286 @@ Graphiti (by Zep AI, Y Combinator backed) is the state-of-the-art temporal knowl
 | **Python Native** | AI/ML ecosystem majority | Target Python devs |
 | **Lightweight** | SQLite default vs. Neo4j required | Performance benchmarks |
 | **Test Coverage** | 93% (409 tests) | Quality messaging |
+
+---
+
+## Product Priorities (December 2025)
+
+| # | Product | Priority | Phase | Notes |
+|---|---------|----------|-------|-------|
+| 1 | **LlamaIndex Integration** | 🔴 Critical | 3 | SDK expansion - highest strategic value |
+| 2 | **LangChain/LangGraph Integration** | 🔴 Critical | 3 | SDK expansion - massive ecosystem reach |
+| 3 | **Insights/Analytics** | 🔴 High | 3 | Dashboard analytics for cloud users |
+| 4 | **VS Code Extension** | 🔴 High | 3-4 | Cloud-only, requires subscription |
+| 5 | **CLI Tool** | 🟡 Medium | 2 | Enhanced CLI for local management |
+| 6 | **Dashboard (Web UI)** | 🟡 Medium | 3 | app.memorygraph.dev |
+| 7 | **CrewAI Integration** | 🟡 Medium | 3 | SDK expansion - multi-agent workflows |
+| 8 | **GitHub Action** | 🟢 Low | 4 | CI/CD memory automation |
+| 9 | **AutoGen Integration** | 🟢 Low | 5 | SDK expansion - Microsoft ecosystem |
+| 10 | **Enterprise, Knowledge Importer, Mobile** | 🟢 Low | 5+ | Future enterprise features |
+
+**Strategic Focus**: LlamaIndex and LangChain integrations are now **Critical** priority to capture the broader AI/ML framework ecosystem before competitors.
+
+---
+
+## Product Portfolio
+
+| Product | Status | Revenue Model |
+|---------|--------|---------------|
+| **MCP Server** | ✅ Live | Open Source (adoption driver) |
+| **Cloud Platform** | 🚧 In Progress | SaaS ($8-12/mo) |
+| **SDK (Python)** | 🔜 Planned | Open Source + Enterprise |
+
+---
+
+## Product Implementation Details
+
+### LlamaIndex Integration (🔴 Critical #1)
+
+**Value Proposition**: "Graph-enhanced RAG for production applications"
+
+**Why LlamaIndex First**:
+- 30K+ GitHub stars, massive RAG ecosystem
+- RAG is THE dominant LLM application pattern
+- Natural fit: RAG needs context, we provide structured context with relationships
+- No major graph-based memory competitor in LlamaIndex ecosystem
+
+**Integration Components**:
+
+| Component | LlamaIndex Class | Purpose |
+|-----------|------------------|---------|
+| `MemoryGraphVectorStore` | `BasePydanticVectorStore` | Graph-aware document storage |
+| `MemoryGraphRetriever` | `BaseRetriever` | Relationship-enhanced retrieval |
+| `MemoryGraphChatMemory` | `BaseChatStore` | Persistent conversation memory |
+| `MemoryGraphIndex` | `BaseIndex` | Knowledge graph index type |
+
+**Code Example**:
+```python
+from llama_index.core import VectorStoreIndex
+from memorygraph.integrations.llamaindex import (
+    MemoryGraphVectorStore,
+    MemoryGraphRetriever
+)
+
+# As Vector Store with relationship awareness
+vector_store = MemoryGraphVectorStore(
+    api_key="mg_...",
+    include_relationships=True,  # Our differentiator!
+    relationship_depth=2
+)
+
+index = VectorStoreIndex.from_documents(documents, vector_store=vector_store)
+
+# Queries automatically traverse relationships
+response = index.as_query_engine().query("What caused the authentication failures?")
+# Returns context from: Error → CAUSED_BY → Config → RELATED_TO → Similar issues
+```
+
+**Unique Value vs Plain Vector Stores**:
+```
+Standard RAG:  Query → Vector Search → Top K Documents → Response
+
+MemoryGraph RAG:  Query → Vector Search → Top K Documents
+                                              ↓
+                                    Relationship Expansion
+                                              ↓
+                         Related Solutions, Causes, Dependencies
+                                              ↓
+                                    Enriched Response
+```
+
+---
+
+### LangChain/LangGraph Integration (🔴 Critical #2)
+
+**Value Proposition**: "Drop-in memory for LangChain agents with relationship intelligence"
+
+**Why LangChain/LangGraph**:
+- LangChain: 95K+ GitHub stars (largest LLM framework)
+- LangGraph: Fast-growing for stateful agent applications
+- Agents need memory more than simple chains
+- Cipher has NO framework integrations
+
+**Integration Components**:
+
+| Component | LangChain/LangGraph Class | Purpose |
+|-----------|---------------------------|---------|
+| `MemoryGraphMemory` | `BaseMemory` | Conversation memory |
+| `MemoryGraphChatMessageHistory` | `BaseChatMessageHistory` | Message persistence |
+| `MemoryGraphRetriever` | `BaseRetriever` | Document retrieval |
+| `MemoryGraphCheckpointer` | `BaseCheckpointSaver` | LangGraph state |
+| `MemoryGraphStore` | `BaseStore` | LangGraph Store |
+
+**Code Examples**:
+
+```python
+# LangChain: As Conversation Memory
+from langchain.memory import MemoryGraphMemory
+from langchain.agents import create_react_agent
+
+memory = MemoryGraphMemory(
+    api_key="mg_...",
+    return_relationships=True,
+    relationship_summary=True  # Include "You previously solved X with Y"
+)
+
+agent = create_react_agent(llm, tools, memory=memory)
+```
+
+```python
+# LangGraph: As State Checkpointer
+from langgraph.graph import StateGraph
+from memorygraph.integrations.langgraph import MemoryGraphCheckpointer
+
+checkpointer = MemoryGraphCheckpointer(
+    api_key="mg_...",
+    store_relationships=True
+)
+
+graph = StateGraph(AgentState)
+app = graph.compile(checkpointer=checkpointer)
+
+# State persists across sessions with relationship context
+config = {"configurable": {"thread_id": "user-123"}}
+result = app.invoke({"messages": [HumanMessage("Continue where we left off")]}, config)
+```
+
+---
+
+### Insights/Analytics Dashboard (🔴 High #3)
+
+**Value Proposition**: "Discover what your coding agent has learned"
+
+**Features**:
+- **Knowledge Gap Detection**: "You have many errors about X but no solutions"
+- **Pattern Discovery**: "These 5 solutions all use retry logic"
+- **Expertise Mapping**: "Most of your auth knowledge came from Project A"
+- **Stale Knowledge Alerts**: "This solution was created 6 months ago, still valid?"
+- **Team Knowledge Distribution**: Who knows what
+- **Temporal Insights**: How understanding evolved over time
+
+**Dashboard Mockup**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│  MemoryGraph Insights                                       │
+├─────────────────────────────────────────────────────────────┤
+│  Knowledge Health Score: 78/100                             │
+│  ┌─────────────────┐  ┌─────────────────┐                   │
+│  │ 🔴 15 Unsolved  │  │ 🟢 47 Solutions │                   │
+│  │    Errors       │  │    Documented   │                   │
+│  └─────────────────┘  └─────────────────┘                   │
+│                                                             │
+│  Top Knowledge Gaps:                                        │
+│  • Authentication (5 errors, 1 solution)                    │
+│  • Database timeouts (3 errors, 0 solutions)                │
+│                                                             │
+│  Emerging Patterns:                                         │
+│  • Retry logic used in 12 solutions (+40% this month)       │
+│  • Circuit breaker pattern gaining adoption                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Revenue Model**: Premium tier feature (+$5/mo or included in Team plan)
+
+---
+
+### VS Code Extension (🔴 High #4)
+
+**Value Proposition**: "Your coding memory, where you code"
+
+**Business Model**: ☁️ **Cloud-Only, Subscription Required**
+- Requires active MemoryGraph Cloud subscription (Pro or Team tier)
+- No local/offline mode - all data synced via memorygraph.dev
+- Drives cloud subscription revenue
+- Simplifies architecture (no local backend complexity)
+
+**Rationale for Cloud-Only**:
+1. **Revenue Driver**: VS Code has massive reach - convert users to paying subscribers
+2. **Simplified Development**: Single backend (cloud API), no local SQLite/Neo4j support needed
+3. **Better UX**: Real-time sync across devices, no setup complexity
+4. **Team Features**: Seamless team memory sharing built-in
+
+**Features**:
+- **Memory Panel**: Sidebar showing relevant memories for current file
+- **Inline Suggestions**: "You solved a similar error in Project X..."
+- **Quick Capture**: Right-click → "Save to MemoryGraph"
+- **Hover Context**: Hover over error → see related solutions
+- **Graph Explorer**: Visual graph navigation in VS Code
+- **GitHub Copilot Integration**: Memory-enhanced completions
+- **Team Memories**: See team knowledge inline (Team tier)
+
+---
+
+### CLI Tool (🟡 Medium #5)
+
+**Value Proposition**: "Memory management from your terminal"
+
+**Commands**:
+```bash
+mg add "Fixed timeout with retry logic" --type solution --tags redis,timeout
+mg search "timeout" --type error
+mg relate mem123 SOLVES mem456
+mg chain mem123                    # Show relationship chain
+mg sync                            # Cloud sync
+mg export --format json
+mg stats                           # Quick analytics
+mg visualize                       # Opens web dashboard
+```
+
+---
+
+## Revenue Model
+
+| Product | Model | Price Point |
+|---------|-------|-------------|
+| MCP Server | Open Source | Free |
+| Cloud Platform | SaaS | $8-12/mo |
+| Dashboard | Included in Cloud | - |
+| SDK | Open Source | Free |
+| LlamaIndex/LangChain | Open Source | Free (drives Cloud) |
+| CLI | Open Source | Free |
+| **VS Code Extension** | **Cloud-Only** | **Requires Pro/Team subscription** |
+| Insights | Premium Feature | +$5/mo or Team plan |
+| Enterprise Server | License | $10K-50K/year |
+
+**Target Revenue Mix (Year 2)**:
+- Cloud Subscriptions: 60%
+- Enterprise Licenses: 30%
+- Professional Services: 10%
+
+---
+
+## Success Metrics
+
+| Metric | Current | Year 1 Target | Year 2 Target |
+|--------|---------|---------------|---------------|
+| GitHub Stars | ~100 | 2,000 | 5,000 |
+| PyPI Downloads/month | ~500 | 10,000 | 50,000 |
+| Cloud Subscribers | 0 | 200 | 1,000 |
+| MRR | $0 | $2,000 | $15,000 |
+| Framework Integrations | 1 (MCP) | 4 | 6 |
+
+---
+
+## Partnership Opportunities
+
+### Technology Partnerships
+
+| Partner | Opportunity | Value |
+|---------|-------------|-------|
+| **LangChain** | Official memory integration | Large community access |
+| **LlamaIndex** | Recommended retrieval backend | RAG market capture |
+| **CrewAI** | Recommended memory provider | Multi-agent positioning |
+| **Anthropic** | Claude Code showcase | Credibility, visibility |
+| **Cursor** | Built-in memory option | IDE market access |
+
+### Distribution Partnerships
+
+| Partner | Opportunity | Value |
+|---------|-------------|-------|
+| **Smithery** | Featured MCP server | Discovery |
+| **Awesome MCP** | Featured listing | Credibility |
+| **AI Tool Directories** | Listings | SEO, discovery |
 
 ---
 
@@ -567,21 +847,26 @@ Match or beat Byterover's pricing (if known). Our target:
 5. Python-native messaging
 6. Clear pricing vs. alternatives
 
-### 3.4 SDK Launch (Differentiation from Cipher)
+### 3.4 SDK Launch (Differentiation from Cipher) 🔴 CRITICAL PRIORITY
 
-Cipher is MCP-only. Our SDK expands to LangChain, CrewAI, etc.
+Cipher is MCP-only. Our SDK expands to LangChain, LlamaIndex, CrewAI, etc.
 
 Reference: memorygraph.dev Workplans 8-10
 
 | Task | Priority | Status |
 |------|----------|--------|
-| memorygraphsdk core package | 🔴 HIGH | 🔜 PLANNED (after Workplan 4) |
-| LangChain integration | 🔴 HIGH | 🔜 PLANNED (Workplan 9) |
+| memorygraphsdk core package | 🔴 CRITICAL | 🔜 PLANNED (after Workplan 4) |
+| **LlamaIndex integration** | 🔴 CRITICAL | 🔜 PLANNED (Priority #1) |
+| **LangChain/LangGraph integration** | 🔴 CRITICAL | 🔜 PLANNED (Priority #2) |
 | CrewAI integration | 🟡 MEDIUM | 🔜 ON-DEMAND |
 | Semantic search capability | 🔴 HIGH | 🔜 PLANNED (Workplan 10) |
 | Publish to PyPI | 🔴 HIGH | 🔜 PLANNED |
 
-**Key Message**: "memory-graph works everywhere - MCP, LangChain, CrewAI, and more. Not locked into one protocol."
+**Key Message**: "memory-graph works everywhere - MCP, LlamaIndex, LangChain, CrewAI, and more. Not locked into one protocol."
+
+**Strategic Rationale**: LlamaIndex and LangChain integrations are now **Critical** priority because:
+- LlamaIndex: Dominant in RAG/retrieval pipelines - perfect fit for memory-graph
+- LangChain: Massive ecosystem (100K+ GitHub stars) - SDK integration captures huge market
 
 ### 3.5 Remaining Cloud Work (memorygraph.dev)
 
@@ -730,10 +1015,11 @@ Cipher's Elastic License may deter some enterprises. Opportunity!
 
 ### 5.2 Expand SDK Ecosystem
 
+> **Note**: LlamaIndex and LangChain integrations moved to Phase 3 as **Critical** priority.
+
 | Task | Priority | Status |
 |------|----------|--------|
-| AutoGen integration | 🔴 HIGH | ⬜ TODO |
-| LlamaIndex integration | 🔴 HIGH | ⬜ TODO |
+| AutoGen integration | 🟢 LOW | ⬜ TODO |
 | OpenAI Agents SDK integration | 🟡 MEDIUM | ⬜ TODO |
 | JavaScript/TypeScript SDK | 🟡 MEDIUM | ⬜ TODO |
 
@@ -831,26 +1117,6 @@ Build on Phase 2 bi-temporal foundation.
 
 ---
 
-## Deferred Features
-
-### VSCode Extension (Deferred to v1.2.0+)
-
-**Decision**: A native VSCode extension is deferred until after cloud launch and SDK stabilization.
-
-**Current Alternative**: VSCode users can access memory-graph today via:
-- **MCP + GitHub Copilot**: GitHub Copilot supports MCP servers, enabling Claude Code-style memory in VSCode
-- **Claude Code CLI**: Works in any terminal, including VSCode's integrated terminal
-
-**Rationale for Deferral**:
-1. **Resource Focus**: Cloud platform (Phase 3) and SDK (Phase 3) are higher priority for market positioning
-2. **Existing Coverage**: MCP + Copilot provides VSCode support without dedicated extension development
-3. **SDK First**: A VSCode extension would benefit from a stable SDK (Phase 3 deliverable)
-4. **Market Signal**: Will revisit based on user demand after v1.0.0 launch
-
-**When to Revisit**: After v1.0.0 cloud launch, evaluate user feedback and demand for native extension.
-
----
-
 ## Risk Assessment Update
 
 ### Competitive Risks
@@ -884,6 +1150,8 @@ Build on Phase 2 bi-temporal foundation.
 | 3.2 | Dec 2025 | Gregory Dickson | **CIPHER v0.3.1 RESPONSE**: Updated Cipher profile (they abandoned vectors for Agentic Search!), replaced embedding strategy with Semantic Navigation approach, positioned cloud-native sync as advantage over Cipher's manual `brv pull`, added marketing angles around Cipher's validation of our approach |
 | 3.3 | Dec 2025 | Gregory Dickson | **DEFERRED FEATURES**: Added VSCode Extension deferral decision (v1.2.0+), documented MCP + GitHub Copilot as current alternative |
 | 3.4 | Dec 2025 | Gregory Dickson | **MEMORYGRAPH.DEV ALIGNMENT**: Updated Phase 3 to reflect actual implementation in memorygraph.dev repository. Infrastructure complete (GCP, Cloud SQL, FalkorDB, Auth API). Marketing site live. Added ADR references. Updated task statuses. Documented remaining workplans (4-7, 8-10). |
+| 3.5 | Dec 2025 | Gregory Dickson | **PRODUCT PRIORITIES UPDATE**: Added Product Priorities table. Elevated LlamaIndex and LangChain integrations to Critical priority. Elevated VS Code Extension from Deferred to High priority. Updated SDK section in Phase 3 and Phase 5. Lowered AutoGen to Low priority. |
+| 4.0 | Dec 2025 | Gregory Dickson | **DOCUMENT CONSOLIDATION**: Merged COMPLEMENTARY_PRODUCTS_BRAINSTORM.md into this document. Added Product Portfolio, Product Implementation Details (LlamaIndex, LangChain, Insights, VS Code, CLI with code examples), Revenue Model, Success Metrics, and Partnership Opportunities sections. Removed duplicate VS Code section. |
 
 ---
 

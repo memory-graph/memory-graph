@@ -8,6 +8,42 @@
 
 ---
 
+## Parallel Execution Guide
+
+This workplan can be executed with **3 parallel agents** after Section 1 (Models) is complete.
+
+### Dependency Graph
+
+```
+Section 1: Data Models (SEQUENTIAL - must complete first)
+    │
+    ├──► Section 2: Configuration ────┐
+    │                                  │
+    ├──► Section 3: SQLite Indexes ────┼──► Section 4: Neo4j Indexes ──► Section 5: Testing
+    │                                  │
+    └──► Section 3: Memgraph Indexes ──┘
+```
+
+### Parallel Work Units
+
+| Agent | Section | Dependencies | Can Run With |
+|-------|---------|--------------|--------------|
+| **Agent 1** | Section 1: Data Models | None | Solo (prerequisite) |
+| **Agent 2** | Section 2: Configuration | Section 1 | Agent 3 |
+| **Agent 3** | Section 3.1: SQLite Indexes | Section 1 | Agent 2 |
+| **Agent 4** | Section 3.2: Neo4j Indexes | Section 3.1 | Agent 5 |
+| **Agent 5** | Section 3.3: Memgraph Indexes | Section 3.1 | Agent 4 |
+| **Agent 6** | Section 4+: Integration Tests | All above | Solo |
+
+### Recommended Execution Order
+
+**Phase A** (1 agent): Section 1 - Update data models
+**Phase B** (2 agents parallel): Section 2 (config) + Section 3.1 (SQLite indexes)
+**Phase C** (2 agents parallel): Section 3.2 (Neo4j) + Section 3.3 (Memgraph)
+**Phase D** (1 agent): Integration testing across all backends
+
+---
+
 ## Prerequisites
 
 - [x] 1-WORKPLAN completed (critical fixes)

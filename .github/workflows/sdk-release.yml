@@ -1,0 +1,170 @@
+name: Release SDK to PyPI
+
+on:
+  push:
+    tags:
+      - 'sdk-v*'  # Trigger on tags like sdk-v0.1.0
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  test:
+    name: Test SDK
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          cd sdk
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+
+      - name: Run tests with coverage
+        run: |
+          cd sdk
+          python -m pytest tests/ --cov=memorygraphsdk --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage reports
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          files: sdk/coverage.xml
+          flags: sdk
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    name: Lint SDK
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd sdk
+          python -m pip install --upgrade pip
+          pip install ruff mypy
+
+      - name: Run ruff
+        run: |
+          cd sdk
+          ruff check memorygraphsdk/
+
+      - name: Run mypy
+        run: |
+          cd sdk
+          mypy memorygraphsdk/ --install-types --non-interactive || true
+
+  build:
+    name: Build SDK Package
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: |
+          cd sdk
+          python -m build
+
+      - name: Check package
+        run: |
+          cd sdk
+          twine check dist/*
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: sdk/dist/
+
+  publish-test:
+    name: Publish to TestPyPI
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'  # Only on manual trigger
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: sdk/dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: sdk/dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/sdk-v')  # Only on version tags
+
+    environment:
+      name: pypi
+      url: https://pypi.org/project/memorygraphsdk/
+
+    permissions:
+      id-token: write  # Required for trusted publishing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: sdk/dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdk/dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: sdk/dist/*
+          generate_release_notes: true
+          body: |
+            ## MemoryGraph SDK Release
+
+            Install with:
+            ```bash
+            pip install memorygraphsdk==${{ github.ref_name }}
+            ```
+
+            See [CHANGELOG.md](https://github.com/gregorydickson/claude-code-memory/blob/main/CHANGELOG.md) for details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

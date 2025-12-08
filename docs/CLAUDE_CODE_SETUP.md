@@ -1565,6 +1565,106 @@ To verify your CLAUDE.md is working:
 
 ---
 
+## Claude Code Web (Remote Containers)
+
+Claude Code Web runs in ephemeral cloud containers. This section explains how to use MemoryGraph in these environments.
+
+### How It Works
+
+Claude Code supports [project hooks](https://code.claude.com/docs/en/hooks) that run on session start. MemoryGraph provides hook files that:
+
+1. Detect remote environment via `CLAUDE_CODE_REMOTE` env var
+2. Install MemoryGraph via pip
+3. Register the MCP server
+4. Configure cloud backend if API key is present
+
+### Installation for Web
+
+#### Option 1: Copy Hook Files (Recommended)
+
+```bash
+# Clone or download memorygraph
+git clone https://github.com/gregorydickson/memory-graph.git
+
+# Copy hooks to your project
+cp -r memory-graph/examples/claude-code-hooks/.claude /path/to/your/project/
+
+# Commit to version control
+cd /path/to/your/project
+git add .claude/
+git commit -m "Add MemoryGraph hooks for Claude Code Web"
+git push
+```
+
+#### Option 2: Manual Setup
+
+Create these files in your project:
+
+**`.claude/settings.json`:**
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/install-memorygraph.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`.claude/hooks/install-memorygraph.sh`:**
+```bash
+#!/bin/bash
+[ "$CLAUDE_CODE_REMOTE" != "true" ] && exit 0
+pip install --quiet memorygraphMCP
+claude mcp add memorygraph 2>/dev/null || true
+echo "[memorygraph] Ready"
+```
+
+Make the script executable:
+```bash
+chmod +x .claude/hooks/install-memorygraph.sh
+```
+
+### Persistent Storage for Web
+
+By default, memories in Claude Code Web are **ephemeral**—they're lost when the session ends. For persistent storage:
+
+**Option A: MemoryGraph Cloud**
+1. Sign up at [memorygraph.dev](https://memorygraph.dev)
+2. Get your API key
+3. Add environment variable: `MEMORYGRAPH_API_KEY`
+
+**Option B: Turso Database**
+1. Create a [Turso](https://turso.tech) account and database
+2. Add environment variables:
+   - `MEMORYGRAPH_TURSO_URL`: `libsql://your-db-name.turso.io`
+   - `MEMORYGRAPH_TURSO_TOKEN`: Your auth token
+
+### Web Environment Behavior
+
+| Environment | Detection | Storage | Persistence |
+|-------------|-----------|---------|-------------|
+| Local CLI | `CLAUDE_CODE_REMOTE` not set | Local SQLite | ✅ Persistent |
+| Remote (no config) | `CLAUDE_CODE_REMOTE=true` | Local SQLite | ❌ Ephemeral |
+| Remote + API key | `CLAUDE_CODE_REMOTE=true` | Cloud API | ✅ Persistent |
+| Remote + Turso | `CLAUDE_CODE_REMOTE=true` | Turso DB | ✅ Persistent |
+
+### Troubleshooting Web Setup
+
+- **Hook not executing**: Verify `.claude/settings.json` is valid JSON, check script is executable
+- **MCP server not available**: Try sending a message to trigger Claude to reload tools
+- **Memories not persisting**: Set `MEMORYGRAPH_API_KEY` or Turso credentials for persistence
+- **Permission denied**: `git update-index --chmod=+x .claude/hooks/install-memorygraph.sh`
+
+---
+
 ## Best Practices
 
 1. **Start Simple**: Begin with core profile, upgrade when needed
@@ -1589,9 +1689,8 @@ To verify your CLAUDE.md is working:
 
 For more information:
 - [README.md](../README.md) - Overview and features
-- [TOOL_PROFILES.md](TOOL_PROFILES.md) - Complete tool reference
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Advanced features guide
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment options
+- [TOOLS.md](TOOLS.md) - Complete tool reference
+- [CONFIGURATION.md](CONFIGURATION.md) - Configuration options
 - [GitHub Issues](https://github.com/gregorydickson/memory-graph/issues) - Support
 
 ---

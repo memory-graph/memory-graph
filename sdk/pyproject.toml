@@ -1,0 +1,93 @@
+[project]
+name = "memorygraphsdk"
+version = "0.1.0"
+description = "Python SDK for MemoryGraph - memory for AI agents"
+authors = [{name = "Gregory Dickson"}]
+license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = [
+    "memorygraph",
+    "memory",
+    "ai",
+    "agents",
+    "langchain",
+    "llamaindex",
+    "crewai",
+    "autogen",
+    "rag",
+    "retrieval",
+    "graph-database",
+    "knowledge-graph"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Database",
+    "Typing :: Typed",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+llamaindex = ["llama-index-core>=0.10.0"]
+langchain = ["langchain-core>=0.1.0"]
+crewai = ["crewai>=0.1.0"]
+autogen = ["pyautogen>=0.2.0"]
+all = [
+    "llama-index-core>=0.10.0",
+    "langchain-core>=0.1.0",
+    "crewai>=0.1.0",
+    "pyautogen>=0.2.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "respx>=0.20.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://memorygraph.dev"
+Documentation = "https://memorygraph.dev/docs/sdk"
+Repository = "https://github.com/gregorydickson/claude-code-memory"
+Changelog = "https://github.com/gregorydickson/claude-code-memory/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

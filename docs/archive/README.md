@@ -13,6 +13,17 @@ This directory contains historical documentation, completed work archives, and c
 
 ## Recent Additions (December 8, 2025)
 
+### Documentation Consolidation
+
+| Document | Action | Notes |
+|----------|--------|-------|
+| `TOOL_PROFILES.md` + `TOOL_SELECTION_GUIDE.md` | Consolidated → `TOOLS.md` | Tool reference unified |
+| `claude-code-web.md` | Merged → `CLAUDE_CODE_SETUP.md` | Web setup now in main guide |
+| `MIGRATION_IMPLEMENTATION_SUMMARY.md` | Archived | Implementation details |
+| `MCP_1.23_UPGRADE_NOTES.md` | Archived | One-time upgrade notes |
+| `CONTEXT_BUDGET.md` | Archived | Internal developer guideline |
+| `19-WORKPLAN.md` | Archived | Context optimization - completed via WP12-13 |
+
 ### Completed Workplans (v0.9.x - v0.10.0)
 
 | Workplan | Title | Status | Completed |

@@ -1,7 +1,16 @@
 # Workplan 19: Context Window Optimization & Marketing
 
+> ❌ **STATUS: ARCHIVED** (2025-12-08)
+>
+> This workplan is archived because:
+> 1. Context optimization was completed in WP12-13 (removed 29 vaporware tools, ~40-45k tokens saved)
+> 2. Tool profile cleanup complete (Core: 9 tools, Extended: 12 tools)
+> 3. ADR-017 documents the context budget constraint
+>
+> **Outcome**: Goals achieved through WP12-13 implementation.
+
 **Version Target**: v0.9.7
-**Priority**: HIGH (Competitive Positioning)
+**Priority**: ~~HIGH~~ ARCHIVED
 **Prerequisites**: None
 **Estimated Effort**: 8-12 hours
 

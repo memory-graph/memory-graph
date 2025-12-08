@@ -24,6 +24,7 @@ except ImportError:
     MessageRole = object  # type: ignore
 
 from ..client import MemoryGraphClient
+from ..exceptions import MemoryGraphError, NotFoundError
 from ..models import Memory
 
 
@@ -59,7 +60,7 @@ class MemoryGraphChatMemory(BaseMemory):
 
     def __init__(
         self,
-        api_key: str,
+        api_key: str | None = None,
         session_id: str = "default",
         api_url: str = "https://api.memorygraph.dev",
         **kwargs: Any,
@@ -68,7 +69,8 @@ class MemoryGraphChatMemory(BaseMemory):
         Initialize MemoryGraph chat memory.
 
         Args:
-            api_key: MemoryGraph API key
+            api_key: MemoryGraph API key. If not provided, will look for
+                MEMORYGRAPH_API_KEY environment variable.
             session_id: Session identifier for this conversation
             api_url: API URL (default: https://api.memorygraph.dev)
             **kwargs: Additional arguments passed to BaseMemory
@@ -211,7 +213,7 @@ class MemoryGraphRetriever:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: str | None = None,
         memory_types: Optional[List[str]] = None,
         api_url: str = "https://api.memorygraph.dev",
         min_importance: Optional[float] = None,
@@ -220,7 +222,8 @@ class MemoryGraphRetriever:
         Initialize MemoryGraph retriever.
 
         Args:
-            api_key: MemoryGraph API key
+            api_key: MemoryGraph API key. If not provided, will look for
+                MEMORYGRAPH_API_KEY environment variable.
             memory_types: Types of memories to retrieve
             api_url: API URL (default: https://api.memorygraph.dev)
             min_importance: Minimum importance threshold
@@ -320,7 +323,7 @@ class MemoryGraphRetriever:
                         }
                         for r in related
                     ]
-                except Exception:
+                except (NotFoundError, MemoryGraphError):
                     # If relationship retrieval fails, continue without them
                     node["metadata"]["related"] = []
 

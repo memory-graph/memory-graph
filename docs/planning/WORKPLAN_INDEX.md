@@ -34,14 +34,36 @@
 
 ---
 
+## Parallel Execution Summary
+
+Each workplan includes a **Parallel Execution Guide** for running with multiple agents.
+
+| Workplan | Max Parallel Agents | Parallelizable Sections |
+|----------|---------------------|-------------------------|
+| **WP0 (Marketing)** | 4 agents | Discovery channels, launch posts |
+| **WP6 (Multi-Tenancy)** | 3 agents | Config, backend indexes |
+| **WP16 (SDK)** | 4 agents | LlamaIndex, LangChain, CrewAI, AutoGen |
+| **WP20 (Cloud)** | ✅ Complete | N/A |
+| **WP21 (LadybugDB)** | 2 agents | Query/Search, Relationships |
+
+### How to Use Parallel Agents
+
+1. Read the **Parallel Execution Guide** at the top of each workplan
+2. Identify sections that can run simultaneously (no dependencies)
+3. Launch agents with specific section assignments
+4. Coordinate on shared files (models, config) before parallel phases
+
+---
+
 ## Overview
 
-Workplans are numbered and organized for sequential execution by coding agents. Each workplan is designed to be:
+Workplans are numbered and organized for sequential or parallel execution by coding agents. Each workplan is designed to be:
 - **Readable in one session** (~130-500 lines)
 - **Self-contained** with clear prerequisites
 - **Actionable** with markdown checkboxes
 - **File-specific** with absolute paths where relevant
 - **Context-aware** with MCP tool budgets considered
+- **Parallelizable** with dependency graphs for multi-agent execution
 
 ---
 
@@ -76,9 +98,9 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 | [12-WORKPLAN](../archive/12-WORKPLAN.md) | Semantic Navigation | ✅ COMPLETE | 2025-12-07 |
 | [13-WORKPLAN](../archive/13-WORKPLAN.md) | Bi-Temporal Schema | ✅ COMPLETE | 2025-12-07 |
 
-### Deprecated Workplans - ARCHIVED ❌
+### Deprecated/Archived Workplans ❌
 
-> **Moved to memorygraph.dev repository or superseded**
+> **Moved to memorygraph.dev repository, superseded, or completed through other work**
 
 | Workplan | Title | Status | Reason |
 |----------|-------|--------|--------|
@@ -87,6 +109,7 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 | [15-WORKPLAN](../archive/15-WORKPLAN.md) | Authentication | ❌ DEPRECATED | → memorygraph.dev |
 | [17-WORKPLAN](../archive/17-WORKPLAN.md) | Marketing Site | ❌ DEPRECATED | → memorygraph.dev |
 | [18-WORKPLAN](../archive/18-WORKPLAN.md) | Team Sync | ❌ DEPRECATED | → memorygraph.dev |
+| [19-WORKPLAN](../archive/19-WORKPLAN.md) | Context Optimization | ❌ ARCHIVED | Completed via WP12-13, ADR-017 |
 
 ### Active Workplans
 
@@ -104,14 +127,29 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 
 **[16-WORKPLAN.md](16-WORKPLAN.md)** - SDK Development (v1.0.0) - ⏸️ **DEFERRED**
 - Create memorygraphsdk Python package
-- LangChain, CrewAI, AutoGen integrations
+- **LlamaIndex integration** (🔴 Critical) - #1 priority
+- **LangChain/LangGraph integration** (🔴 Critical) - #2 priority
+- CrewAI integration (🟡 Medium)
+- AutoGen integration (🟢 Low)
 - Publish to PyPI
-- **Priority**: HIGH (Competitive Differentiation vs Cipher) - DEFERRED
+- **Priority**: 🔴 CRITICAL (Competitive Differentiation) - DEFERRED
 - **Status**: Deferred pending v0.10.0 release and WP20 completion
 - **Prerequisites**: memorygraph.dev Graph Service complete, WP20 release
 - **Reference**: PRODUCT_ROADMAP.md Phase 3.4, memorygraph.dev Workplan 8-10
-- **Tasks**: 60+ (across 8 sections)
-- **Note**: Aligns with memorygraph.dev SDK workplans (8-10)
+- **Tasks**: 70+ (across 9 sections)
+- **Note**: Priority updated 2025-12-08 per PRODUCT_ROADMAP.md
+
+### Backend Expansion (Lower Priority)
+
+**[21-WORKPLAN-ladybugdb.md](21-WORKPLAN-ladybugdb.md)** - LadybugDB Backend Completion - ⏸️ **PENDING**
+- Complete the LadybugDB backend implementation to production-ready status
+- Current state: Skeleton with ~30% implementation
+- Missing: Memory CRUD, Relationship methods, Search/Query, parameterized queries
+- Security: Fix SQL injection vulnerability in query handling
+- **Priority**: 🟡 MEDIUM (Backend expansion)
+- **Prerequisites**: WP16 (SDK) and WP20 (Cloud) releases complete
+- **Tasks**: 60+ (across 6 sections)
+- **Note**: Created 2025-12-08 per code review findings
 
 ### Future (Strategic Features)
 
@@ -206,6 +244,8 @@ Workplans are numbered and organized for sequential execution by coding agents. 
                 │   │
                 │   └─→ 18-WORKPLAN (Team Sync) [v1.1.0] NEW
                 │
+                ├─→ 21-WORKPLAN (LadybugDB Backend) [MEDIUM] NEW
+                │
                 └─→ 6-WORKPLAN (Multi-Tenancy) [FUTURE]
 ```
 
@@ -249,7 +289,7 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 ## Metrics Summary
 
 ### Total Work Status (as of 2025-12-07)
-- **Total Workplans**: 19 active + 4 deprecated
+- **Total Workplans**: 20 active + 4 deprecated
 - **Completed Workplans**: 11 (1-5, 8-13, 20 core implementation)
 - **New Workplans**: 8 (12-13, 16, 18, 20)
 - **Test Suite**: 1,338 tests passing (up from 890)
@@ -336,7 +376,7 @@ Planned ADRs:
 1. ✅ 12-WORKPLAN: Semantic Navigation Tools (contextual_search) - COMPLETE
 2. ✅ 13-WORKPLAN: Bi-Temporal Schema - COMPLETE
 
-**8 New Workplans Created (2025-12-05/07)**:
+**9 New Workplans Created (2025-12-05/08)**:
 1. ✅ 12-WORKPLAN: Semantic Navigation Tools (v0.10.0) - COMPLETE
 2. ✅ 13-WORKPLAN: Bi-Temporal Schema (v0.10.0) - COMPLETE
 3. ✅ 14-WORKPLAN: Cloud Infrastructure - DEPRECATED (see memorygraph.dev)
@@ -345,6 +385,7 @@ Planned ADRs:
 6. ✅ 17-WORKPLAN: memorygraph.dev Website - DEPRECATED (see memorygraph.dev)
 7. ✅ 18-WORKPLAN: Real-Time Team Sync (v1.1.0) - DEPRECATED (see memorygraph.dev)
 8. ✅ 20-WORKPLAN: MCP Cloud Backend Adaptation (v1.0.0) - IMPLEMENTATION COMPLETE
+9. 🆕 21-WORKPLAN: LadybugDB Backend Completion - PENDING (2025-12-08)
 
 **Workplans Deprecated**:
 - ❌ 7-WEBSITE-WORKPLAN: Content merged into 17-WORKPLAN
@@ -407,6 +448,13 @@ Based on the current state and [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md):
    - Team workspaces
    - Activity feed
 
+### Backend Expansion (When Ready)
+1. **21-WORKPLAN**: LadybugDB Backend Completion
+   - Complete skeleton to production-ready status
+   - Fix security issues (parameterized queries)
+   - Implement all GraphBackend methods
+   - **Status**: PENDING (after WP16/WP20 releases)
+
 ### Long-term (v1.2.0+)
 1. **6-WORKPLAN**: Multi-Tenancy
    - Enterprise features
@@ -461,8 +509,8 @@ These are superseded by the new numbered workplans.
 
 ---
 
-**Last Updated**: 2025-12-07
+**Last Updated**: 2025-12-08
 **Maintainer**: Gregory Dickson
 **Status**: v0.10.0 ready for release (12-13 complete), SDK development next (16)
 **Cloud**: Already deployed at memorygraph.dev
-**Next Focus**: SDK integrations (LangChain, CrewAI, AutoGen)
+**Next Focus**: SDK integrations - **LlamaIndex** (🔴 Critical), **LangChain** (🔴 Critical), CrewAI, AutoGen
