@@ -728,14 +728,44 @@ class CloudBackend(GraphBackend):
             project: Optional project filter
 
         Returns:
-            Activity summary dictionary
+            Activity summary dictionary with Memory objects
         """
         params = {"days": days}
         if project:
             params["project"] = project
 
         result = await self._request("GET", "/memories/recent", params=params)
-        return result or {}
+        if not result:
+            return {
+                "total_count": 0,
+                "memories_by_type": {},
+                "recent_memories": [],
+                "unresolved_problems": [],
+                "days": days,
+                "project": project
+            }
+
+        # Convert API response dicts to Memory objects
+        recent_memories = []
+        for item in result.get("recent_memories", []):
+            memory = self._api_response_to_memory(item)
+            if memory:
+                recent_memories.append(memory)
+
+        unresolved_problems = []
+        for item in result.get("unresolved_problems", []):
+            memory = self._api_response_to_memory(item)
+            if memory:
+                unresolved_problems.append(memory)
+
+        return {
+            "total_count": result.get("total_count", 0),
+            "memories_by_type": result.get("memories_by_type", {}),
+            "recent_memories": recent_memories,
+            "unresolved_problems": unresolved_problems,
+            "days": result.get("days", days),
+            "project": result.get("project", project)
+        }
 
     async def get_statistics(self) -> dict[str, Any]:
         """
