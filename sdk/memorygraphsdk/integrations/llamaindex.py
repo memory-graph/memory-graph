@@ -61,7 +61,8 @@ class MemoryGraphChatMemory(BaseMemory):
 
     model_config = {"arbitrary_types_allowed": True}
 
-    client: MemoryGraphClient = Field(exclude=True)
+    # Use Any type to allow mocking in tests while still storing the client
+    client: Any = Field(default=None, exclude=True)
     session_id: str = Field(default="default")
 
     def __init__(
@@ -87,10 +88,9 @@ class MemoryGraphChatMemory(BaseMemory):
                 "Install it with: pip install memorygraphsdk[llamaindex]"
             )
 
-        super().__init__(**kwargs)
-        # Use object.__setattr__ to bypass Pydantic's frozen model checks
-        object.__setattr__(self, "client", MemoryGraphClient(api_key=api_key, api_url=api_url))
-        object.__setattr__(self, "session_id", session_id)
+        # Create client first, then pass to super().__init__()
+        client = MemoryGraphClient(api_key=api_key, api_url=api_url)
+        super().__init__(client=client, session_id=session_id, **kwargs)
 
     def get(self, input: str | None = None, **kwargs: Any) -> list[ChatMessage]:
         """
