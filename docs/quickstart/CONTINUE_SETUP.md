@@ -8,7 +8,24 @@ Get persistent memory working with Continue in VS Code or JetBrains IDEs.
 - Python 3.10+
 - pipx installed (`pip install --user pipx && pipx ensurepath`)
 
-## Quick Start
+## Choose Your Backend
+
+MemoryGraph supports two backend options:
+
+| Feature | Local (SQLite) | Cloud |
+|---------|---------------|-------|
+| **Setup** | Zero-config | API key required |
+| **Data Location** | `~/.memorygraph/` | memorygraph.dev |
+| **Multi-device** | No | Yes |
+| **Team sharing** | No | Yes |
+| **Offline** | Yes | No |
+| **Cost** | Free | Free tier available |
+
+**New users**: We recommend starting with **Cloud** for multi-device sync, or **Local** for single-machine use.
+
+---
+
+## Quick Start (Local Backend)
 
 ### 1. Install MemoryGraph
 
@@ -102,6 +119,103 @@ Retrieve it:
 ```
 What should I do before committing code?
 ```
+
+---
+
+## Quick Start (Cloud Backend)
+
+Cloud backend syncs memories across all your devices and enables team collaboration.
+
+### 1. Get Your API Key
+
+1. Sign up at [app.memorygraph.dev](https://app.memorygraph.dev)
+2. Copy your API key (starts with `mg_`)
+
+### 2. Install MemoryGraph
+
+```bash
+pipx install memorygraphMCP
+```
+
+### 3. Configure Continue with Cloud Backend
+
+**YAML Configuration** (recommended):
+
+```yaml
+mcpServers:
+  - name: memorygraph
+    command: memorygraph
+    args:
+      - "--backend"
+      - "cloud"
+    env:
+      MEMORYGRAPH_API_KEY: "mg_your_api_key_here"
+```
+
+**JSON Configuration**:
+
+```json
+{
+  "mcpServers": [
+    {
+      "name": "memorygraph",
+      "command": "memorygraph",
+      "args": ["--backend", "cloud"],
+      "env": {
+        "MEMORYGRAPH_API_KEY": "mg_your_api_key_here"
+      }
+    }
+  ]
+}
+```
+
+### 4. Restart Continue and Verify
+
+1. Reload your IDE or restart Continue
+2. Switch to **Agent** mode
+3. Ask: "What tools do you have for storing memories?"
+
+---
+
+## Migrating from Local to Cloud
+
+Already using local SQLite and want to switch to cloud?
+
+### Step 1: Export Local Memories
+
+```bash
+memorygraph export --output memories-backup.json
+```
+
+### Step 2: Import to Cloud
+
+```bash
+export MEMORYGRAPH_API_KEY=mg_your_key_here
+memorygraph import --backend cloud --input memories-backup.json
+```
+
+### Step 3: Update Continue Configuration
+
+Update your `.continue/config.yaml`:
+
+```yaml
+mcpServers:
+  - name: memorygraph
+    command: memorygraph
+    args:
+      - "--backend"
+      - "cloud"
+    env:
+      MEMORYGRAPH_API_KEY: "mg_your_api_key_here"
+```
+
+### Step 4: Restart Continue
+
+Reload your IDE to apply the new configuration.
+
+See [CLOUD_BACKEND.md](../CLOUD_BACKEND.md) for detailed migration options.
+
+---
 
 ## Configuration Options
 
