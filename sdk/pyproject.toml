@@ -1,6 +1,6 @@
 [project]
 name = "memorygraphsdk"
-version = "0.11.2"
+version = "0.11.7"
 description = "Python SDK for MemoryGraph - memory for AI agents"
 authors = [{name = "Gregory Dickson"}]
 license = "Apache-2.0"
