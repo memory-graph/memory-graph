@@ -57,6 +57,8 @@ class MemoryGraphChatMemory(BaseMemory):
         )
     """
 
+    model_config = {"arbitrary_types_allowed": True}
+
     client: MemoryGraphClient = Field(exclude=True)
     session_id: str = Field(default="default")
 
