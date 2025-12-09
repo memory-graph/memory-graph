@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced embedding support
 - Workflow automation templates
 
+## [0.11.11] - 2025-12-09
+
+### Fixed
+- **Cloud Backend `get_recent_activity`**: Fixed `'dict' object has no attribute 'title'` error
+  - Cloud backend now converts API response dicts to Memory objects using `_api_response_to_memory()`
+  - Returns proper empty response structure when no results
+- **Activity Tools**: Added defensive `_get_memory_attr()` helper function
+  - Handles both Memory objects and dict representations
+  - Properly extracts enum values (e.g., `type.value`)
+- **Migration Manager**: Added CloudMemoryDatabase support for cloud backend migrations
+- **CLI Migration**: Added MEMORYGRAPH_API_KEY environment variable support for cloud backend target
+
 ## [0.11.10] - 2025-12-09
 
 ### Changed

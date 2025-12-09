@@ -7,6 +7,7 @@ chat memory and retrieval systems.
 This integration requires llama-index to be installed:
     pip install memorygraphsdk[llamaindex]
 """
+
 from typing import Any
 
 try:
@@ -25,6 +26,7 @@ except ImportError:
     def Field(**kwargs: Any) -> Any:  # type: ignore  # noqa: N802
         """Stub for pydantic Field when llama-index not installed."""
         return None
+
 
 from ..client import MemoryGraphClient
 from ..exceptions import MemoryGraphError, NotFoundError
@@ -184,6 +186,36 @@ class MemoryGraphChatMemory(BaseMemory):
     def class_name(cls) -> str:
         """Return class name for serialization."""
         return "MemoryGraphChatMemory"
+
+    @classmethod
+    def from_defaults(
+        cls,
+        api_key: str | None = None,
+        session_id: str = "default",
+        api_url: str = "https://api.memorygraph.dev",
+        **kwargs: Any,
+    ) -> "MemoryGraphChatMemory":
+        """
+        Create a MemoryGraphChatMemory instance with default settings.
+
+        This is the recommended way to create a memory instance.
+
+        Args:
+            api_key: MemoryGraph API key. If not provided, will look for
+                MEMORYGRAPH_API_KEY environment variable.
+            session_id: Session identifier for this conversation
+            api_url: API URL (default: https://api.memorygraph.dev)
+            **kwargs: Additional arguments passed to the constructor
+
+        Returns:
+            A new MemoryGraphChatMemory instance
+        """
+        return cls(
+            api_key=api_key,
+            session_id=session_id,
+            api_url=api_url,
+            **kwargs,
+        )
 
 
 class MemoryGraphRetriever:

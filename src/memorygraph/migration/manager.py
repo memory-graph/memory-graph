@@ -342,13 +342,17 @@ class MigrationManager:
         """
         from ..backends.sqlite_fallback import SQLiteFallbackBackend
         from ..backends.falkordblite_backend import FalkorDBLiteBackend
+        from ..backends.cloud_backend import CloudBackend
         from ..sqlite_database import SQLiteMemoryDatabase
+        from ..cloud_database import CloudMemoryDatabase
 
         backend = await self._create_backend(config)
 
-        # Use SQLiteMemoryDatabase for SQLite-based backends
+        # Use appropriate database wrapper for each backend type
         if isinstance(backend, (SQLiteFallbackBackend, FalkorDBLiteBackend)):
             db = SQLiteMemoryDatabase(backend)
+        elif isinstance(backend, CloudBackend):
+            db = CloudMemoryDatabase(backend)
         else:
             db = MemoryDatabase(backend)
 

@@ -138,10 +138,20 @@ async def handle_migrate(args: argparse.Namespace) -> None:
             source_config = BackendConfig.from_env()
 
         # Build target config
+        # For cloud backend, read API key from environment
+        target_password = None
+        if args.target_backend == "cloud":
+            import os
+            target_password = os.environ.get("MEMORYGRAPH_API_KEY")
+            if not target_password:
+                print("❌ MEMORYGRAPH_API_KEY environment variable is required for cloud backend")
+                sys.exit(1)
+
         target_config = BackendConfig(
             backend_type=BackendType(args.target_backend),
             path=args.to_path,
-            uri=args.to_uri
+            uri=args.to_uri,
+            password=target_password
         )
 
         # Build options

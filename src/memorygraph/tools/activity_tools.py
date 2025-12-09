@@ -172,7 +172,7 @@ async def handle_get_recent_activity(
         result_text += "**💡 Next Steps**:\n"
         if activity['unresolved_problems']:
             result_text += "- Review unresolved problems and consider solutions\n"
-            result_text += f"- Use `get_memory(memory_id=\"...\")` for details\n"
+            result_text += "- Use `get_memory(memory_id=\"...\")` for details\n"
         else:
             result_text += "- All problems have been addressed!\n"
 
