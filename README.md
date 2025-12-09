@@ -10,8 +10,9 @@
 
 <p align="center">
   <a href="https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml"><img src="https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
-  <a href="https://pypi.org/project/memorygraphMCP/"><img src="https://img.shields.io/pypi/v/memorygraphMCP" alt="PyPI"></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python"></a>
+  <a href="https://pypi.org/project/memorygraphMCP/"><img src="https://img.shields.io/pypi/v/memorygraphMCP" alt="PyPI MCP"></a>
+  <a href="https://pypi.org/project/memorygraphsdk/"><img src="https://img.shields.io/pypi/v/memorygraphsdk" alt="PyPI SDK"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="Python"></a>
   <a href="docs/CONFIGURATION.md"><img src="https://img.shields.io/badge/setup-zero--config-green" alt="Zero Config"></a>
   <a href="docs/CONFIGURATION.md"><img src="https://img.shields.io/badge/backends-8%20options-purple" alt="8 Backends"></a>
 </p>
@@ -712,6 +713,39 @@ pytest tests/ -v --cov=memorygraph
 
 ---
 
+## What's New in v0.11.0
+
+### Python SDK for Agent Frameworks
+
+**NEW:** `memorygraphsdk` - Native integrations for popular AI frameworks!
+
+```bash
+pip install memorygraphsdk[all]  # All integrations
+```
+
+| Framework | Integration | Description |
+|-----------|-------------|-------------|
+| **LlamaIndex** | `MemoryGraphChatMemory`, `MemoryGraphRetriever` | Chat memory + RAG retrieval |
+| **LangChain** | `MemoryGraphMemory` | BaseMemory with session support |
+| **CrewAI** | `MemoryGraphCrewMemory` | Multi-agent persistent memory |
+| **AutoGen** | `MemoryGraphAutoGenHistory` | Conversation history |
+
+```python
+from memorygraphsdk import MemoryGraphClient
+
+client = MemoryGraphClient(api_key="mg_...")
+memory = client.create_memory(
+    type="solution",
+    title="Fixed Redis timeout",
+    content="Used exponential backoff",
+    tags=["redis", "fix"]
+)
+```
+
+See [SDK Documentation](sdk/README.md) for full integration guides.
+
+---
+
 ## What's New in v0.10.0
 
 ### Context Budget Optimization (60-70% token savings)
@@ -811,23 +845,21 @@ memorygraph import --format json --input backup.json --skip-duplicates
 
 ## Roadmap
 
-
-### Current (v0.10.0)
+### Current (v0.11.0) ✅
+- **Python SDK** - `memorygraphsdk` with LlamaIndex, LangChain, CrewAI, AutoGen integrations
+- **Cloud Backend** - Multi-device sync via memorygraph.dev
 - **Bi-temporal tracking** - Track knowledge evolution over time
 - **Semantic navigation** - LLM-powered contextual search
 - 8 backend options (SQLite, Neo4j, Memgraph, FalkorDB, FalkorDBLite, LadybugDB, Turso, Cloud)
-- Backend-to-backend migration with `memorygraph migrate`
-- Universal export/import (all backends)
-- Circuit breaker for cloud resilience
-- 1,068 tests passing
-- PyPI + Docker
+- 1,200+ tests passing
+- Two PyPI packages: `memorygraphMCP` + `memorygraphsdk`
 
 ### Planned (v1.0+)
-- SDK integrations (LangChain, CrewAI, AutoGen)
-- MemoryGraph Cloud at memorygraph.dev (already deployed)
 - Real-time team sync
+- Multi-tenancy features
+- Enhanced SDK documentation
 
-See [PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md) for details.
+See [PRODUCT_ROADMAP.md](docs/planning/PRODUCT_ROADMAP.md) for details.
 
 ---
 

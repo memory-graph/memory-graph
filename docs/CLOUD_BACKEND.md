@@ -231,5 +231,5 @@ MemoryGraph API keys always start with `mg_`. Ensure you're using the correct ke
 ## Support
 
 - Documentation: [https://memorygraph.dev/docs](https://memorygraph.dev/docs)
-- Issues: [https://github.com/gregorydickson/memorygraph/issues](https://github.com/gregorydickson/memorygraph/issues)
+- Issues: [https://github.com/gregorydickson/memory-graph/issues](https://github.com/gregorydickson/memory-graph/issues)
 - Email: support@memorygraph.dev
