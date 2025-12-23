@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced embedding support
 - Workflow automation templates
 
-## [0.11.14] - 2025-12-23
+## [0.12.0] - 2025-12-23
 
 ### Added
 - **MemoryOperations Protocol** (`src/memorygraph/protocols.py`): Type-safe interface defining common operations all backends must support
