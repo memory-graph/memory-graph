@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "memorygraphMCP"
-version = "0.11.12"
+version = "0.11.13"
 description = "Graph-based MCP memory server for AI coding agents with intelligent relationship tracking and multi-backend support"
 authors = [
     {name = "Gregory Dickson", email = "gregory.d.dickson@gmail.com"}

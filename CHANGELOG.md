@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced embedding support
 - Workflow automation templates
 
+## [0.11.13] - 2025-12-23
+
+### Changed
+- **Tool Descriptions Optimized for Retrieval**: Updated MCP tool descriptions to guide LLMs on when to use `recall_memories` vs `search_memories`
+  - `recall_memories`: Added "BEST FOR" (conceptual queries, fuzzy matching) and "LESS EFFECTIVE FOR" (acronyms, proper nouns) sections
+  - `search_memories`: Changed guidance to "USE THIS TOOL FIRST (not recall) when searching for: Acronyms, Proper nouns, Known tags, Technical terms"
+  - `store_memory`: Added "TAGGING BEST PRACTICE" section encouraging acronyms as tags for reliable retrieval
+  - Fixes issue where `recall_memories` underperformed for acronyms (DCAD, JWT, API) while `search_memories` with tags filter found results reliably
+
+## [0.11.12] - 2025-12-12
+
+### Changed
+- **Token Optimization**: Further optimizations for context efficiency
+- **Test Coverage**: Comprehensive test coverage improvements
+
 ## [0.11.11] - 2025-12-09
 
 ### Fixed

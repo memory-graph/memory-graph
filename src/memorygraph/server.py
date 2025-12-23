@@ -109,14 +109,23 @@ class ClaudeMemoryServer:
                 description="""Primary tool for finding past memories using natural language queries.
 
 Optimized for fuzzy matching - handles plurals, tenses, and case variations automatically.
-Prefer this over search_memories for most queries.
+
+BEST FOR:
+- Conceptual queries ("how does X work")
+- General exploration ("what do we know about authentication")
+- Fuzzy/approximate matching
+
+LESS EFFECTIVE FOR:
+- Acronyms (DCAD, JWT, API) - use search_memories with tags instead
+- Proper nouns (company names, services)
+- Exact technical terms
 
 EXAMPLES:
 - recall_memories(query="timeout fix") - find timeout-related solutions
-- recall_memories(query="Redis", memory_types=["solution"]) - Redis solutions only
+- recall_memories(query="how does auth work") - conceptual query
 - recall_memories(project_path="/app") - memories from specific project
 
-For exact matching or boolean queries, use search_memories instead.""",
+FALLBACK: If recall returns no relevant results, try search_memories with tags filter.""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -156,11 +165,16 @@ For exact matching or boolean queries, use search_memories instead.""",
 
 Required: type, title, content. Optional: tags, importance (0-1), context.
 
+TAGGING BEST PRACTICE:
+- Always include acronyms AS TAGS (e.g., tags=["jwt", "auth"])
+- Fuzzy search struggles with acronyms in content
+- Tags provide exact match fallback for reliable retrieval
+
 Types: solution, problem, error, fix, pattern, decision, task, code_pattern, technology, command, workflow, general
 
 EXAMPLES:
 - store_memory(type="solution", title="Fixed Redis timeout", content="Increased timeout to 30s...", tags=["redis"], importance=0.8)
-- store_memory(type="error", title="OAuth2 auth failure", content="Error details...", tags=["auth"])
+- store_memory(type="error", title="OAuth2 auth failure", content="Error details...", tags=["auth", "oauth2"])
 
 Returns memory_id. Use create_relationship to link related memories.""",
                 inputSchema={
@@ -227,16 +241,28 @@ EXAMPLE: get_memory(memory_id="abc-123")""",
             ),
             Tool(
                 name="search_memories",
-                description="""Advanced search with fine-grained filters. Use recall_memories first for simple queries.
+                description="""Advanced search with fine-grained filters for precise retrieval.
 
-Use this when you need: exact matching (search_tolerance="strict"), tag filtering, importance thresholds, or multi-term boolean queries.
+USE THIS TOOL FIRST (not recall) when searching for:
+- Acronyms: DCAD, JWT, MCR2, API, etc.
+- Proper nouns: Company names, service names, project names
+- Known tags: When you know the tag from previous memories
+- Technical terms: Exact matches needed
 
-Params: query, memory_types, tags, min_importance, search_tolerance (strict/normal/fuzzy), match_mode (any/all)
+PARAMETERS:
+- tags: Filter by exact tag match (most reliable for acronyms)
+- memory_types: Filter by type (solution, problem, etc.)
+- min_importance: Filter by importance threshold
+- search_tolerance: strict/normal/fuzzy
+- match_mode: any/all for multiple terms
 
 EXAMPLES:
+- search_memories(tags=["jwt", "auth"]) - find JWT-related memories
+- search_memories(tags=["dcad"]) - find DCAD memories by tag
 - search_memories(query="timeout", memory_types=["solution"]) - timeout solutions
 - search_memories(tags=["redis"], min_importance=0.7) - important Redis memories
-- search_memories(query="auth", search_tolerance="strict") - exact match only""",
+
+For conceptual/natural language queries, use recall_memories instead.""",
                 inputSchema={
                     "type": "object",
                     "properties": {
