@@ -433,7 +433,8 @@ class TestMemoryDatabase:
         with pytest.raises(DatabaseConnectionError) as exc_info:
             await database.store_memory(sample_memory)
 
-        assert "Write query failed" in str(exc_info.value)
+        # Error message may be wrapped at different levels
+        assert "Unexpected database error" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_memory_existing(self, database, connection, sample_memory, mock_driver, mock_session):

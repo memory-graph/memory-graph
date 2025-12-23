@@ -5,15 +5,30 @@ These tests verify that the backend factory correctly selects and initializes
 the appropriate backend based on configuration and availability.
 """
 
+import importlib.util
 import pytest
 import os
 from unittest.mock import AsyncMock, patch
 
 from src.memorygraph.backends.factory import BackendFactory
-from src.memorygraph.backends.neo4j_backend import Neo4jBackend
-from src.memorygraph.backends.memgraph_backend import MemgraphBackend
 from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 from src.memorygraph.models import DatabaseConnectionError
+
+# Check if neo4j is available before importing backends
+neo4j_available = importlib.util.find_spec("neo4j") is not None
+
+if neo4j_available:
+    from src.memorygraph.backends.neo4j_backend import Neo4jBackend
+    from src.memorygraph.backends.memgraph_backend import MemgraphBackend
+else:
+    Neo4jBackend = None
+    MemgraphBackend = None
+
+# Skip entire module if neo4j not available
+pytestmark = pytest.mark.skipif(
+    not neo4j_available,
+    reason="neo4j package not installed"
+)
 
 
 class TestBackendFactoryExplicitSelection:

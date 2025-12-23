@@ -4,13 +4,28 @@ Additional tests for Memgraph backend to improve test coverage to >70%.
 This test file adds missing edge cases and code paths not covered by existing tests.
 """
 
+import importlib.util
 import pytest
 import os
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from neo4j.exceptions import Neo4jError
 
-from src.memorygraph.backends.memgraph_backend import MemgraphBackend
+# Check if neo4j is available before importing
+neo4j_available = importlib.util.find_spec("neo4j") is not None
+
+if neo4j_available:
+    from neo4j.exceptions import Neo4jError
+    from src.memorygraph.backends.memgraph_backend import MemgraphBackend
+else:
+    Neo4jError = None
+    MemgraphBackend = None
+
 from src.memorygraph.models import DatabaseConnectionError
+
+# Skip entire module if neo4j not available
+pytestmark = pytest.mark.skipif(
+    not neo4j_available,
+    reason="neo4j package not installed"
+)
 
 
 class TestMemgraphBackendAdditionalCoverage:

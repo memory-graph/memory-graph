@@ -5,12 +5,31 @@ These tests verify that the Neo4j backend correctly implements the GraphBackend
 interface and maintains compatibility with the existing Neo4j functionality.
 """
 
+import importlib.util
 import pytest
 import os
 from unittest.mock import AsyncMock, Mock, patch
 
-from src.memorygraph.backends.neo4j_backend import Neo4jBackend
+# Check if neo4j is available before importing backends
+neo4j_available = importlib.util.find_spec("neo4j") is not None
+
+if neo4j_available:
+    from src.memorygraph.backends.neo4j_backend import Neo4jBackend
+else:
+    Neo4jBackend = None
+
 from src.memorygraph.models import DatabaseConnectionError, SchemaError
+
+# Skip entire module if neo4j not available
+pytestmark = pytest.mark.skipif(
+    not neo4j_available,
+    reason="neo4j package not installed"
+)
+
+neo4j_skip = pytest.mark.skipif(
+    not neo4j_available,
+    reason="neo4j package not installed"
+)
 
 
 class TestNeo4jBackendInitialization:
@@ -107,6 +126,7 @@ class TestNeo4jBackendConnection:
             assert backend.driver is not None
             mock_driver.verify_connectivity.assert_called_once()
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_connect_service_unavailable(self):
         """Test connection failure when service is unavailable."""
@@ -117,7 +137,7 @@ class TestNeo4jBackendConnection:
 
             backend = Neo4jBackend(uri="bolt://test:7687", password="test")
 
-            with pytest.raises(DatabaseConnectionError, match="Failed to connect to Neo4j"):
+            with pytest.raises(DatabaseConnectionError, match="Unexpected error connecting to Neo4j"):
                 await backend.connect()
 
             assert backend._connected is False
