@@ -19,6 +19,7 @@ class BackendType(Enum):
     CLOUD = "cloud"
     FALKORDB = "falkordb"
     FALKORDBLITE = "falkordblite"
+    LADYBUGDB = "ladybugdb"
     AUTO = "auto"
 
 
@@ -65,7 +66,7 @@ class Config:
     Configuration class for the memory server.
 
     Environment Variables:
-        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|turso|cloud|falkordb|falkordblite|auto) [default: sqlite]
+        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|turso|cloud|falkordb|falkordblite|ladybugdb|auto) [default: sqlite]
 
         Neo4j Configuration:
             MEMORY_NEO4J_URI or NEO4J_URI: Connection URI [default: bolt://localhost:7687]
