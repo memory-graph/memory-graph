@@ -159,7 +159,7 @@ class TestLadybugDBConnection:
         # Should use default path
         mock_Database_class.assert_called_once()
         call_args = mock_Database_class.call_args[0]
-        assert call_args[0].endswith(".memorygraph/ladybugdb.db")
+        assert call_args[0].endswith(".memorygraph/memory.lbdb")
 
     @pytest.mark.asyncio
     @patch("memorygraph.backends.ladybugdb_backend.lb")
@@ -351,4 +351,4 @@ class TestLadybugDBBackendInitialization:
 
         # Should have set a default path
         assert backend.db_path is not None
-        assert ".memorygraph/ladybugdb.db" in backend.db_path
+        assert ".memorygraph/memory.lbdb" in backend.db_path

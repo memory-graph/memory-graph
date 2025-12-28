@@ -375,6 +375,10 @@ def print_config_summary() -> None:
         print(f"\n  FalkorDBLite: Embedded database")
         print(f"  Note: Configuration via MEMORY_FALKORDBLITE_PATH environment variable")
 
+    if config['backend'] in ['ladybugdb', 'auto']:
+        print(f"\n  LadybugDB: Embedded database")
+        print(f"  Note: Configuration via MEMORY_LADYBUGDB_PATH environment variable")
+
     print()
 
 
@@ -450,7 +454,7 @@ Environment Variables:
     MEMORY_FALKORDBLITE_PATH  Database path [default: ~/.memorygraph/falkordblite.db]
 
   LadybugDB Configuration:
-    MEMORY_LADYBUGDB_PATH  Database path [default: ~/.memorygraph/ladybugdb.db]
+    MEMORY_LADYBUGDB_PATH  Database path [default: ~/.memorygraph/memory.lbdb]
 
   Turso Configuration:
     MEMORY_TURSO_URL       Turso database URL (required for turso backend)

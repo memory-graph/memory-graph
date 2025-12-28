@@ -250,7 +250,7 @@ class BackendFactory:
         # Lazy import - only load ladybugdb backend when needed
         from .ladybugdb_backend import LadybugDBBackend
 
-        db_path = os.getenv("MEMORY_LADYBUGDB_PATH") or os.getenv("LADYBUGDB_PATH")
+        db_path = os.getenv("MEMORY_LADYBUGDB_PATH")
 
         backend = LadybugDBBackend(db_path=db_path)
         await backend.connect()

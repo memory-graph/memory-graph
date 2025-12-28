@@ -48,7 +48,7 @@ class LadybugDBBackend(GraphBackend):
         Initialize LadybugDB backend.
 
         Args:
-            db_path: Path to database file (defaults to LADYBUGDB_PATH env var or ~/.memorygraph/ladybugdb.db)
+            db_path: Path to database file (defaults to MEMORY_LADYBUGDB_PATH env var or ~/.memorygraph/memory.lbdb)
             graph_name: Name of the graph database (defaults to 'memorygraph')
 
         Raises:
@@ -60,13 +60,13 @@ class LadybugDBBackend(GraphBackend):
                 "Install it with: pip install real-ladybug"
             )
         if db_path is None:
-            db_path = os.getenv("LADYBUGDB_PATH")
+            db_path = os.getenv("MEMORY_LADYBUGDB_PATH")
             if db_path is None:
-                # Default to ~/.memorygraph/ladybugdb.db
+                # Default to ~/.memorygraph/memory.lbdb
                 home = Path.home()
                 db_dir = home / ".memorygraph"
                 db_dir.mkdir(parents=True, exist_ok=True)
-                db_path = str(db_dir / "ladybugdb.db")
+                db_path = str(db_dir / "memory.lbdb")
 
         self.db_path = db_path
         self.graph_name = graph_name
@@ -90,6 +90,7 @@ class LadybugDBBackend(GraphBackend):
 
             # Create connection for executing queries
             self.graph = lb.Connection(self.client)
+
             self._connected = True
 
             logger.info(f"Successfully connected to LadybugDB at {self.db_path}")

@@ -133,6 +133,9 @@ class Config:
     TURSO_DATABASE_URL: Optional[str] = os.getenv("TURSO_DATABASE_URL")
     TURSO_AUTH_TOKEN: Optional[str] = os.getenv("TURSO_AUTH_TOKEN")
 
+    # LadybugDB Configuration
+    MEMORY_LADYBUGDB_PATH: str = os.getenv("MEMORY_LADYBUGDB_PATH", os.path.expanduser("~/.memorygraph/memory.lbdb"))
+
     # Cloud Configuration
     MEMORYGRAPH_API_KEY: Optional[str] = os.getenv("MEMORYGRAPH_API_KEY")
     MEMORYGRAPH_API_URL: str = os.getenv("MEMORYGRAPH_API_URL", "https://graph-api.memorygraph.dev")
@@ -256,6 +259,9 @@ class Config:
                 "path": cls.TURSO_PATH,
                 "database_url": cls.TURSO_DATABASE_URL,
                 "auth_token_configured": bool(cls.TURSO_AUTH_TOKEN)
+            },
+            "ladybugdb": {
+                "path": cls.MEMORY_LADYBUGDB_PATH
             },
             "cloud": {
                 "api_url": cls.MEMORYGRAPH_API_URL,
