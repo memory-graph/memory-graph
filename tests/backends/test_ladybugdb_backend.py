@@ -210,7 +210,8 @@ class TestLadybugDBQueryExecution:
         result = await backend.execute_query("MATCH (n) RETURN n", write=False)
 
         assert result == mock_result_data
-        mock_connection.execute.assert_called_once_with("MATCH (n) RETURN n")
+        # Check that the query was called with None parameters (default)
+        mock_connection.execute.assert_called_with("MATCH (n) RETURN n", None)
 
     @pytest.mark.asyncio
     @patch("memorygraph.backends.ladybugdb_backend.lb")
@@ -231,7 +232,7 @@ class TestLadybugDBQueryExecution:
         backend = LadybugDBBackend(db_path="/tmp/test.db")
         await backend.connect()
 
-        # LadybugDB doesn't support parameters, so they are ignored
+        # Parameters are now passed to LadybugDB's execute method
         params = {"name": "test_node"}
         result = await backend.execute_query(
             "MATCH (n {name: 'test_node'}) RETURN count(n) as count",
@@ -240,9 +241,46 @@ class TestLadybugDBQueryExecution:
         )
 
         assert result == mock_result_data
-        mock_connection.execute.assert_called_once_with(
-            "MATCH (n {name: 'test_node'}) RETURN count(n) as count"
+        # Verify parameters are passed to execute
+        mock_connection.execute.assert_called_with(
+            "MATCH (n {name: 'test_node'}) RETURN count(n) as count",
+            params
         )
+
+    @pytest.mark.asyncio
+    @patch("memorygraph.backends.ladybugdb_backend.lb")
+    async def test_execute_query_passes_parameters_to_ladybugdb(self, mock_lb):
+        """Test that execute_query correctly passes parameters to LadybugDB connection."""
+        mock_result_data = [{"id": 1, "title": "Test Memory", "content": "I like icecream"}]
+        (
+            mock_client,
+            mock_connection,
+            mock_Database,
+            mock_Database_class,
+            mock_Connection_class,
+        ) = setup_mock_ladybug(mock_result_data)
+
+        mock_lb.Database = mock_Database_class
+        mock_lb.Connection = mock_Connection_class
+
+        backend = LadybugDBBackend(db_path="/tmp/test.db")
+        await backend.connect()
+
+        query = """
+        MATCH (m:Memory)
+        WHERE m.content CONTAINS $search_term
+        RETURN m
+        ORDER BY m.importance DESC
+        LIMIT $limit
+        """
+        params = {"search_term": "icecream", "limit": 10}
+        result = await backend.execute_query(query, params, write=False)
+
+        assert result == mock_result_data
+
+        # CRITICAL: Verify that execute is called WITH parameters
+        # This tests the fix for the bug where parameters were not being passed
+        mock_connection.execute.assert_called_with(query, params)
 
     @pytest.mark.asyncio
     @patch("memorygraph.backends.ladybugdb_backend.lb")
@@ -268,8 +306,9 @@ class TestLadybugDBQueryExecution:
         )
 
         assert result == mock_result_data
-        mock_connection.execute.assert_called_once_with(
-            "CREATE (n:Node {name: 'test'})"
+        # Check that query was called with None parameters (default)
+        mock_connection.execute.assert_called_with(
+            "CREATE (n:Node {name: 'test'})", None
         )
 
     @pytest.mark.asyncio

@@ -250,7 +250,7 @@ class TestLadybugDBIntegration:
         await backend2.connect()
 
         try:
-            # Should see the node from the other connection
+            # Should see node from other connection
             result2 = await backend2.execute_query(
                 f"MATCH (n:{table_name} {{id: 1}}) RETURN count(n) as count"
             )
@@ -259,6 +259,162 @@ class TestLadybugDBIntegration:
             assert row2[0] == 1  # count should be 1
         finally:
             await backend2.disconnect()
+
+    @pytest.mark.asyncio
+    async def test_store_and_retrieve_memory_with_parameters(self, backend):
+        """Test storing a Memory node and retrieving it with parameterized queries."""
+        # Initialize the standard Memory schema
+        await backend.initialize_schema()
+
+        # Create a memory with all required fields
+        memory_id = str(uuid.uuid4())
+        title = "User Preference"
+        content = "I like icecream"
+        memory_type = "general"
+        importance = 0.9
+        confidence = 1.0
+        created_at = datetime.now().isoformat()
+        updated_at = datetime.now().isoformat()
+
+        # Store the memory
+        create_query = f"""
+        CREATE (m:Memory {{
+            id: '{memory_id}',
+            type: '{memory_type}',
+            title: '{title}',
+            content: '{content}',
+            importance: {importance},
+            confidence: {confidence},
+            created_at: '{created_at}',
+            updated_at: '{updated_at}',
+            summary: '',
+            tags: '[]',
+            context_project_path: '',
+            context_file_path: '',
+            context_line_start: -1,
+            context_line_end: -1,
+            context_commit_hash: '',
+            context_branch: '',
+            metadata: '{{}}'
+        }})
+        RETURN m
+        """
+
+        result = await backend.execute_query(create_query, write=True)
+        assert len(result) == 1
+        assert len(result[0]) == 1  # Should return the created memory
+
+        # Retrieve the memory using parameterized query
+        # This tests the critical fix: parameters must be passed to LadybugDB's execute
+        query = """
+        MATCH (m:Memory)
+        WHERE m.content CONTAINS $search_term AND m.importance >= $min_importance
+        RETURN m.title, m.content, m.importance
+        ORDER BY m.importance DESC
+        LIMIT $limit
+        """
+
+        params = {
+            "search_term": "icecream",
+            "min_importance": 0.5,
+            "limit": 10
+        }
+
+        result = await backend.execute_query(query, params)
+
+        # Verify we found the memory
+        assert len(result) == 1, f"Expected 1 result, got {len(result)}"
+        row = result[0]
+
+        # LadybugDB returns a list of values (one per RETURN field)
+        # We RETURN m.title, m.content, m.importance
+        assert len(row) == 3
+        assert row[0] == title
+        assert row[1] == content
+        assert row[2] == importance
+
+    @pytest.mark.asyncio
+    async def test_store_multiple_memories_and_search_with_parameters(self, backend):
+        """Test storing multiple memories and searching with various parameter combinations."""
+        await backend.initialize_schema()
+
+        # Create multiple memories
+        memories = [
+            ("User likes icecream", "general", 0.9),
+            ("Prefers chocolate icecream", "preference", 0.7),
+            ("Likes vanilla too", "preference", 0.5),
+            ("Not a preference", "general", 0.3),
+        ]
+
+        for i, (content, mtype, importance) in enumerate(memories):
+            memory_id = str(uuid.uuid4())
+            create_query = f"""
+            CREATE (m:Memory {{
+                id: '{memory_id}',
+                type: '{mtype}',
+                title: 'Memory {i}',
+                content: '{content}',
+                importance: {importance},
+                confidence: 1.0,
+                created_at: '{datetime.now().isoformat()}',
+                updated_at: '{datetime.now().isoformat()}',
+                summary: '',
+                tags: '[]',
+                context_project_path: '',
+                context_file_path: '',
+                context_line_start: -1,
+                context_line_end: -1,
+                context_commit_hash: '',
+                context_branch: '',
+                metadata: '{{}}'
+            }})
+            """
+            await backend.execute_query(create_query, write=True)
+
+        # Test 1: Search with CONTAINS parameter
+        query1 = """
+        MATCH (m:Memory)
+        WHERE m.content CONTAINS $search_term
+        RETURN m.content, m.importance
+        ORDER BY m.importance DESC
+        """
+        result1 = await backend.execute_query(query1, {"search_term": "icecream"})
+        assert len(result1) == 2
+        assert "icecream" in result1[0][0]
+
+        # Test 2: Filter by importance
+        query2 = """
+        MATCH (m:Memory)
+        WHERE m.importance >= $min_importance
+        RETURN m.content, m.importance
+        ORDER BY m.importance DESC
+        """
+        result2 = await backend.execute_query(query2, {"min_importance": 0.6})
+        assert len(result2) == 2
+        for row in result2:
+            assert row[1] >= 0.6
+
+        # Test 3: Multiple parameters
+        query3 = """
+        MATCH (m:Memory)
+        WHERE m.type = $memory_type AND m.importance >= $min_importance
+        RETURN m.content, m.type, m.importance
+        ORDER BY m.importance DESC
+        LIMIT $limit
+        """
+        result3 = await backend.execute_query(
+            query3,
+            {
+                "memory_type": "preference",
+                "min_importance": 0.5,
+                "limit": 10
+            }
+        )
+        # Both preference memories match (0.7 and 0.5)
+        assert len(result3) == 2
+        for row in result3:
+            assert row[1] == "preference"
+            assert row[2] >= 0.5
 
 
 # Import here to avoid import errors when real_ladybug is not available

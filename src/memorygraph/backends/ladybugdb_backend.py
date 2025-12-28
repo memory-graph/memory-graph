@@ -150,16 +150,25 @@ class LadybugDBBackend(GraphBackend):
             raise DatabaseConnectionError("Not connected to LadybugDB")
 
         try:
-            # Execute query using LadybugDB's connection
-            result = self.graph.execute(query)
+            # Execute query using LadybugDB's connection with parameters
+            result = self.graph.execute(query, parameters)
 
             # Convert result to list of dictionaries
-            # LadybugDB returns QueryResult with has_next()/get_next() methods
+            # LadybugDB returns either QueryResult or list[QueryResult]
+            # QueryResult has has_next()/get_next() methods
             # get_next() returns the row data as a dictionary
             rows = []
-            while result.has_next():
-                row_data = result.get_next()
-                rows.append(row_data)
+            if isinstance(result, list):
+                # Handle multiple result sets (e.g., from multiple queries)
+                for single_result in result:
+                    while single_result.has_next():
+                        row_data = single_result.get_next()
+                        rows.append(row_data)
+            else:
+                # Handle single result set
+                while result.has_next():
+                    row_data = result.get_next()
+                    rows.append(row_data)
 
             return rows
 
