@@ -375,6 +375,10 @@ def print_config_summary() -> None:
         print(f"\n  FalkorDBLite: Embedded database")
         print(f"  Note: Configuration via MEMORY_FALKORDBLITE_PATH environment variable")
 
+    if config['backend'] in ['ladybugdb', 'auto']:
+        print(f"\n  LadybugDB: Embedded database")
+        print(f"  Note: Configuration via MEMORY_LADYBUGDB_PATH environment variable")
+
     print()
 
 
@@ -418,6 +422,9 @@ Examples:
   # Use Neo4j backend with extended profile
   memorygraph --backend neo4j --profile extended
 
+  # Use LadybugDB backend
+  memorygraph --backend ladybugdb
+
   # Show current configuration
   memorygraph --show-config
 
@@ -425,7 +432,7 @@ Examples:
   memorygraph --health
 
 Environment Variables:
-  MEMORY_BACKEND         Backend type (sqlite|neo4j|memgraph|falkordb|falkordblite|turso|cloud|auto) [default: sqlite]
+  MEMORY_BACKEND         Backend type (sqlite|neo4j|memgraph|falkordb|falkordblite|ladybugdb|turso|cloud|auto) [default: sqlite]
   MEMORY_TOOL_PROFILE    Tool profile (core|extended) [default: core]
   MEMORY_SQLITE_PATH     SQLite database path [default: ~/.memorygraph/memory.db]
   MEMORY_LOG_LEVEL       Log level (DEBUG|INFO|WARNING|ERROR) [default: INFO]
@@ -445,6 +452,9 @@ Environment Variables:
 
   FalkorDBLite Configuration:
     MEMORY_FALKORDBLITE_PATH  Database path [default: ~/.memorygraph/falkordblite.db]
+
+  LadybugDB Configuration:
+    MEMORY_LADYBUGDB_PATH  Database path [default: ~/.memorygraph/memory.lbdb]
 
   Turso Configuration:
     MEMORY_TURSO_URL       Turso database URL (required for turso backend)
@@ -466,7 +476,7 @@ Environment Variables:
     parser.add_argument(
         "--backend",
         type=str,
-        choices=["sqlite", "neo4j", "memgraph", "falkordb", "falkordblite", "turso", "cloud", "auto"],
+        choices=["sqlite", "neo4j", "memgraph", "falkordb", "falkordblite", "ladybugdb", "turso", "cloud", "auto"],
         help="Database backend to use (overrides MEMORY_BACKEND env var)"
     )
 
@@ -652,13 +662,16 @@ Environment Variables:
     if args.backend:
         validate_backend(args.backend)
         os.environ["MEMORY_BACKEND"] = args.backend
+        Config.BACKEND = args.backend
 
     if args.profile:
         validate_profile(args.profile)
         os.environ["MEMORY_TOOL_PROFILE"] = args.profile
+        Config.TOOL_PROFILE = args.profile
 
     if args.log_level:
         os.environ["MEMORY_LOG_LEVEL"] = args.log_level
+        Config.LOG_LEVEL = args.log_level
 
     # Configure logging
     logging.basicConfig(

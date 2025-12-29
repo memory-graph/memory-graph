@@ -7,6 +7,7 @@ a high-level interface for interacting with the Neo4j graph database.
 
 import os
 import logging
+import json
 from typing import Dict, List, Optional, Any, Union, Tuple, TYPE_CHECKING
 from contextlib import asynccontextmanager
 import uuid
@@ -214,6 +215,8 @@ class Neo4jConnection:
 class MemoryDatabase:
     """High-level interface for memory database operations."""
 
+    LADYBUG = "ladybugdb"
+
     def __init__(self, connection):
         """
         Initialize with a database backend connection.
@@ -223,9 +226,195 @@ class MemoryDatabase:
                        Must provide execute_write_query and execute_read_query methods.
         """
         self.connection = connection
-    
+        self._backend = None
+        backend_name_attr = getattr(connection, "backend_name", lambda: "unknown")
+        if callable(backend_name_attr):
+            self._backend = backend_name_attr()
+        else:
+            self._backend = backend_name_attr
+
+    def _to_backend_id(self, memory_id: str):
+        """Convert string ID to backend-specific format.
+
+        Args:
+            memory_id: String ID to convert
+
+        Returns:
+            UUID object for LadybugDB, string for Neo4j
+        """
+        return uuid.UUID(memory_id) if self._backend == self.LADYBUG else memory_id
+
+    def _build_ladybug_memory_params(self, memory: Memory) -> dict:
+        """Build parameters dictionary for LadybugDB memory operations.
+
+        Args:
+            memory: Memory object to convert
+
+        Returns:
+            Dictionary of parameters with native Python types
+        """
+        params = {
+            "id": str(memory.id),  # Convert UUID to string for JSON compatibility
+            "type": memory.type.value,
+            "title": memory.title,
+            "content": memory.content,
+            "importance": memory.importance,
+            "confidence": memory.confidence,
+            "usage_count": memory.usage_count,
+            "created_at": memory.created_at,
+            "updated_at": memory.updated_at,
+            "version": memory.version,
+        }
+
+        # Add optional fields
+        if memory.summary:
+            params["summary"] = memory.summary
+        if memory.updated_by:
+            params["updated_by"] = memory.updated_by
+        if memory.effectiveness is not None:
+            params["effectiveness"] = memory.effectiveness
+        if memory.last_accessed:
+            params["last_accessed"] = memory.last_accessed
+
+        # Handle context fields
+        if memory.context:
+            context_data = memory.context.model_dump()
+            for key, value in context_data.items():
+                if value is not None:
+                    if isinstance(value, datetime):
+                        params[f"context_{key}"] = value
+                    elif isinstance(value, (list, dict)):
+                        params[f"context_{key}"] = json.dumps(value)
+                    else:
+                        params[f"context_{key}"] = value
+
+        # Add tags as JSON string for LadybugDB
+        params["tags"] = json.dumps(memory.tags)
+
+        return params
+
+    def _build_ladybug_memory_query(self, params: dict, operation: str = "MERGE") -> str:
+        """Build LadybugDB query for memory operations.
+
+        Args:
+            params: Parameter dictionary from _build_ladybug_memory_params
+            operation: Either 'MERGE' or 'MATCH' for the initial clause
+
+        Returns:
+            Complete Cypher query string
+        """
+        # Build SET clause (excluding id and tags which are handled separately)
+        set_fields = [k for k in params.keys() if k not in ("id", "tags")]
+        set_clauses = ", ".join([f"m.{k} = ${k}" for k in set_fields])
+
+        # Handle tags - convert list to JSON string representation
+        # LadybugDB's to_json() expects a string parameter, not a list
+        if set_clauses:
+            set_clauses += ", "
+        set_clauses += "m.tags = $tags"
+
+        return f"""
+        {operation} (m:Memory {{id: $id}})
+        SET {set_clauses}
+        RETURN m.id as id
+        """
+
+    def _node_to_memory(self, node_data: Dict[str, Any]) -> Optional[Memory]:
+        """Convert database node data to Memory object (backend-agnostic).
+
+        Args:
+            node_data: Node data from database query
+
+        Returns:
+            Memory object or None if conversion fails
+        """
+        if self._backend == self.LADYBUG:
+            return self._ladybug_to_memory(node_data)
+        else:
+            return self._neo4j_to_memory(node_data)
+
     async def initialize_schema(self) -> None:
         """Create database schema, constraints, and indexes.
+
+        Raises:
+            SchemaError: If schema creation fails
+        """
+        if self._backend == self.LADYBUG:
+            await self.initialize_ladybugdb_schema()
+        else:
+            await self.initialize_neo4j_schema()
+
+    async def initialize_ladybugdb_schema(self) -> None:
+        """Create LadybugDB schema, constraints, and indexes.
+
+        LadybugDB uses different Cypher syntax than Neo4j.
+        LadybugDB requires NODE TABLE before REL TABLE.
+
+        Raises:
+            SchemaError: If schema creation fails
+        """
+        logger.info("Initializing LadybugDB schema for Claude Memory...")
+
+        # LadybugDB cannot create unique constraints beyond primary key and not null
+        # Create NODE TABLE first, then REL TABLE
+
+        # Create Memory node table using LadybugDB syntax
+        create_memory_table = """
+        CREATE NODE TABLE IF NOT EXISTS Memory(
+            id UUID PRIMARY KEY,
+            type STRING,
+            title STRING,
+            content STRING,
+            summary STRING,
+            tags JSON,
+            importance DOUBLE,
+            confidence DOUBLE,
+            effectiveness DOUBLE,
+            usage_count INT,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            last_accessed TIMESTAMP,
+            version INT,
+            updated_by STRING,
+            context_project_path STRING,
+            context_line_start INT,
+            context_line_end INT,
+            context_commit_hash STRING,
+            context_branch STRING,
+            metadata STRING
+        )
+        """
+
+        # Create REL table for relationships using LadybugDB syntax
+        # This requires Memory node table to exist first
+        create_relationship_table = """
+        CREATE REL TABLE IF NOT EXISTS REL(
+            FROM Memory TO Memory,
+            id UUID,
+            type STRING,
+            properties STRING,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            metadata STRING
+        )
+        """
+
+        # LadybugDB doesn't support CREATE INDEX at all, so we skip indexes
+        # The primary keys will provide indexing automatically
+
+        # Extensions (JSON, FTS) are loaded during backend connection in ladybugdb_backend.py
+
+        # Execute schema creation
+        await self.connection.execute_write_query(create_memory_table)
+        logger.debug("Created Memory node table")
+
+        await self.connection.execute_write_query(create_relationship_table)
+        logger.debug("Created REL table for relationships")
+
+        logger.info("LadybugDB schema initialization completed")
+
+    async def initialize_neo4j_schema(self) -> None:
+        """Create Neo4j database schema, constraints, and indexes.
 
         Raises:
             SchemaError: If schema creation fails
@@ -266,8 +455,8 @@ class MemoryDatabase:
                 if "already exists" not in str(e).lower():
                     logger.warning(f"Failed to create index: {e}")
 
-        logger.info("Schema initialization completed")
-    
+        logger.info("Neo4j schema initialization completed")
+
     async def store_memory(self, memory: Memory) -> str:
         """Store a memory in the database and return its ID.
 
@@ -287,20 +476,21 @@ class MemoryDatabase:
 
             memory.updated_at = datetime.now(timezone.utc)
 
-            # Convert memory to Neo4j properties
-            memory_node = MemoryNode(memory=memory)
-            properties = memory_node.to_neo4j_properties()
+            if self._backend == self.LADYBUG:
+                params = self._build_ladybug_memory_params(memory)
+                query = self._build_ladybug_memory_query(params, "MERGE")
+            else:
+                # Neo4j code path - unchanged
+                memory_node = MemoryNode(memory=memory)
+                properties = memory_node.to_neo4j_properties()
+                query = """
+                MERGE (m:Memory {id: $id})
+                SET m += $properties
+                RETURN m.id as id
+                """
+                params = {"id": memory.id, "properties": properties}
 
-            query = """
-            MERGE (m:Memory {id: $id})
-            SET m += $properties
-            RETURN m.id as id
-            """
-
-            result = await self.connection.execute_write_query(
-                query,
-                {"id": memory.id, "properties": properties}
-            )
+            result = await self.connection.execute_write_query(query, params)
 
             if result:
                 logger.info(f"Stored memory: {memory.id} ({memory.type})")
@@ -313,7 +503,7 @@ class MemoryDatabase:
                 raise
             logger.error(f"Failed to store memory: {e}")
             raise DatabaseConnectionError(f"Failed to store memory: {e}")
-    
+
     async def get_memory(self, memory_id: str, include_relationships: bool = True) -> Optional[Memory]:
         """Retrieve a memory by ID.
 
@@ -333,20 +523,21 @@ class MemoryDatabase:
             RETURN m
             """
 
-            result = await self.connection.execute_read_query(query, {"memory_id": memory_id})
+            params = {"memory_id": self._to_backend_id(memory_id)}
+            result = await self.connection.execute_read_query(query, params)
 
             if not result:
                 return None
 
             memory_data = result[0]["m"]
-            return self._neo4j_to_memory(memory_data)
+            return self._node_to_memory(memory_data)
 
         except Exception as e:
             if isinstance(e, DatabaseConnectionError):
                 raise
             logger.error(f"Failed to get memory {memory_id}: {e}")
             raise DatabaseConnectionError(f"Failed to get memory: {e}")
-    
+
     async def search_memories(self, search_query: SearchQuery) -> List[Memory]:
         """Search for memories based on query parameters.
 
@@ -373,6 +564,7 @@ class MemoryDatabase:
                 parameters["memory_types"] = [t.value for t in search_query.memory_types]
 
             if search_query.tags:
+                # Both Neo4j/Memgraph and LadybugDB (with JSON extension) support list operations
                 conditions.append("ANY(tag IN $tags WHERE tag IN m.tags)")
                 parameters["tags"] = search_query.tags
 
@@ -413,7 +605,7 @@ class MemoryDatabase:
 
             memories = []
             for record in result:
-                memory = self._neo4j_to_memory(record["m"])
+                memory = self._node_to_memory(record["m"])
                 if memory:
                     memories.append(memory)
 
@@ -452,6 +644,7 @@ class MemoryDatabase:
                 parameters["memory_types"] = [t.value for t in search_query.memory_types]
 
             if search_query.tags:
+                # Both Neo4j/Memgraph and LadybugDB (with JSON extension) support list operations
                 conditions.append("ANY(tag IN $tags WHERE tag IN m.tags)")
                 parameters["tags"] = search_query.tags
 
@@ -504,7 +697,7 @@ class MemoryDatabase:
 
             memories = []
             for record in result:
-                memory = self._neo4j_to_memory(record["m"])
+                memory = self._node_to_memory(record["m"])
                 if memory:
                     memories.append(memory)
 
@@ -548,20 +741,21 @@ class MemoryDatabase:
 
             memory.updated_at = datetime.now(timezone.utc)
 
-            # Convert memory to Neo4j properties
-            memory_node = MemoryNode(memory=memory)
-            properties = memory_node.to_neo4j_properties()
+            if self._backend == self.LADYBUG:
+                params = self._build_ladybug_memory_params(memory)
+                query = self._build_ladybug_memory_query(params, "MATCH")
+            else:
+                # Neo4j code path - unchanged
+                memory_node = MemoryNode(memory=memory)
+                properties = memory_node.to_neo4j_properties()
+                query = """
+                MATCH (m:Memory {id: $id})
+                SET m += $properties
+                RETURN m.id as id
+                """
+                params = {"id": memory.id, "properties": properties}
 
-            query = """
-            MATCH (m:Memory {id: $id})
-            SET m += $properties
-            RETURN m.id as id
-            """
-
-            result = await self.connection.execute_write_query(
-                query,
-                {"id": memory.id, "properties": properties}
-            )
+            result = await self.connection.execute_write_query(query, params)
 
             success = len(result) > 0
             if success:
@@ -574,7 +768,7 @@ class MemoryDatabase:
                 raise
             logger.error(f"Failed to update memory {memory.id}: {e}")
             raise DatabaseConnectionError(f"Failed to update memory: {e}")
-    
+
     async def delete_memory(self, memory_id: str) -> bool:
         """Delete a memory and all its relationships.
 
@@ -594,7 +788,8 @@ class MemoryDatabase:
             RETURN COUNT(m) as deleted_count
             """
 
-            result = await self.connection.execute_write_query(query, {"memory_id": memory_id})
+            params = {"memory_id": self._to_backend_id(memory_id)}
+            result = await self.connection.execute_write_query(query, params)
 
             success = result and result[0]["deleted_count"] > 0
             if success:
@@ -607,7 +802,7 @@ class MemoryDatabase:
                 raise
             logger.error(f"Failed to delete memory {memory_id}: {e}")
             raise DatabaseConnectionError(f"Failed to delete memory: {e}")
-    
+
     async def create_relationship(
         self,
         from_memory_id: str,
@@ -649,14 +844,12 @@ class MemoryDatabase:
             RETURN r.id as id
             """
 
-            result = await self.connection.execute_write_query(
-                query,
-                {
-                    "from_id": from_memory_id,
-                    "to_id": to_memory_id,
-                    "properties": props_dict
-                }
-            )
+            params = {
+                "from_id": self._to_backend_id(from_memory_id),
+                "to_id": self._to_backend_id(to_memory_id),
+                "properties": props_dict
+            }
+            result = await self.connection.execute_write_query(query, params)
 
             if result:
                 logger.info(f"Created relationship: {relationship_type.value} between {from_memory_id} and {to_memory_id}")
@@ -672,7 +865,7 @@ class MemoryDatabase:
                 raise
             logger.error(f"Failed to create relationship: {e}")
             raise RelationshipError(f"Failed to create relationship: {e}")
-    
+
     async def get_related_memories(
         self,
         memory_id: str,
@@ -713,15 +906,16 @@ class MemoryDatabase:
                    properties(rel) as rel_props,
                    source.id as from_id,
                    target.id as to_id
-            ORDER BY rel.strength DESC, related.importance DESC
-            LIMIT 20
-            """
+             ORDER BY rel.strength DESC, related.importance DESC
+             LIMIT 20
+             """
 
-            result = await self.connection.execute_read_query(query, {"memory_id": memory_id})
+            params = {"memory_id": self._to_backend_id(memory_id)}
+            result = await self.connection.execute_read_query(query, params)
 
             related_memories = []
             for record in result:
-                memory = self._neo4j_to_memory(record["related"])
+                memory = self._node_to_memory(record["related"])
                 if memory:
                     # Properly extract relationship type, properties, and direction
                     rel_type_str = record.get("rel_type", "RELATED_TO")
@@ -766,10 +960,77 @@ class MemoryDatabase:
                 raise
             logger.error(f"Failed to get related memories for {memory_id}: {e}")
             raise DatabaseConnectionError(f"Failed to get related memories: {e}")
-    
+
+    def _ladybug_to_memory(self, node_data: Dict[str, Any]) -> Optional[Memory]:
+        """Convert LadybugDB node data to Memory object.
+
+        LadybugDB returns native Python types:
+        - UUID as UUID objects
+        - TIMESTAMP as datetime objects
+        - JSON as parsed Python objects (lists, dicts)
+        """
+        try:
+            # Extract tags - JSON type returns string representation
+            tags_value = node_data.get("tags", [])
+            if isinstance(tags_value, str):
+                # Parse JSON string
+                try:
+                    tags_value = json.loads(tags_value)
+                except json.JSONDecodeError:
+                    tags_value = []
+            elif not isinstance(tags_value, list):
+                tags_value = []
+
+            # Extract basic memory fields - types are already native Python
+            memory_data = {
+                "id": str(node_data.get("id")),  # Convert UUID to string
+                "type": MemoryType(node_data.get("type")),
+                "title": node_data.get("title"),
+                "content": node_data.get("content"),
+                "summary": node_data.get("summary"),
+                "tags": tags_value,
+                "importance": node_data.get("importance", 0.5),
+                "confidence": node_data.get("confidence", 0.8),
+                "effectiveness": node_data.get("effectiveness"),
+                "usage_count": node_data.get("usage_count", 0),
+                "last_accessed": node_data.get("last_accessed"),
+                "created_at": node_data.get("created_at"),  # Already datetime
+                "updated_at": node_data.get("updated_at"),  # Already datetime
+                "version": node_data.get("version", 1),
+                "updated_by": node_data.get("updated_by"),
+            }
+
+            # Extract context information
+            context_data = {}
+            context_field_mapping = {
+                "context_project_path": "project_path",
+                "context_file_path": "file_path",
+                "context_line_start": "line_start",
+                "context_line_end": "line_end",
+                "context_commit_hash": "git_commit",
+                "context_branch": "git_branch",
+            }
+            for db_field, context_key in context_field_mapping.items():
+                if db_field in node_data and node_data[db_field] is not None:
+                    context_data[context_key] = node_data[db_field]
+
+            if context_data:
+                memory_data["context"] = MemoryContext(**context_data)
+
+            return Memory(**memory_data)
+
+        except Exception as e:
+            logger.error(f"Failed to convert LadybugDB node to Memory: {e}")
+            return None
+
     def _neo4j_to_memory(self, node_data: Dict[str, Any]) -> Optional[Memory]:
         """Convert Neo4j node data to Memory object."""
         try:
+            # Extract tags (LadybugDB JSON extension returns list directly like Neo4j/Memgraph)
+            tags_value = node_data.get("tags", [])
+            if not isinstance(tags_value, list):
+                tags_value = []
+
             # Extract basic memory fields
             memory_data = {
                 "id": node_data.get("id"),
@@ -777,19 +1038,22 @@ class MemoryDatabase:
                 "title": node_data.get("title"),
                 "content": node_data.get("content"),
                 "summary": node_data.get("summary"),
-                "tags": node_data.get("tags", []),
+                "tags": tags_value,
                 "importance": node_data.get("importance", 0.5),
                 "confidence": node_data.get("confidence", 0.8),
                 "effectiveness": node_data.get("effectiveness"),
                 "usage_count": node_data.get("usage_count", 0),
-                "created_at": datetime.fromisoformat(node_data.get("created_at")),
-                "updated_at": datetime.fromisoformat(node_data.get("updated_at")),
+                "created_at": node_data.get("created_at") if isinstance(node_data.get("created_at"), datetime) else (datetime.fromisoformat(node_data["created_at"]) if node_data.get("created_at") else None),
+                "updated_at": node_data.get("updated_at") if isinstance(node_data.get("updated_at"), datetime) else (datetime.fromisoformat(node_data["updated_at"]) if node_data.get("updated_at") else None),
             }
-            
+
             # Handle optional last_accessed field
             if node_data.get("last_accessed"):
-                memory_data["last_accessed"] = datetime.fromisoformat(node_data["last_accessed"])
-            
+                last_accessed = node_data["last_accessed"]
+                if isinstance(last_accessed, str):
+                    last_accessed = datetime.fromisoformat(last_accessed)
+                memory_data["last_accessed"] = last_accessed
+
             # Extract context information
             import json
             context_data = {}
@@ -820,9 +1084,9 @@ class MemoryDatabase:
                             context_data[time_field] = datetime.fromisoformat(context_data[time_field])
 
                 memory_data["context"] = MemoryContext(**context_data)
-            
+
             return Memory(**memory_data)
-            
+
         except Exception as e:
             logger.error(f"Failed to convert Neo4j node to Memory: {e}")
             return None
@@ -865,21 +1129,33 @@ class MemoryDatabase:
             RETURN r
             """
 
-            # Neo4j doesn't support parameterized relationship types, so construct query dynamically
-            query = f"""
-            MATCH (from:Memory {{id: $from_id}})-[r:{relationship_type.value}]->(to:Memory {{id: $to_id}})
-            SET r += $props
-            RETURN r
-            """
+            if self._backend == self.LADYBUG:
+                # LadybugDB doesn't support += for map updates, so we need to set properties individually
+                set_clauses = ", ".join([f"r.{k} = ${k}" for k in props_dict.keys()])
+                query = f"""
+                MATCH (src:Memory {{id: $from_id}})-[r:{relationship_type.value}]->(dst:Memory {{id: $to_id}})
+                SET {set_clauses}
+                RETURN r
+                """
+                params = {
+                    "from_id": self._to_backend_id(from_memory_id),
+                    "to_id": self._to_backend_id(to_memory_id),
+                    **props_dict
+                }
+            else:
+               # Neo4j doesn't support parameterized relationship types, so construct query dynamically
+                query = f"""
+                MATCH (from:Memory {{id: $from_id}})-[r:{relationship_type.value}]->(to:Memory {{id: $to_id}})
+                SET r += $props
+                RETURN r
+                """
 
-            result = await self.connection.execute_write_query(
-                query,
-                {
+                params = {
                     "from_id": from_memory_id,
                     "to_id": to_memory_id,
                     "props": props_dict
                 }
-            )
+            result = await self.connection.execute_write_query(query, params)
 
             if not result:
                 raise RelationshipError(

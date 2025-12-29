@@ -48,7 +48,7 @@ class LadybugDBBackend(GraphBackend):
         Initialize LadybugDB backend.
 
         Args:
-            db_path: Path to database file (defaults to LADYBUGDB_PATH env var or ~/.memorygraph/ladybugdb.db)
+            db_path: Path to database file (defaults to MEMORY_LADYBUGDB_PATH env var or ~/.memorygraph/memory.lbdb)
             graph_name: Name of the graph database (defaults to 'memorygraph')
 
         Raises:
@@ -60,13 +60,13 @@ class LadybugDBBackend(GraphBackend):
                 "Install it with: pip install real-ladybug"
             )
         if db_path is None:
-            db_path = os.getenv("LADYBUGDB_PATH")
+            db_path = os.getenv("MEMORY_LADYBUGDB_PATH")
             if db_path is None:
-                # Default to ~/.memorygraph/ladybugdb.db
+                # Default to ~/.memorygraph/memory.lbdb
                 home = Path.home()
                 db_dir = home / ".memorygraph"
                 db_dir.mkdir(parents=True, exist_ok=True)
-                db_path = str(db_dir / "ladybugdb.db")
+                db_path = str(db_dir / "memory.lbdb")
 
         self.db_path = db_path
         self.graph_name = graph_name
@@ -90,6 +90,23 @@ class LadybugDBBackend(GraphBackend):
 
             # Create connection for executing queries
             self.graph = lb.Connection(self.client)
+
+            # Install and load JSON extension
+            try:
+                self.graph.execute("INSTALL JSON")
+                self.graph.execute("LOAD EXTENSION JSON")
+                logger.info("Loaded JSON extension for LadybugDB")
+            except Exception as e:
+                logger.warning(f"Failed to load JSON extension: {e}")
+
+            # Install and load FTS extension, then create fulltext index using LadybugDB syntax
+            try:
+                self.graph.execute("INSTALL FTS")
+                self.graph.execute("LOAD EXTENSION FTS")
+                logger.info("Loaded FTS extension for LadybugDB")
+            except Exception as e:
+                logger.warning(f"Failed to load FTS extension: {e}")
+
             self._connected = True
 
             logger.info(f"Successfully connected to LadybugDB at {self.db_path}")
@@ -133,16 +150,21 @@ class LadybugDBBackend(GraphBackend):
             raise DatabaseConnectionError("Not connected to LadybugDB")
 
         try:
-            # Execute query using LadybugDB's connection
-            result = self.graph.execute(query)
+            # Execute query using LadybugDB's connection with parameters
+            result = self.graph.execute(query, parameters)
 
-            # Convert result to list of dictionaries
-            # LadybugDB returns QueryResult with has_next()/get_next() methods
-            # get_next() returns the row data as a dictionary
+            # Convert result to list of dictionaries using get_as_pl() for consistent format
+            # Polars is used instead of pandas for better performance
             rows = []
-            while result.has_next():
-                row_data = result.get_next()
-                rows.append(row_data)
+            if isinstance(result, list):
+                # Handle multiple result sets (e.g., from multiple queries)
+                for single_result in result:
+                    df = single_result.get_as_pl()
+                    rows.extend(df.to_dicts())
+            else:
+                # Handle single result set
+                df = result.get_as_pl()
+                rows = df.to_dicts()
 
             return rows
 
@@ -152,7 +174,10 @@ class LadybugDBBackend(GraphBackend):
 
     async def initialize_schema(self) -> None:
         """
-        Initialize database schema including indexes and constraints.
+        Initialize database schema including node and rel tables.
+
+        LadybugDB requires NODE TABLE and REL TABLE to be created before adding data.
+        LadybugDB does not support CREATE INDEX or CREATE CONSTRAINT commands.
 
         This should be idempotent and safe to call multiple times.
 
@@ -163,17 +188,55 @@ class LadybugDBBackend(GraphBackend):
             raise DatabaseConnectionError("Not connected to LadybugDB")
 
         try:
-            # Create basic schema - indexes and constraints
-            # Note: LadybugDB Cypher syntax may vary, adjust as needed
+            # LadybugDB requires NODE TABLE and REL TABLE to exist first
+            # These tables must be created before any nodes/relationships can be added
             schema_queries = [
-                "CREATE INDEX IF NOT EXISTS FOR (n:Memory) ON (n.id)",
-                "CREATE INDEX IF NOT EXISTS FOR (n:Memory) ON (n.type)",
-                "CREATE INDEX IF NOT EXISTS FOR (n:Memory) ON (n.created_at)",
-                "CREATE CONSTRAINT IF NOT EXISTS FOR (n:Memory) REQUIRE n.id IS UNIQUE",
+                # Create Memory node table
+                """
+                CREATE NODE TABLE IF NOT EXISTS Memory(
+                    id UUID PRIMARY KEY,
+                    type STRING,
+                    title STRING,
+                    content STRING,
+                    summary STRING,
+                    tags JSON,
+                    importance DOUBLE,
+                    confidence DOUBLE,
+                    usage_count INT,
+                    effectiveness DOUBLE,
+                    last_accessed TIMESTAMP,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    version INT,
+                    updated_by STRING,
+                    context_project_path STRING,
+                    context_file_path STRING,
+                    context_line_start INT,
+                    context_line_end INT,
+                    context_commit_hash STRING,
+                    context_branch STRING,
+                    metadata STRING
+                )
+                """,
+                # Create relationship table for connections between Memory nodes
+                """
+                CREATE REL TABLE IF NOT EXISTS REL(
+                    FROM Memory TO Memory,
+                    id UUID,
+                    type STRING,
+                    properties STRING,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    metadata STRING
+                )
+                """,
             ]
 
             for query in schema_queries:
                 await self.execute_query(query, write=True)
+
+            # Note: LadybugDB does not support CREATE INDEX commands
+            # The primary keys on node tables provide indexing automatically
 
         except Exception as e:
             logger.error(f"Schema initialization failed: {e}")

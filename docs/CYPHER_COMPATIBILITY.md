@@ -1,21 +1,24 @@
 # Cypher Compatibility Guide
 
-This document outlines the Cypher dialect differences between supported graph database backends (Neo4j, Memgraph) and how the memory server handles them.
+This document outlines Cypher dialect differences between supported graph database backends (Neo4j, Memgraph, LadybugDB) and how the memory server handles them.
 
 ## Overview
 
-MemoryGraph uses Cypher as its query language across all graph-based backends. While Neo4j and Memgraph both support Cypher, there are some dialect differences that need to be considered.
+MemoryGraph uses Cypher as its query language across all graph-based backends. While Neo4j, Memgraph, and LadybugDB all support Cypher, there are some dialect differences that need to be considered.
 
 ## Backend Comparison
 
-| Feature | Neo4j | Memgraph | SQLite Fallback |
-|---------|-------|----------|-----------------|
-| Cypher Support | Full | Subset | Limited (translated) |
-| FULLTEXT INDEX | ✅ Yes | ⚠️ Limited | ✅ FTS5 |
-| Constraints | ✅ Full | ⚠️ Basic | ✅ Basic |
-| APOC Procedures | ✅ Yes | ❌ No | N/A |
-| Transactions | ✅ Yes | ✅ Yes | ✅ Yes |
-| Graph Algorithms | ✅ GDS | ⚠️ Limited | ✅ NetworkX |
+| Feature | Neo4j | Memgraph | LadybugDB | SQLite Fallback |
+|---------|-------|----------|------------|-----------------|
+| Cypher Support | Full | Subset | Subset | Limited (translated) |
+| Schema Required | ❌ No | ❌ No | ✅ Yes (NODE/REL TABLE) | ❌ No |
+| FULLTEXT INDEX | ✅ Yes | ⚠️ Limited | ✅ Yes (via FTS extension) | ✅ FTS5 |
+| Constraints | ✅ Full | ⚠️ Basic | ❌ No (PK only) | ✅ Basic |
+| Indexes | ✅ Yes | ✅ Yes | ❌ No (PK auto) | ✅ Yes |
+| APOC Procedures | ✅ Yes | ❌ No | ❌ No | N/A |
+| Transactions | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+| Graph Algorithms | ✅ GDS | ⚠️ Limited | ⚠️ Limited | ✅ NetworkX |
+| List Storage | Native | Native | JSON[] extension | N/A |
 
 ## Syntax Differences
 
@@ -132,6 +135,13 @@ FOR (m:Memory) ON EACH [m.title, m.content, m.summary]
 RETURN 1  -- No-op query (fulltext not fully supported)
 ```
 
+**LadybugDB** (uses FTS extension):
+```cypher
+INSTALL FTS
+LOAD EXTENSION FTS
+CALL CREATE_FTS_INDEX('Memory', 'memory_content_index', ['title', 'content', 'summary'])
+```
+
 ### 2. Constraint Creation
 
 **Input** (Neo4j v5 syntax):
@@ -140,9 +150,84 @@ CREATE CONSTRAINT memory_id_unique IF NOT EXISTS
 FOR (m:Memory) REQUIRE m.id IS UNIQUE
 ```
 
+**Neo4j** (no change):
+```cypher
+CREATE CONSTRAINT memory_id_unique IF NOT EXISTS
+FOR (m:Memory) REQUIRE m.id IS UNIQUE
+```
+
 **Memgraph** (adapted for older versions):
 ```cypher
 CREATE CONSTRAINT ON (m:Memory) ASSERT m.id IS UNIQUE
+```
+
+**LadybugDB** (constraints not supported):
+```cypher
+-- LadybugDB does not support CREATE CONSTRAINT
+-- Use PRIMARY KEY in NODE TABLE definition instead
+CREATE NODE TABLE Memory(
+    id STRING PRIMARY KEY,
+    ...
+)
+```
+
+### 3. Schema Initialization
+
+**Neo4j/Memgraph** (schemaless - nodes/relationships can be created anytime):
+```cypher
+-- Can create nodes directly without schema
+CREATE (m:Memory {id: '123', title: 'Test'})
+```
+
+**LadybugDB** (requires NODE TABLE and REL TABLE first):
+```cypher
+-- Must create NODE TABLE before creating nodes
+CREATE NODE TABLE IF NOT EXISTS Memory(
+    id STRING PRIMARY KEY,
+    title STRING,
+    content STRING,
+    tags STRING,  -- Stored as JSON string
+    ...
+)
+
+CREATE REL TABLE IF NOT EXISTS REL(
+    FROM Memory TO Memory,
+    id STRING,
+    type STRING,
+    ...
+)
+
+-- Then can create nodes
+CREATE (m:Memory {id: '123', title: 'Test'})
+```
+
+### 4. List Field Handling (e.g., tags)
+
+**Neo4j/Memgraph** (native list support):
+```cypher
+-- Storage: Tags stored as native list/array
+MATCH (m:Memory)
+WHERE ANY(tag IN $tags WHERE tag IN m.tags)
+RETURN m
+```
+
+**LadybugDB** (JSON extension with native JSON array type):
+```cypher
+-- Schema: Tags defined as JSON[] array type
+CREATE NODE TABLE Memory(
+    id STRING PRIMARY KEY,
+    tags JSON[],
+    ...
+)
+
+-- Storage: Tags stored as JSON array (same as Neo4j/Memgraph)
+MATCH (m:Memory {id: $id})
+SET m.tags = $tags  -- Pass list directly, no serialization needed
+
+-- Query: Uses same list operations as other backends
+MATCH (m:Memory)
+WHERE ANY(tag IN $tags WHERE tag IN m.tags)
+RETURN m
 ```
 
 ## Performance Considerations
@@ -186,6 +271,25 @@ CREATE CONSTRAINT ON (m:Memory) ASSERT m.id IS UNIQUE
   - Small graphs (< 10,000 nodes)
   - Portable deployments
 
+### LadybugDB
+- **Strengths**:
+  - Embedded database (no separate server needed)
+  - Low resource footprint
+  - Fast for embedded use cases
+  - Schema-defined tables (compile-time type checking)
+
+- **Best For**:
+  - Embedded applications
+  - Single-user scenarios
+  - Development/testing
+  - Desktop applications
+
+- **Limitations**:
+  - Requires explicit schema (NODE TABLE, REL TABLE)
+  - No index creation (primary keys only)
+  - No constraint support (beyond PK)
+  - Requires JSON extension for list/array types (JSON[], JSON, etc.)
+
 ## Limitations by Backend
 
 ### Neo4j
@@ -204,6 +308,13 @@ CREATE CONSTRAINT ON (m:Memory) ASSERT m.id IS UNIQUE
 - ❌ Graph traversals slower (NetworkX overhead)
 - ❌ Limited to single connection writes
 - ❌ Not suitable for large graphs (> 10K nodes)
+
+### LadybugDB
+- ❌ Requires explicit schema (NODE TABLE, REL TABLE)
+- ❌ No CREATE INDEX support (primary keys only)
+- ❌ No CREATE CONSTRAINT support
+- ❌ List fields stored as JSON strings (not native arrays)
+- ❌ Limited to embedded use (not multi-client)
 
 ## Migration Between Backends
 
@@ -240,9 +351,10 @@ for rel_data in exported_relationships:
 ## Recommendations
 
 ### For Development
-1. **Start with SQLite**: No setup required
-2. **Upgrade to Memgraph**: When testing graph performance
-3. **Use Neo4j**: When preparing for production
+1. **Start with SQLite**: No setup required, simple and reliable
+2. **Use LadybugDB**: When you need schema-defined graph tables
+3. **Upgrade to Memgraph**: When testing graph performance
+4. **Use Neo4j**: When preparing for production
 
 ### For Production
 1. **Neo4j Community**: Best for most use cases
@@ -268,6 +380,10 @@ export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
 # SQLite (auto-fallback)
 export MEMORY_BACKEND=sqlite
 export MEMORY_SQLITE_PATH=~/.memorygraph/memory.db
+
+# LadybugDB
+export MEMORY_BACKEND=ladybugdb
+export MEMORY_LADYBUGDB_PATH=~/.memorygraph/memory.lbdb
 
 # Auto-select (recommended)
 export MEMORY_BACKEND=auto  # Tries Neo4j → Memgraph → SQLite

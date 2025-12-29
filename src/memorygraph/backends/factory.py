@@ -250,12 +250,12 @@ class BackendFactory:
         # Lazy import - only load ladybugdb backend when needed
         from .ladybugdb_backend import LadybugDBBackend
 
-        db_path = os.getenv("MEMORY_LADYBUGDB_PATH") or os.getenv("LADYBUGDB_PATH")
+        db_path = os.getenv("MEMORY_LADYBUGDB_PATH")
 
         backend = LadybugDBBackend(db_path=db_path)
         await backend.connect()
-        # Schema managed externally - assumes database is already configured
-        # NOTE: Unlike SQLite/Turso, LadybugDB schema is not auto-initialized
+        # Initialize schema for LadybugDB (required for proper table creation)
+        await backend.initialize_schema()
         return backend
 
     @staticmethod

@@ -54,13 +54,19 @@ def mock_optional_backends():
     sys.modules['neo4j.exceptions'] = neo4j_exceptions_mock
     
     # Mock gqlalchemy for memgraph
-    memgraph_mock = MagicMock()  
+    memgraph_mock = MagicMock()
     sys.modules['gqlalchemy'] = memgraph_mock
-    
+
+    # Mock real_ladybug for LadybugDB
+    ladybug_mock = MagicMock()
+    ladybug_mock.Database = MagicMock()
+    ladybug_mock.Connection = MagicMock()
+    sys.modules['real_ladybug'] = ladybug_mock
+
     yield
-    
+
     # Cleanup
-    for module in ['neo4j', 'neo4j.exceptions', 'gqlalchemy']:
+    for module in ['neo4j', 'neo4j.exceptions', 'gqlalchemy', 'real_ladybug']:
         if module in sys.modules:
             del sys.modules[module]
 
@@ -199,6 +205,7 @@ class TestBackendTypeDetection:
             with patch('src.memorygraph.backends.ladybugdb_backend.LadybugDBBackend') as MockLadybugDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
+                mock_instance.initialize_schema = AsyncMock()
                 MockLadybugDB.return_value = mock_instance
 
                 backend = await BackendFactory.create_backend()
@@ -366,6 +373,7 @@ class TestBackendCreation:
             with patch('src.memorygraph.backends.ladybugdb_backend.LadybugDBBackend') as MockLadybugDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
+                mock_instance.initialize_schema = AsyncMock()
                 MockLadybugDB.return_value = mock_instance
 
                 backend = await BackendFactory._create_ladybugdb()
@@ -607,6 +615,7 @@ class TestHelperMethods:
             backend = await BackendFactory._create_ladybugdb_with_path('/test/ladybug.db')
 
             MockLadybugDB.assert_called_once_with(db_path='/test/ladybug.db')
+            mock_instance.connect.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_neo4j_with_config_helper(self):

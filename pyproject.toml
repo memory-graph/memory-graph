@@ -32,6 +32,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "typing-extensions>=4.0.0",
     "networkx>=3.0.0",
+    "polars>=1.36.1",
 ]
 
 [project.optional-dependencies]
@@ -49,6 +50,8 @@ falkordblite = [
 ]
 ladybugdb = [
     "real-ladybug>=0.12.2",
+    "polars>=1.36.1",
+    "pyarrow>=15.0.0",
 ]
 turso = [
     "libsql-experimental>=0.0.30",

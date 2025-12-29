@@ -19,6 +19,7 @@ class BackendType(Enum):
     CLOUD = "cloud"
     FALKORDB = "falkordb"
     FALKORDBLITE = "falkordblite"
+    LADYBUGDB = "ladybugdb"
     AUTO = "auto"
 
 
@@ -65,7 +66,7 @@ class Config:
     Configuration class for the memory server.
 
     Environment Variables:
-        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|turso|cloud|falkordb|falkordblite|auto) [default: sqlite]
+        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|turso|cloud|falkordb|falkordblite|ladybugdb|auto) [default: sqlite]
 
         Neo4j Configuration:
             MEMORY_NEO4J_URI or NEO4J_URI: Connection URI [default: bolt://localhost:7687]
@@ -131,6 +132,9 @@ class Config:
     TURSO_PATH: str = os.getenv("MEMORY_TURSO_PATH", os.path.expanduser("~/.memorygraph/memory.db"))
     TURSO_DATABASE_URL: Optional[str] = os.getenv("TURSO_DATABASE_URL")
     TURSO_AUTH_TOKEN: Optional[str] = os.getenv("TURSO_AUTH_TOKEN")
+
+    # LadybugDB Configuration
+    MEMORY_LADYBUGDB_PATH: str = os.getenv("MEMORY_LADYBUGDB_PATH", os.path.expanduser("~/.memorygraph/memory.lbdb"))
 
     # Cloud Configuration
     MEMORYGRAPH_API_KEY: Optional[str] = os.getenv("MEMORYGRAPH_API_KEY")
@@ -255,6 +259,9 @@ class Config:
                 "path": cls.TURSO_PATH,
                 "database_url": cls.TURSO_DATABASE_URL,
                 "auth_token_configured": bool(cls.TURSO_AUTH_TOKEN)
+            },
+            "ladybugdb": {
+                "path": cls.MEMORY_LADYBUGDB_PATH
             },
             "cloud": {
                 "api_url": cls.MEMORYGRAPH_API_URL,

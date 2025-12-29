@@ -107,11 +107,12 @@ class TestLadybugDBIntegration:
         result = await backend.execute_query(query)
 
         assert len(result) == 1
-        # LadybugDB returns results as lists
+        # Results are returned as dictionaries
         row = result[0]
-        assert len(row) == 2  # id and name
-        assert row[1] == "test_node"  # name field
-        assert row[0] == node_id  # id field
+        assert "n.name" in row  # name field
+        assert "n.id" in row  # id field
+        assert row["n.name"] == "test_node"  # name field
+        assert row["n.id"] == node_id  # id field
 
     @pytest.mark.asyncio
     async def test_create_relationship(self, backend):
@@ -164,7 +165,7 @@ class TestLadybugDBIntegration:
 
         assert len(result) == 1
         row = result[0]
-        assert row[0] == 1  # count should be 1
+        assert row["rel_count"] == 1  # count should be 1
 
     @pytest.mark.asyncio
     async def test_query_with_no_results(self, backend):
@@ -208,8 +209,8 @@ class TestLadybugDBIntegration:
         # Check that we have 3 results
         for i, row_data in enumerate(result):
             row = row_data
-            assert len(row) == 2  # id and name
-            assert row[1] == f"node_{i}"  # name field
+            assert "n.id" in row and "n.name" in row
+            assert row["n.name"] == f"node_{i}"  # name field
 
     @pytest.mark.asyncio
     async def test_error_handling(self, backend):
@@ -241,7 +242,7 @@ class TestLadybugDBIntegration:
         )
         assert len(result) == 1
         row = result[0]
-        assert row[0] == 1  # count should be 1
+        assert row["count"] == 1  # count should be 1
 
         # Create another backend instance to same database
         backend2 = LadybugDBBackend(
@@ -250,15 +251,171 @@ class TestLadybugDBIntegration:
         await backend2.connect()
 
         try:
-            # Should see the node from the other connection
+            # Should see node from other connection
             result2 = await backend2.execute_query(
                 f"MATCH (n:{table_name} {{id: 1}}) RETURN count(n) as count"
             )
             assert len(result2) == 1
             row2 = result2[0]
-            assert row2[0] == 1  # count should be 1
+            assert row2["count"] == 1  # count should be 1
         finally:
             await backend2.disconnect()
+
+    @pytest.mark.asyncio
+    async def test_store_and_retrieve_memory_with_parameters(self, backend):
+        """Test storing a Memory node and retrieving it with parameterized queries."""
+        # Initialize the standard Memory schema
+        await backend.initialize_schema()
+
+        # Create a memory with all required fields
+        memory_id = str(uuid.uuid4())
+        title = "User Preference"
+        content = "I like icecream"
+        memory_type = "general"
+        importance = 0.9
+        confidence = 1.0
+        created_at = datetime.now().isoformat()
+        updated_at = datetime.now().isoformat()
+
+        # Store the memory
+        create_query = f"""
+        CREATE (m:Memory {{
+            id: '{memory_id}',
+            type: '{memory_type}',
+            title: '{title}',
+            content: '{content}',
+            importance: {importance},
+            confidence: {confidence},
+            created_at: '{created_at}',
+            updated_at: '{updated_at}',
+            summary: '',
+            tags: '[]',
+            context_project_path: '',
+            context_file_path: '',
+            context_line_start: -1,
+            context_line_end: -1,
+            context_commit_hash: '',
+            context_branch: '',
+            metadata: '{{}}'
+        }})
+        RETURN m
+        """
+
+        result = await backend.execute_query(create_query, write=True)
+        assert len(result) == 1
+        assert len(result[0]) == 1  # Should return the created memory
+
+        # Retrieve the memory using parameterized query
+        # This tests the critical fix: parameters must be passed to LadybugDB's execute
+        query = """
+        MATCH (m:Memory)
+        WHERE m.content CONTAINS $search_term AND m.importance >= $min_importance
+        RETURN m.title, m.content, m.importance
+        ORDER BY m.importance DESC
+        LIMIT $limit
+        """
+
+        params = {
+            "search_term": "icecream",
+            "min_importance": 0.5,
+            "limit": 10
+        }
+
+        result = await backend.execute_query(query, params)
+
+        # Verify we found the memory
+        assert len(result) == 1, f"Expected 1 result, got {len(result)}"
+        row = result[0]
+
+        # Results are returned as dictionaries
+        # We RETURN m.title, m.content, m.importance
+        assert "m.title" in row and "m.content" in row and "m.importance" in row
+        assert row["m.title"] == title
+        assert row["m.content"] == content
+        assert row["m.importance"] == importance
+
+    @pytest.mark.asyncio
+    async def test_store_multiple_memories_and_search_with_parameters(self, backend):
+        """Test storing multiple memories and searching with various parameter combinations."""
+        await backend.initialize_schema()
+
+        # Create multiple memories
+        memories = [
+            ("User likes icecream", "general", 0.9),
+            ("Prefers chocolate icecream", "preference", 0.7),
+            ("Likes vanilla too", "preference", 0.5),
+            ("Not a preference", "general", 0.3),
+        ]
+
+        for i, (content, mtype, importance) in enumerate(memories):
+            memory_id = str(uuid.uuid4())
+            create_query = f"""
+            CREATE (m:Memory {{
+                id: '{memory_id}',
+                type: '{mtype}',
+                title: 'Memory {i}',
+                content: '{content}',
+                importance: {importance},
+                confidence: 1.0,
+                created_at: '{datetime.now().isoformat()}',
+                updated_at: '{datetime.now().isoformat()}',
+                summary: '',
+                tags: '[]',
+                context_project_path: '',
+                context_file_path: '',
+                context_line_start: -1,
+                context_line_end: -1,
+                context_commit_hash: '',
+                context_branch: '',
+                metadata: '{{}}'
+            }})
+            """
+            await backend.execute_query(create_query, write=True)
+
+        # Test 1: Search with CONTAINS parameter
+        query1 = """
+        MATCH (m:Memory)
+        WHERE m.content CONTAINS $search_term
+        RETURN m.content, m.importance
+        ORDER BY m.importance DESC
+        """
+        result1 = await backend.execute_query(query1, {"search_term": "icecream"})
+        assert len(result1) == 2
+        assert "icecream" in result1[0]["m.content"]
+
+        # Test 2: Filter by importance
+        query2 = """
+        MATCH (m:Memory)
+        WHERE m.importance >= $min_importance
+        RETURN m.content, m.importance
+        ORDER BY m.importance DESC
+        """
+        result2 = await backend.execute_query(query2, {"min_importance": 0.6})
+        assert len(result2) == 2
+        for row in result2:
+            assert row["m.importance"] >= 0.6
+
+        # Test 3: Multiple parameters
+        query3 = """
+        MATCH (m:Memory)
+        WHERE m.type = $memory_type AND m.importance >= $min_importance
+        RETURN m.content, m.type, m.importance
+        ORDER BY m.importance DESC
+        LIMIT $limit
+        """
+        result3 = await backend.execute_query(
+            query3,
+            {
+                "memory_type": "preference",
+                "min_importance": 0.5,
+                "limit": 10
+            }
+        )
+        # Both preference memories match (0.7 and 0.5)
+        assert len(result3) == 2
+        for row in result3:
+            assert row["m.type"] == "preference"
+            assert row["m.importance"] >= 0.5
 
 
 # Import here to avoid import errors when real_ladybug is not available
