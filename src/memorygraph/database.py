@@ -254,7 +254,7 @@ class MemoryDatabase:
             Dictionary of parameters with native Python types
         """
         params = {
-            "id": uuid.UUID(memory.id),
+            "id": str(memory.id),  # Convert UUID to string for JSON compatibility
             "type": memory.type.value,
             "title": memory.title,
             "content": memory.content,
