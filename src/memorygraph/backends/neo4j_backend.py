@@ -42,9 +42,9 @@ class Neo4jBackend(GraphBackend):
         Raises:
             DatabaseConnectionError: If password is not provided
         """
-        self.uri = uri or os.getenv("MEMORY_NEO4J_URI") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
-        self.user = user or os.getenv("MEMORY_NEO4J_USER") or os.getenv("NEO4J_USER", "neo4j")
-        self.password = password or os.getenv("MEMORY_NEO4J_PASSWORD") or os.getenv("NEO4J_PASSWORD")
+        self.uri = uri or Config.NEO4J_URI
+        self.user = user or Config.NEO4J_USER
+        self.password = password or Config.NEO4J_PASSWORD
         self.database = database
         self.driver: Optional[AsyncDriver] = None
         self._connected = False
@@ -118,7 +118,7 @@ class Neo4jBackend(GraphBackend):
             DatabaseConnectionError: If not connected or query fails
         """
         if not self._connected or not self.driver:
-            raise DatabaseConnectionError("Not connected to Neo4j. Call connect() first.")
+            raise DatabaseConnectionError("Connection failed: not connected to Neo4j (call connect() first)")
 
         params = parameters or {}
 
@@ -137,7 +137,7 @@ class Neo4jBackend(GraphBackend):
     async def _session(self):
         """Async context manager for Neo4j session."""
         if not self.driver:
-            raise DatabaseConnectionError("Not connected to Neo4j. Call connect() first.")
+            raise DatabaseConnectionError("Connection failed: not connected to Neo4j (call connect() first)")
 
         session = self.driver.session(database=self.database)
         try:

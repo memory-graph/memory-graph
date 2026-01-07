@@ -13,10 +13,27 @@ Tests cover:
 import importlib.util
 import pytest
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from memorygraph.database import Neo4jConnection, MemoryDatabase
+from memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 # Check if neo4j is available
 neo4j_available = importlib.util.find_spec("neo4j") is not None
@@ -112,16 +129,18 @@ class TestNeo4jConnection:
         assert conn.password == "password"
         assert conn.driver is None
 
-    def test_connection_initialization_from_env(self, monkeypatch):
-        """Test connection initialization from environment variables."""
-        monkeypatch.setenv("NEO4J_URI", "bolt://custom:7687")
-        monkeypatch.setenv("NEO4J_USER", "custom_user")
-        monkeypatch.setenv("NEO4J_PASSWORD", "custom_pass")
-
-        conn = Neo4jConnection()
-        assert conn.uri == "bolt://custom:7687"
-        assert conn.user == "custom_user"
-        assert conn.password == "custom_pass"
+    def test_connection_initialization_from_config(self):
+        """Test connection initialization from Config class."""
+        # Neo4jConnection now reads from Config, not os.environ directly
+        with patch_config(
+            NEO4J_URI="bolt://custom:7687",
+            NEO4J_USER="custom_user",
+            NEO4J_PASSWORD="custom_pass"
+        ):
+            conn = Neo4jConnection()
+            assert conn.uri == "bolt://custom:7687"
+            assert conn.user == "custom_user"
+            assert conn.password == "custom_pass"
 
     def test_connection_initialization_missing_password(self):
         """Test that missing password raises error."""
@@ -237,7 +256,7 @@ class TestNeo4jConnection:
             async with conn.session():
                 pass
 
-        assert "Not connected" in str(exc_info.value)
+        assert "not connected" in str(exc_info.value).lower()
 
     @pytest.mark.asyncio
     async def test_execute_write_query(self, connection, mock_driver, mock_session):

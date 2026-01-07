@@ -44,9 +44,9 @@ class MemgraphBackend(GraphBackend):
             Memgraph Community Edition has no authentication by default.
             Enterprise Edition supports authentication.
         """
-        self.uri = uri or os.getenv("MEMORY_MEMGRAPH_URI", "bolt://localhost:7687")
-        self.user = user or os.getenv("MEMORY_MEMGRAPH_USER", "")
-        self.password = password or os.getenv("MEMORY_MEMGRAPH_PASSWORD", "")
+        self.uri = uri or Config.MEMGRAPH_URI
+        self.user = user or Config.MEMGRAPH_USER
+        self.password = password or Config.MEMGRAPH_PASSWORD
         self.database = database
         self.driver: Optional[AsyncDriver] = None
         self._connected = False
@@ -119,7 +119,7 @@ class MemgraphBackend(GraphBackend):
             DatabaseConnectionError: If not connected or query fails
         """
         if not self._connected or not self.driver:
-            raise DatabaseConnectionError("Not connected to Memgraph. Call connect() first.")
+            raise DatabaseConnectionError("Connection failed: not connected to Memgraph (call connect() first)")
 
         params = parameters or {}
 
@@ -140,7 +140,7 @@ class MemgraphBackend(GraphBackend):
     async def _session(self):
         """Async context manager for Memgraph session."""
         if not self.driver:
-            raise DatabaseConnectionError("Not connected to Memgraph. Call connect() first.")
+            raise DatabaseConnectionError("Connection failed: not connected to Memgraph (call connect() first)")
 
         session = self.driver.session()
         try:

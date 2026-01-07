@@ -146,7 +146,7 @@ class TestFalkorDBQuery:
         """Test query execution when not connected."""
         backend = FalkorDBBackend(host='localhost', port=6379)
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected"):
+        with pytest.raises(DatabaseConnectionError, match="(?i)not connected"):
             await backend.execute_query("MATCH (n) RETURN n")
 
 

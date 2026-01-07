@@ -25,6 +25,7 @@ except ImportError:
 
 from .base import GraphBackend
 from ..models import DatabaseConnectionError, SchemaError
+from ..config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +64,9 @@ class TursoBackend(GraphBackend):
 
         # Configuration
         default_path = os.path.expanduser("~/.memorygraph/memory.db")
-        self.db_path = db_path or os.getenv("MEMORY_TURSO_PATH", default_path)
-        self.sync_url = sync_url or os.getenv("TURSO_DATABASE_URL")
-        self.auth_token = auth_token or os.getenv("TURSO_AUTH_TOKEN")
+        self.db_path = db_path or Config.TURSO_PATH or default_path
+        self.sync_url = sync_url or Config.TURSO_DATABASE_URL
+        self.auth_token = auth_token or Config.TURSO_AUTH_TOKEN
 
         # Connection state
         self.conn = None
@@ -182,7 +183,7 @@ class TursoBackend(GraphBackend):
         """
         if not self._connected or not self.conn:
             raise DatabaseConnectionError(
-                "Not connected to Turso. Call connect() first."
+                "Connection failed: not connected to Turso (call connect() first)"
             )
 
         params = parameters or {}
@@ -226,7 +227,7 @@ class TursoBackend(GraphBackend):
         logger.info("Initializing Turso schema...")
 
         if not self.conn:
-            raise DatabaseConnectionError("Not connected to database")
+            raise DatabaseConnectionError("Schema operation failed: not connected to database")
 
         try:
             # Wrap all blocking operations in asyncio.to_thread

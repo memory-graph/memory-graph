@@ -5,12 +5,8 @@ This module implements the Model Context Protocol server that provides intellige
 memory capabilities for Claude Code using Neo4j as the backend storage.
 """
 
-import asyncio
 import logging
-import os
-import uuid
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional
 
 from mcp.server import Server, NotificationOptions
 from mcp.server.models import InitializationOptions
@@ -22,25 +18,17 @@ from mcp.types import (
     ListToolsRequest,
     ListToolsResult,
 )
-from pydantic import ValidationError
 
 from . import __version__
 from .database import MemoryDatabase
-from .sqlite_database import SQLiteMemoryDatabase
-from .cloud_database import CloudMemoryDatabase
 from .backends.sqlite_fallback import SQLiteFallbackBackend
 from .backends.cloud_backend import CloudRESTAdapter
+from .sqlite_database import SQLiteMemoryDatabase
+from .cloud_database import CloudMemoryDatabase
+# Note: Only DatabaseConnectionError and MemoryType from models are imported at module level.
+# Other domain model classes (Memory, RelationshipType, etc.) are passed via tool handlers.
 from .models import (
-    Memory,
     MemoryType,
-    RelationshipType,
-    RelationshipProperties,
-    SearchQuery,
-    MemoryContext,
-    MemoryError,
-    MemoryNotFoundError,
-    RelationshipError,
-    ValidationError as MemoryValidationError,
     DatabaseConnectionError,
 )
 from .advanced_tools import ADVANCED_RELATIONSHIP_TOOLS, AdvancedRelationshipHandlers
@@ -643,7 +631,7 @@ RETURNS:
                     )
 
             except Exception as e:
-                logger.error(f"Error handling tool call {name}: {e}")
+                logger.error(f"Error handling tool call {name}: {e}", exc_info=True)
                 return CallToolResult(
                     content=[TextContent(
                         type="text",
@@ -683,7 +671,7 @@ RETURNS:
             logger.info(f"Tool profile: {Config.TOOL_PROFILE.upper()} ({len(self.tools)} tools enabled)")
 
         except Exception as e:
-            logger.error(f"Failed to initialize server: {e}")
+            logger.error(f"Failed to initialize server: {e}", exc_info=True)
             raise
     
     async def cleanup(self):
@@ -724,7 +712,7 @@ async def main():
     except KeyboardInterrupt:
         logger.info("Received interrupt signal")
     except Exception as e:
-        logger.error(f"Server error: {e}")
+        logger.error(f"Server error: {e}", exc_info=True)
         raise
     finally:
         await server.cleanup()

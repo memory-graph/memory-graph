@@ -8,12 +8,29 @@ full MCP context.
 
 import pytest
 import json
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
 from memorygraph.backends.cloud_backend import CloudRESTAdapter
 from memorygraph.models import Memory, MemoryType
+from memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 class MockHTTPClient:
@@ -479,13 +496,14 @@ class TestE2ECloudBackend:
 
     @pytest.mark.asyncio
     async def test_mcp_backend_configuration(self):
-        """Test that cloud backend can be configured from environment."""
-        with patch.dict('os.environ', {
-            'MEMORYGRAPH_API_KEY': 'mg_env_key',
-            'MEMORYGRAPH_API_URL': 'https://custom-api.memorygraph.dev'
-        }):
+        """Test that cloud backend can be configured from Config."""
+        # CloudRESTAdapter now reads from Config, not os.environ directly
+        with patch_config(
+            MEMORYGRAPH_API_KEY='mg_config_key',
+            MEMORYGRAPH_API_URL='https://custom-api.memorygraph.dev'
+        ):
             backend = CloudRESTAdapter()
-            assert backend.api_key == 'mg_env_key'
+            assert backend.api_key == 'mg_config_key'
             assert backend.api_url == 'https://custom-api.memorygraph.dev'
 
     @pytest.mark.asyncio

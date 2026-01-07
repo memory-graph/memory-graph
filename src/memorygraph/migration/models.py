@@ -8,7 +8,7 @@ between different backend types.
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List
 
-from ..config import BackendType
+from ..config import BackendType, Config
 
 
 @dataclass
@@ -32,13 +32,9 @@ class BackendConfig:
         Create config from current environment variables.
 
         Reads MEMORY_BACKEND and related env vars to construct config.
-        Note: Reads env vars directly to ensure fresh values.
+        Note: Uses Config singleton to ensure consistent values.
         """
-        import os
-
-        # Read backend type directly from env to get current value
-        backend_str = os.getenv("MEMORY_BACKEND", "sqlite")
-        backend_type = BackendType(backend_str)
+        backend_type = BackendType(Config.BACKEND)
 
         # Determine URI and credentials based on backend type
         uri = None
@@ -47,27 +43,27 @@ class BackendConfig:
         path = None
 
         if backend_type == BackendType.NEO4J:
-            uri = os.getenv("MEMORY_NEO4J_URI") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
-            username = os.getenv("MEMORY_NEO4J_USER") or os.getenv("NEO4J_USER", "neo4j")
-            password = os.getenv("MEMORY_NEO4J_PASSWORD") or os.getenv("NEO4J_PASSWORD")
+            uri = Config.NEO4J_URI
+            username = Config.NEO4J_USER
+            password = Config.NEO4J_PASSWORD
 
         elif backend_type == BackendType.MEMGRAPH:
-            uri = os.getenv("MEMORY_MEMGRAPH_URI", "bolt://localhost:7687")
-            username = os.getenv("MEMORY_MEMGRAPH_USER", "")
-            password = os.getenv("MEMORY_MEMGRAPH_PASSWORD", "")
+            uri = Config.MEMGRAPH_URI
+            username = Config.MEMGRAPH_USER
+            password = Config.MEMGRAPH_PASSWORD
 
         elif backend_type == BackendType.FALKORDB:
             # FalkorDB uses Redis protocol, construct URI from host:port
-            host = os.getenv("MEMORY_FALKORDB_HOST") or os.getenv("FALKORDB_HOST", "localhost")
-            port = os.getenv("MEMORY_FALKORDB_PORT") or os.getenv("FALKORDB_PORT", "6379")
+            host = Config.FALKORDB_HOST
+            port = str(Config.FALKORDB_PORT)
             uri = f"redis://{host}:{port}"
-            password = os.getenv("MEMORY_FALKORDB_PASSWORD") or os.getenv("FALKORDB_PASSWORD")
+            password = Config.FALKORDB_PASSWORD
 
         elif backend_type == BackendType.SQLITE:
-            path = os.getenv("MEMORY_SQLITE_PATH", os.path.expanduser("~/.memorygraph/memory.db"))
+            path = Config.SQLITE_PATH
 
         elif backend_type == BackendType.FALKORDBLITE:
-            path = os.getenv("MEMORY_FALKORDBLITE_PATH") or os.getenv("FALKORDBLITE_PATH", os.path.expanduser("~/.memorygraph/falkordblite.db"))
+            path = Config.FALKORDBLITE_PATH
 
         return cls(
             backend_type=backend_type,

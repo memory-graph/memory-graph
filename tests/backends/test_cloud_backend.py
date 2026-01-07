@@ -11,6 +11,7 @@ Tests cover:
 """
 
 import pytest
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
@@ -27,6 +28,22 @@ from memorygraph.models import (
     RelationshipType, RelationshipProperties, SearchQuery,
     DatabaseConnectionError,
 )
+from memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 @pytest.fixture
@@ -95,18 +112,20 @@ class TestCloudRESTAdapterInitialization:
 
     def test_initialization_without_api_key_raises(self):
         """Test that missing API key raises error."""
-        with patch.dict('os.environ', {}, clear=True):
+        # CloudRESTAdapter now reads from Config, not os.environ
+        with patch_config(MEMORYGRAPH_API_KEY=None):
             with pytest.raises(DatabaseConnectionError) as exc_info:
                 CloudRESTAdapter()
             assert "MEMORYGRAPH_API_KEY is required" in str(exc_info.value)
 
-    def test_initialization_with_env_vars(self, api_key, api_url):
-        """Test initialization from environment variables."""
-        with patch.dict('os.environ', {
-            'MEMORYGRAPH_API_KEY': api_key,
-            'MEMORYGRAPH_API_URL': api_url,
-            'MEMORYGRAPH_TIMEOUT': '60'
-        }):
+    def test_initialization_with_config(self, api_key, api_url):
+        """Test initialization from Config class."""
+        # CloudRESTAdapter now reads from Config, not os.environ directly
+        with patch_config(
+            MEMORYGRAPH_API_KEY=api_key,
+            MEMORYGRAPH_API_URL=api_url,
+            MEMORYGRAPH_TIMEOUT=60
+        ):
             backend = CloudRESTAdapter()
             assert backend.api_key == api_key
             assert backend.api_url == api_url
@@ -114,13 +133,14 @@ class TestCloudRESTAdapterInitialization:
 
     def test_api_key_warning_for_invalid_prefix(self, api_url, caplog):
         """Test warning for API key without mg_ prefix."""
-        with patch.dict('os.environ', {}, clear=True):
-            backend = CloudRESTAdapter(api_key="invalid_key", api_url=api_url)
-            assert "does not start with 'mg_'" in caplog.text
+        # Pass api_key as constructor param since it warns there
+        backend = CloudRESTAdapter(api_key="invalid_key", api_url=api_url)
+        assert "does not start with 'mg_'" in caplog.text
 
     def test_default_api_url(self, api_key):
         """Test default API URL is used when not provided."""
-        with patch.dict('os.environ', {'MEMORYGRAPH_API_KEY': api_key}, clear=True):
+        # Pass api_key as constructor param, rely on Config default for URL
+        with patch_config(MEMORYGRAPH_API_URL=None):
             backend = CloudRESTAdapter(api_key=api_key)
             assert backend.api_url == CloudRESTAdapter.DEFAULT_API_URL
 

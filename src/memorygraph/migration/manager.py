@@ -69,88 +69,79 @@ class MigrationManager:
         start_time = time.time()
         logger.info(f"Starting migration: {source_config.backend_type.value} → {target_config.backend_type.value}")
 
-        temp_export = None
+        # Use TemporaryDirectory for automatic cleanup
+        with tempfile.TemporaryDirectory(prefix="memorygraph_migration_") as temp_dir:
+            try:
+                temp_dir_path = Path(temp_dir)
 
-        try:
-            # Phase 1: Pre-flight validation
-            logger.info("Phase 1: Pre-flight validation")
-            await self._validate_source(source_config)
-            await self._validate_target(target_config)
-            await self._check_compatibility(source_config, target_config)
+                # Phase 1: Pre-flight validation
+                logger.info("Phase 1: Pre-flight validation")
+                await self._validate_source(source_config)
+                await self._validate_target(target_config)
+                await self._check_compatibility(source_config, target_config)
 
-            # Phase 2: Export from source
-            logger.info("Phase 2: Exporting from source")
-            temp_export = await self._export_from_source(source_config, options)
+                # Phase 2: Export from source
+                logger.info("Phase 2: Exporting from source")
+                temp_export = await self._export_from_source(source_config, options, temp_dir_path)
 
-            # Phase 3: Validate export
-            logger.info("Phase 3: Validating export")
-            validation_result = await self._validate_export(temp_export)
-            if not validation_result.valid:
-                raise MigrationError(f"Export validation failed: {validation_result.errors}")
+                # Phase 3: Validate export
+                logger.info("Phase 3: Validating export")
+                validation_result = await self._validate_export(temp_export)
+                if not validation_result.valid:
+                    raise MigrationError(f"Export validation failed: {validation_result.errors}")
 
-            if options.dry_run:
-                logger.info("Dry-run mode: Skipping import phase")
+                if options.dry_run:
+                    logger.info("Dry-run mode: Skipping import phase")
+                    source_stats = await self._get_backend_stats(source_config)
+                    return MigrationResult(
+                        success=True,
+                        dry_run=True,
+                        source_stats=source_stats,
+                        duration_seconds=time.time() - start_time
+                    )
+
+                # Phase 4: Import to target
+                logger.info("Phase 4: Importing to target")
+                import_stats = await self._import_to_target(target_config, temp_export, options)
+
+                # Phase 5: Verify migration
+                verification_result = None
+                if options.verify:
+                    logger.info("Phase 5: Verifying migration")
+                    verification_result = await self._verify_migration(
+                        source_config,
+                        target_config,
+                        temp_export
+                    )
+
+                    if not verification_result.valid and options.rollback_on_failure:
+                        logger.error("Verification failed, rolling back...")
+                        await self._rollback_target(target_config)
+                        raise MigrationError(f"Verification failed: {verification_result.errors}")
+
                 source_stats = await self._get_backend_stats(source_config)
+                target_stats = await self._get_backend_stats(target_config)
+
+                logger.info("Migration completed successfully")
                 return MigrationResult(
                     success=True,
-                    dry_run=True,
                     source_stats=source_stats,
+                    target_stats=target_stats,
+                    imported_memories=import_stats["imported_memories"],
+                    imported_relationships=import_stats["imported_relationships"],
+                    skipped_memories=import_stats["skipped_memories"],
+                    verification_result=verification_result,
                     duration_seconds=time.time() - start_time
                 )
 
-            # Phase 4: Import to target
-            logger.info("Phase 4: Importing to target")
-            import_stats = await self._import_to_target(target_config, temp_export, options)
-
-            # Phase 5: Verify migration
-            verification_result = None
-            if options.verify:
-                logger.info("Phase 5: Verifying migration")
-                verification_result = await self._verify_migration(
-                    source_config,
-                    target_config,
-                    temp_export
+            except Exception as e:
+                logger.error(f"Migration failed: {e}", exc_info=True)
+                # temp_dir is automatically cleaned up when context exits
+                return MigrationResult(
+                    success=False,
+                    duration_seconds=time.time() - start_time,
+                    errors=[str(e)]
                 )
-
-                if not verification_result.valid and options.rollback_on_failure:
-                    logger.error("Verification failed, rolling back...")
-                    await self._rollback_target(target_config)
-                    raise MigrationError(f"Verification failed: {verification_result.errors}")
-
-            # Phase 6: Cleanup
-            logger.info("Phase 6: Cleanup")
-            await self._cleanup_temp_files(temp_export)
-
-            source_stats = await self._get_backend_stats(source_config)
-            target_stats = await self._get_backend_stats(target_config)
-
-            logger.info("Migration completed successfully")
-            return MigrationResult(
-                success=True,
-                source_stats=source_stats,
-                target_stats=target_stats,
-                imported_memories=import_stats["imported_memories"],
-                imported_relationships=import_stats["imported_relationships"],
-                skipped_memories=import_stats["skipped_memories"],
-                verification_result=verification_result,
-                duration_seconds=time.time() - start_time
-            )
-
-        except Exception as e:
-            logger.error(f"Migration failed: {e}", exc_info=True)
-
-            # Cleanup on failure
-            if temp_export and temp_export.exists():
-                try:
-                    await self._cleanup_temp_files(temp_export)
-                except Exception as cleanup_error:
-                    logger.warning(f"Failed to cleanup temp files: {cleanup_error}")
-
-            return MigrationResult(
-                success=False,
-                duration_seconds=time.time() - start_time,
-                errors=[str(e)]
-            )
 
     async def _validate_source(self, config: BackendConfig) -> None:
         """
@@ -229,10 +220,16 @@ class MigrationManager:
     async def _export_from_source(
         self,
         config: BackendConfig,
-        options: MigrationOptions
+        options: MigrationOptions,
+        temp_dir: Path
     ) -> Path:
         """
         Export data from source backend to temporary file.
+
+        Args:
+            config: Source backend configuration
+            options: Migration options
+            temp_dir: Temporary directory for export file
 
         Returns:
             Path to temporary export file
@@ -253,9 +250,7 @@ class MigrationManager:
             db = MemoryDatabase(backend)
 
         try:
-            # Create temp export file
-            temp_dir = Path(tempfile.gettempdir()) / "memorygraph_migration"
-            temp_dir.mkdir(exist_ok=True, parents=True)
+            # Create temp export file in provided temp directory
             export_path = temp_dir / f"migration_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
 
             # Use universal export (from Phase 1)

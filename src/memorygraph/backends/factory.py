@@ -10,6 +10,7 @@ import os
 from typing import Optional, Union
 
 from .base import GraphBackend
+from ..config import Config
 from ..models import DatabaseConnectionError
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ class BackendFactory:
         - Cloud: Schema managed by cloud service (no local initialization needed)
         - All initialize_schema() methods are idempotent (safe to call multiple times)
         """
-        backend_type = os.getenv("MEMORY_BACKEND", "sqlite").lower()
+        backend_type = Config.BACKEND.lower()
 
         if backend_type == "neo4j":
             logger.info("Explicit backend selection: Neo4j")
@@ -105,7 +106,7 @@ class BackendFactory:
             DatabaseConnectionError: If no backend can be connected
         """
         # Try Neo4j first (if password is configured)
-        neo4j_password = os.getenv("MEMORY_NEO4J_PASSWORD") or os.getenv("NEO4J_PASSWORD")
+        neo4j_password = Config.NEO4J_PASSWORD
         if neo4j_password:
             try:
                 logger.info("Attempting to connect to Neo4j...")
@@ -116,7 +117,7 @@ class BackendFactory:
                 logger.warning(f"Neo4j connection failed: {e}")
 
         # Try Memgraph (Community Edition typically has no auth)
-        memgraph_uri = os.getenv("MEMORY_MEMGRAPH_URI")
+        memgraph_uri = Config.MEMGRAPH_URI
         if memgraph_uri:
             try:
                 logger.info("Attempting to connect to Memgraph...")
@@ -153,9 +154,9 @@ class BackendFactory:
         # Lazy import - only load neo4j backend when needed
         from .neo4j_backend import Neo4jBackend
 
-        uri = os.getenv("MEMORY_NEO4J_URI") or os.getenv("NEO4J_URI")
-        user = os.getenv("MEMORY_NEO4J_USER") or os.getenv("NEO4J_USER")
-        password = os.getenv("MEMORY_NEO4J_PASSWORD") or os.getenv("NEO4J_PASSWORD")
+        uri = Config.NEO4J_URI
+        user = Config.NEO4J_USER
+        password = Config.NEO4J_PASSWORD
 
         if not password:
             raise DatabaseConnectionError(
@@ -182,9 +183,9 @@ class BackendFactory:
         # Lazy import - only load memgraph backend when needed
         from .memgraph_backend import MemgraphBackend
 
-        uri = os.getenv("MEMORY_MEMGRAPH_URI")
-        user = os.getenv("MEMORY_MEMGRAPH_USER", "")
-        password = os.getenv("MEMORY_MEMGRAPH_PASSWORD", "")
+        uri = Config.MEMGRAPH_URI
+        user = Config.MEMGRAPH_USER
+        password = Config.MEMGRAPH_PASSWORD
 
         backend = MemgraphBackend(uri=uri, user=user, password=password)
         await backend.connect()
@@ -205,10 +206,9 @@ class BackendFactory:
         # Lazy import - only load falkordb backend when needed
         from .falkordb_backend import FalkorDBBackend
 
-        host = os.getenv("MEMORY_FALKORDB_HOST") or os.getenv("FALKORDB_HOST")
-        port_str = os.getenv("MEMORY_FALKORDB_PORT") or os.getenv("FALKORDB_PORT")
-        port = int(port_str) if port_str else None
-        password = os.getenv("MEMORY_FALKORDB_PASSWORD") or os.getenv("FALKORDB_PASSWORD")
+        host = Config.FALKORDB_HOST
+        port = Config.FALKORDB_PORT
+        password = Config.FALKORDB_PASSWORD
 
         backend = FalkorDBBackend(host=host, port=port, password=password)
         await backend.connect()
@@ -229,7 +229,7 @@ class BackendFactory:
         # Lazy import - only load falkordblite backend when needed
         from .falkordblite_backend import FalkorDBLiteBackend
 
-        db_path = os.getenv("MEMORY_FALKORDBLITE_PATH") or os.getenv("FALKORDBLITE_PATH")
+        db_path = Config.FALKORDBLITE_PATH
 
         backend = FalkorDBLiteBackend(db_path=db_path)
         await backend.connect()
@@ -250,7 +250,7 @@ class BackendFactory:
         # Lazy import - only load ladybugdb backend when needed
         from .ladybugdb_backend import LadybugDBBackend
 
-        db_path = os.getenv("MEMORY_LADYBUGDB_PATH") or os.getenv("LADYBUGDB_PATH")
+        db_path = Config.LADYBUGDB_PATH
 
         backend = LadybugDBBackend(db_path=db_path)
         await backend.connect()
@@ -272,7 +272,7 @@ class BackendFactory:
         # Lazy import - only load sqlite backend when needed
         from .sqlite_fallback import SQLiteFallbackBackend
 
-        db_path = os.getenv("MEMORY_SQLITE_PATH")
+        db_path = Config.SQLITE_PATH
         backend = SQLiteFallbackBackend(db_path=db_path)
         await backend.connect()
         # Schema auto-initialized - safe for first-time users
@@ -293,9 +293,9 @@ class BackendFactory:
         # Lazy import - only load turso backend when needed
         from .turso import TursoBackend
 
-        db_path = os.getenv("MEMORY_TURSO_PATH")
-        sync_url = os.getenv("TURSO_DATABASE_URL") or os.getenv("MEMORYGRAPH_TURSO_URL")
-        auth_token = os.getenv("TURSO_AUTH_TOKEN") or os.getenv("MEMORYGRAPH_TURSO_TOKEN")
+        db_path = Config.TURSO_PATH
+        sync_url = Config.TURSO_DATABASE_URL
+        auth_token = Config.TURSO_AUTH_TOKEN
 
         backend = TursoBackend(
             db_path=db_path,
@@ -321,10 +321,9 @@ class BackendFactory:
         # Lazy import - only load cloud backend when needed
         from .cloud_backend import CloudRESTAdapter
 
-        api_key = os.getenv("MEMORYGRAPH_API_KEY")
-        api_url = os.getenv("MEMORYGRAPH_API_URL")
-        timeout_str = os.getenv("MEMORYGRAPH_TIMEOUT")
-        timeout = int(timeout_str) if timeout_str else None
+        api_key = Config.MEMORYGRAPH_API_KEY
+        api_url = Config.MEMORYGRAPH_API_URL
+        timeout = Config.MEMORYGRAPH_TIMEOUT
 
         if not api_key:
             raise DatabaseConnectionError(
@@ -559,7 +558,7 @@ class BackendFactory:
         Returns:
             Backend type string: "neo4j", "memgraph", "sqlite", or "auto"
         """
-        return os.getenv("MEMORY_BACKEND", "auto").lower()
+        return Config.BACKEND.lower()
 
     @staticmethod
     def is_backend_configured(backend_type: str) -> bool:
@@ -573,28 +572,18 @@ class BackendFactory:
             True if backend appears to be configured
         """
         if backend_type == "neo4j":
-            return bool(
-                os.getenv("MEMORY_NEO4J_PASSWORD") or
-                os.getenv("NEO4J_PASSWORD")
-            )
+            return bool(Config.NEO4J_PASSWORD)
         elif backend_type == "memgraph":
-            return bool(os.getenv("MEMORY_MEMGRAPH_URI"))
+            return bool(Config.MEMGRAPH_URI)
         elif backend_type == "falkordb":
-            return bool(
-                os.getenv("MEMORY_FALKORDB_HOST") or
-                os.getenv("FALKORDB_HOST")
-            )
+            return bool(Config.FALKORDB_HOST)
         elif backend_type == "falkordblite":
             return True  # FalkorDBLite is always available (embedded, like SQLite)
         elif backend_type == "sqlite":
             return True  # SQLite is always available if NetworkX is installed
         elif backend_type == "turso":
-            return bool(
-                os.getenv("TURSO_DATABASE_URL") or
-                os.getenv("MEMORYGRAPH_TURSO_URL") or
-                os.getenv("MEMORY_TURSO_PATH")
-            )
+            return bool(Config.TURSO_DATABASE_URL or Config.TURSO_PATH)
         elif backend_type == "cloud":
-            return bool(os.getenv("MEMORYGRAPH_API_KEY"))
+            return bool(Config.MEMORYGRAPH_API_KEY)
         else:
             return False

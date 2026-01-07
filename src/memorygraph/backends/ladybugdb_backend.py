@@ -60,13 +60,11 @@ class LadybugDBBackend(GraphBackend):
                 "Install it with: pip install real-ladybug"
             )
         if db_path is None:
-            db_path = os.getenv("LADYBUGDB_PATH")
+            db_path = Config.LADYBUGDB_PATH
             if db_path is None:
-                # Default to ~/.memorygraph/ladybugdb.db
-                home = Path.home()
-                db_dir = home / ".memorygraph"
-                db_dir.mkdir(parents=True, exist_ok=True)
-                db_path = str(db_dir / "ladybugdb.db")
+                # Default to ~/.memorygraph/ladybugdb.db and ensure directory exists
+                db_path = os.path.expanduser("~/.memorygraph/ladybugdb.db")
+                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
         self.db_path = db_path
         self.graph_name = graph_name
@@ -130,7 +128,7 @@ class LadybugDBBackend(GraphBackend):
             List of result dictionaries
         """
         if not self._connected or not self.graph:
-            raise DatabaseConnectionError("Not connected to LadybugDB")
+            raise DatabaseConnectionError("Connection failed: not connected to LadybugDB")
 
         try:
             # Execute query using LadybugDB's connection
@@ -160,7 +158,7 @@ class LadybugDBBackend(GraphBackend):
             SchemaError: If schema initialization fails
         """
         if not self._connected or not self.graph:
-            raise DatabaseConnectionError("Not connected to LadybugDB")
+            raise DatabaseConnectionError("Connection failed: not connected to LadybugDB")
 
         try:
             # Create basic schema - indexes and constraints

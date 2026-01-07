@@ -11,11 +11,28 @@ import pytest
 import tempfile
 import os
 from pathlib import Path
+from contextlib import contextmanager
 
 from memorygraph.backends.factory import BackendFactory
 from memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 from memorygraph.sqlite_database import SQLiteMemoryDatabase
 from memorygraph.models import Memory, MemoryType
+from memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 class TestSQLiteIntegration:
@@ -29,14 +46,16 @@ class TestSQLiteIntegration:
             monkeypatch.setenv("MEMORY_SQLITE_PATH", db_path)
             monkeypatch.setenv("MEMORY_BACKEND", "sqlite")
 
-            backend = await BackendFactory.create_backend()
+            # Factory reads from Config, not os.environ
+            with patch_config(BACKEND="sqlite", SQLITE_PATH=db_path):
+                backend = await BackendFactory.create_backend()
 
-            # Use backend_name() method instead of isinstance to avoid
-            # issues with module reloading during test runs
-            assert backend.backend_name() == "sqlite"
-            assert hasattr(backend, 'conn')  # SQLite-specific attribute
+                # Use backend_name() method instead of isinstance to avoid
+                # issues with module reloading during test runs
+                assert backend.backend_name() == "sqlite"
+                assert hasattr(backend, 'conn')  # SQLite-specific attribute
 
-            await backend.disconnect()
+                await backend.disconnect()
 
     @pytest.mark.asyncio
     async def test_sqlite_memory_database_with_factory(self, monkeypatch):
@@ -46,29 +65,31 @@ class TestSQLiteIntegration:
             monkeypatch.setenv("MEMORY_SQLITE_PATH", db_path)
             monkeypatch.setenv("MEMORY_BACKEND", "sqlite")
 
-            # Create backend via factory
-            backend = await BackendFactory.create_backend()
+            # Factory reads from Config, not os.environ
+            with patch_config(BACKEND="sqlite", SQLITE_PATH=db_path):
+                # Create backend via factory
+                backend = await BackendFactory.create_backend()
 
-            # Create database
-            db = SQLiteMemoryDatabase(backend)
-            await db.initialize_schema()
+                # Create database
+                db = SQLiteMemoryDatabase(backend)
+                await db.initialize_schema()
 
-            # Store a memory
-            memory = Memory(
-                type=MemoryType.GENERAL,
-                title="Test Memory",
-                content="This is a test"
-            )
+                # Store a memory
+                memory = Memory(
+                    type=MemoryType.GENERAL,
+                    title="Test Memory",
+                    content="This is a test"
+                )
 
-            memory_id = await db.store_memory(memory)
-            assert memory_id is not None
+                memory_id = await db.store_memory(memory)
+                assert memory_id is not None
 
-            # Retrieve it
-            retrieved = await db.get_memory(memory_id)
-            assert retrieved is not None
-            assert retrieved.title == "Test Memory"
+                # Retrieve it
+                retrieved = await db.get_memory(memory_id)
+                assert retrieved is not None
+                assert retrieved.title == "Test Memory"
 
-            await backend.disconnect()
+                await backend.disconnect()
 
     @pytest.mark.asyncio
     async def test_memory_persists_to_disk(self, monkeypatch):
@@ -78,34 +99,36 @@ class TestSQLiteIntegration:
             monkeypatch.setenv("MEMORY_SQLITE_PATH", db_path)
             monkeypatch.setenv("MEMORY_BACKEND", "sqlite")
 
-            # Create and store a memory
-            backend1 = await BackendFactory.create_backend()
-            db1 = SQLiteMemoryDatabase(backend1)
-            await db1.initialize_schema()
+            # Factory reads from Config, not os.environ
+            with patch_config(BACKEND="sqlite", SQLITE_PATH=db_path):
+                # Create and store a memory
+                backend1 = await BackendFactory.create_backend()
+                db1 = SQLiteMemoryDatabase(backend1)
+                await db1.initialize_schema()
 
-            memory = Memory(
-                type=MemoryType.SOLUTION,
-                title="Persistent Memory",
-                content="This should persist"
-            )
+                memory = Memory(
+                    type=MemoryType.SOLUTION,
+                    title="Persistent Memory",
+                    content="This should persist"
+                )
 
-            memory_id = await db1.store_memory(memory)
-            await backend1.disconnect()
+                memory_id = await db1.store_memory(memory)
+                await backend1.disconnect()
 
-            # Verify file exists and has content
-            assert os.path.exists(db_path)
-            assert os.path.getsize(db_path) > 0
+                # Verify file exists and has content
+                assert os.path.exists(db_path)
+                assert os.path.getsize(db_path) > 0
 
-            # Reconnect and verify data is still there
-            backend2 = await BackendFactory.create_backend()
-            db2 = SQLiteMemoryDatabase(backend2)
+                # Reconnect and verify data is still there
+                backend2 = await BackendFactory.create_backend()
+                db2 = SQLiteMemoryDatabase(backend2)
 
-            retrieved = await db2.get_memory(memory_id)
-            assert retrieved is not None
-            assert retrieved.title == "Persistent Memory"
-            assert retrieved.content == "This should persist"
+                retrieved = await db2.get_memory(memory_id)
+                assert retrieved is not None
+                assert retrieved.title == "Persistent Memory"
+                assert retrieved.content == "This should persist"
 
-            await backend2.disconnect()
+                await backend2.disconnect()
 
     @pytest.mark.asyncio
     async def test_default_backend_is_sqlite(self, monkeypatch):
@@ -115,15 +138,18 @@ class TestSQLiteIntegration:
             monkeypatch.delenv("MEMORY_BACKEND", raising=False)
             monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
             monkeypatch.delenv("MEMORY_NEO4J_PASSWORD", raising=False)
-            monkeypatch.setenv("MEMORY_SQLITE_PATH", os.path.join(tmpdir, "default.db"))
+            db_path = os.path.join(tmpdir, "default.db")
+            monkeypatch.setenv("MEMORY_SQLITE_PATH", db_path)
 
-            backend = await BackendFactory.create_backend()
+            # Factory reads from Config - sqlite is the default, clear neo4j password
+            with patch_config(BACKEND="sqlite", SQLITE_PATH=db_path, NEO4J_PASSWORD=None):
+                backend = await BackendFactory.create_backend()
 
-            # Should be SQLite by default - use backend_name() to avoid
-            # isinstance issues with module reloading
-            assert backend.backend_name() == "sqlite"
+                # Should be SQLite by default - use backend_name() to avoid
+                # isinstance issues with module reloading
+                assert backend.backend_name() == "sqlite"
 
-            await backend.disconnect()
+                await backend.disconnect()
 
     @pytest.mark.asyncio
     async def test_server_initialization_with_sqlite(self, monkeypatch):
@@ -133,36 +159,38 @@ class TestSQLiteIntegration:
             monkeypatch.setenv("MEMORY_SQLITE_PATH", db_path)
             monkeypatch.setenv("MEMORY_BACKEND", "sqlite")
 
-            # Reload server module to get fresh imports (avoids issues with
-            # module reloading from other tests)
-            import importlib
-            import memorygraph.server
-            importlib.reload(memorygraph.server)
-            from memorygraph.server import ClaudeMemoryServer
+            # Factory reads from Config, not os.environ
+            with patch_config(BACKEND="sqlite", SQLITE_PATH=db_path):
+                # Reload server module to get fresh imports (avoids issues with
+                # module reloading from other tests)
+                import importlib
+                import memorygraph.server
+                importlib.reload(memorygraph.server)
+                from memorygraph.server import ClaudeMemoryServer
 
-            server = ClaudeMemoryServer()
-            await server.initialize()
+                server = ClaudeMemoryServer()
+                await server.initialize()
 
-            # Verify we have a SQLite backend - the important thing is that
-            # the underlying connection uses SQLite, not the specific class type
-            # (which can be affected by module reloading during test runs)
-            assert server.db_connection is not None
-            assert server.db_connection.backend_name() == "sqlite"
-            assert server.memory_db is not None
+                # Verify we have a SQLite backend - the important thing is that
+                # the underlying connection uses SQLite, not the specific class type
+                # (which can be affected by module reloading during test runs)
+                assert server.db_connection is not None
+                assert server.db_connection.backend_name() == "sqlite"
+                assert server.memory_db is not None
 
-            # Test storing a memory via the server's database
-            memory = Memory(
-                type=MemoryType.TASK,
-                title="Server Test",
-                content="Testing server integration"
-            )
+                # Test storing a memory via the server's database
+                memory = Memory(
+                    type=MemoryType.TASK,
+                    title="Server Test",
+                    content="Testing server integration"
+                )
 
-            memory_id = await server.memory_db.store_memory(memory)
-            assert memory_id is not None
+                memory_id = await server.memory_db.store_memory(memory)
+                assert memory_id is not None
 
-            # Retrieve and verify
-            retrieved = await server.memory_db.get_memory(memory_id)
-            assert retrieved is not None
-            assert retrieved.title == "Server Test"
+                # Retrieve and verify
+                retrieved = await server.memory_db.get_memory(memory_id)
+                assert retrieved is not None
+                assert retrieved.title == "Server Test"
 
-            await server.cleanup()
+                await server.cleanup()

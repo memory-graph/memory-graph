@@ -282,7 +282,7 @@ class TestMemgraphBackendQueryExecution:
         """Test query execution when not connected."""
         backend = MemgraphBackend(uri="bolt://test:7687")
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected to Memgraph"):
+        with pytest.raises(DatabaseConnectionError, match="(?i)not connected"):
             await backend.execute_query("MATCH (n) RETURN n")
 
     @pytest.mark.asyncio
@@ -292,7 +292,7 @@ class TestMemgraphBackendQueryExecution:
         backend._connected = True  # Simulate inconsistent state
         backend.driver = None
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected to Memgraph"):
+        with pytest.raises(DatabaseConnectionError, match="(?i)not connected"):
             await backend.execute_query("MATCH (n) RETURN n")
 
     @neo4j_skip
@@ -586,7 +586,7 @@ class TestMemgraphSessionManagement:
         """Test session context manager when not connected."""
         backend = MemgraphBackend(uri="bolt://test:7687")
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected to Memgraph"):
+        with pytest.raises(DatabaseConnectionError, match="(?i)not connected"):
             async with backend._session():
                 pass
 

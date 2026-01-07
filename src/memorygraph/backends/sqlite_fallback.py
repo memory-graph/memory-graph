@@ -49,7 +49,7 @@ class SQLiteFallbackBackend(GraphBackend):
             )
 
         default_path = os.path.expanduser("~/.memorygraph/memory.db")
-        resolved_path = db_path or os.getenv("MEMORY_SQLITE_PATH", default_path)
+        resolved_path = db_path or Config.SQLITE_PATH or default_path
         self.db_path: str = resolved_path if resolved_path else default_path
         self.conn: Optional[sqlite3.Connection] = None
         self.graph: Optional[nx.DiGraph] = None  # type: ignore[misc,no-any-unimported]
@@ -121,7 +121,7 @@ class SQLiteFallbackBackend(GraphBackend):
             Complex Cypher queries will raise NotImplementedError.
         """
         if not self._connected or not self.conn:
-            raise DatabaseConnectionError("Not connected to SQLite. Call connect() first.")
+            raise DatabaseConnectionError("Connection failed: not connected to SQLite (call connect() first)")
 
         params = parameters or {}
 
@@ -149,7 +149,7 @@ class SQLiteFallbackBackend(GraphBackend):
         logger.info("Initializing SQLite schema for Claude Memory...")
 
         if not self.conn:
-            raise SchemaError("Not connected to database")
+            raise SchemaError("Schema operation failed: not connected to database")
 
         cursor = self.conn.cursor()
 
@@ -428,6 +428,21 @@ class SQLiteFallbackBackend(GraphBackend):
 
     # Helper methods for direct database operations (used by MemoryDatabase)
 
+    def _validate_connection(self) -> bool:
+        """
+        Validate the SQLite connection is still usable.
+
+        Returns:
+            True if connection is valid, False otherwise
+        """
+        if not self.conn:
+            return False
+        try:
+            self.conn.execute("SELECT 1")
+            return True
+        except Exception:
+            return False
+
     def execute_sync(self, query: str, parameters: Optional[tuple[Any, ...]] = None) -> list[dict[str, Any]]:
         """
         Execute a synchronous SQL query (for internal use).
@@ -439,8 +454,8 @@ class SQLiteFallbackBackend(GraphBackend):
         Returns:
             List of result rows as dictionaries
         """
-        if not self.conn:
-            raise DatabaseConnectionError("Not connected to SQLite")
+        if not self._validate_connection():
+            raise DatabaseConnectionError("SQLite connection is not valid. Call connect() first.")
 
         cursor = self.conn.cursor()
         if parameters:

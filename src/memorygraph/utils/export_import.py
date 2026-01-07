@@ -9,7 +9,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Callable, Set, Tuple, Union
+from typing import Dict, Any, List, Optional, Callable, Set, Tuple, Union, Protocol, TYPE_CHECKING
 
 from ..models import (
     Memory, MemoryType, MemoryContext, RelationshipType, RelationshipProperties,
@@ -17,11 +17,38 @@ from ..models import (
 )
 from .pagination import paginate_memories
 
+if TYPE_CHECKING:
+    from ..database import MemoryDatabase
+    from ..sqlite_database import SQLiteMemoryDatabase
+
 logger = logging.getLogger(__name__)
 
 
+class MemoryDatabaseProtocol(Protocol):
+    """Protocol for memory database backends."""
+
+    async def get_related_memories(
+        self,
+        memory_id: str,
+        relationship_types: Optional[List[RelationshipType]] = None,
+        max_depth: int = 1,
+        limit: int = 100
+    ) -> List[Tuple[Memory, Relationship]]:
+        """Get related memories for a given memory."""
+        ...
+
+    async def search_memories(
+        self,
+        query: SearchQuery,
+        limit: int = 10,
+        offset: int = 0
+    ) -> List[Memory]:
+        """Search for memories."""
+        ...
+
+
 async def _export_relationships(
-    db,  # MemoryDatabase or SQLiteMemoryDatabase
+    db: MemoryDatabaseProtocol,
     memories: List[Memory]
 ) -> List[Dict[str, Any]]:
     """
@@ -68,7 +95,7 @@ async def _export_relationships(
 
 
 async def export_to_json(
-    db,  # MemoryDatabase or SQLiteMemoryDatabase
+    db: MemoryDatabaseProtocol,
     output_path: str,
     progress_callback: Optional[Callable[[int, int], None]] = None
 ) -> Dict[str, Any]:
@@ -172,7 +199,7 @@ async def export_to_json(
 
 
 async def import_from_json(
-    db,  # MemoryDatabase or SQLiteMemoryDatabase
+    db: MemoryDatabaseProtocol,
     input_path: str,
     skip_duplicates: bool = False,
     progress_callback: Optional[Callable[[int, int], None]] = None
@@ -336,7 +363,7 @@ async def import_from_json(
 
 
 async def export_to_markdown(
-    db,  # MemoryDatabase or SQLiteMemoryDatabase
+    db: MemoryDatabaseProtocol,
     output_dir: str
 ) -> None:
     """

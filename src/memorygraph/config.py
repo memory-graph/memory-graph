@@ -137,6 +137,23 @@ class Config:
     MEMORYGRAPH_API_URL: str = os.getenv("MEMORYGRAPH_API_URL", "https://graph-api.memorygraph.dev")
     MEMORYGRAPH_TIMEOUT: int = int(os.getenv("MEMORYGRAPH_TIMEOUT", "30"))
 
+    # Cloud Backend Retry Configuration
+    CLOUD_MAX_RETRIES: int = int(os.getenv("MEMORYGRAPH_MAX_RETRIES", "3"))
+    CLOUD_RETRY_BACKOFF_BASE: float = float(os.getenv("MEMORYGRAPH_RETRY_BACKOFF", "1.0"))
+    CLOUD_CIRCUIT_BREAKER_THRESHOLD: int = int(os.getenv("MEMORYGRAPH_CB_THRESHOLD", "5"))
+    CLOUD_CIRCUIT_BREAKER_TIMEOUT: float = float(os.getenv("MEMORYGRAPH_CB_TIMEOUT", "60.0"))
+
+    # FalkorDB Configuration
+    FALKORDB_HOST: str = os.getenv("MEMORY_FALKORDB_HOST") or os.getenv("FALKORDB_HOST", "localhost")
+    FALKORDB_PORT: int = int(port_str) if (port_str := os.getenv("MEMORY_FALKORDB_PORT") or os.getenv("FALKORDB_PORT")) else 6379
+    FALKORDB_PASSWORD: Optional[str] = os.getenv("MEMORY_FALKORDB_PASSWORD") or os.getenv("FALKORDB_PASSWORD")
+
+    # FalkorDBLite Configuration
+    FALKORDBLITE_PATH: str = os.getenv("MEMORY_FALKORDBLITE_PATH") or os.getenv("FALKORDBLITE_PATH") or os.path.expanduser("~/.memorygraph/falkordblite.db")
+
+    # LadybugDB Configuration
+    LADYBUGDB_PATH: str = os.getenv("MEMORY_LADYBUGDB_PATH") or os.getenv("LADYBUGDB_PATH") or os.path.expanduser("~/.memorygraph/ladybugdb.db")
+
     # Tool Profile Configuration
     TOOL_PROFILE: str = os.getenv("MEMORY_TOOL_PROFILE", "core")
 

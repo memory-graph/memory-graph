@@ -277,7 +277,7 @@ class TestLadybugDBQueryExecution:
         """Test query execution when not connected."""
         backend = LadybugDBBackend(db_path="/tmp/test.db")
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected to LadybugDB"):
+        with pytest.raises(DatabaseConnectionError, match="(?i)not connected"):
             await backend.execute_query("MATCH (n) RETURN n")
 
     @pytest.mark.asyncio

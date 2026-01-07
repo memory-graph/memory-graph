@@ -6,14 +6,30 @@ import os
 import tempfile
 import pytest
 from pathlib import Path
+from contextlib import contextmanager
 
 from src.memorygraph.migration.manager import MigrationManager
 from src.memorygraph.migration.models import BackendConfig, MigrationOptions
-from src.memorygraph.config import BackendType
+from src.memorygraph.config import BackendType, Config
 from src.memorygraph.backends.factory import BackendFactory
 from src.memorygraph.sqlite_database import SQLiteMemoryDatabase
 from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 from src.memorygraph.models import Memory, MemoryType, RelationshipType, RelationshipProperties
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 @pytest.mark.asyncio
@@ -28,35 +44,37 @@ async def test_sqlite_to_sqlite_migration():
         os.environ["MEMORY_BACKEND"] = "sqlite"
         os.environ["MEMORY_SQLITE_PATH"] = source_path
 
-        source_backend = await BackendFactory.create_backend()
-        if isinstance(source_backend, SQLiteFallbackBackend):
-            source_db = SQLiteMemoryDatabase(source_backend)
-        else:
-            source_db = SQLiteMemoryDatabase(source_backend)  # For SQLite, always use SQLiteMemoryDatabase
-        await source_db.initialize_schema()
+        # Factory reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH=source_path):
+            source_backend = await BackendFactory.create_backend()
+            if isinstance(source_backend, SQLiteFallbackBackend):
+                source_db = SQLiteMemoryDatabase(source_backend)
+            else:
+                source_db = SQLiteMemoryDatabase(source_backend)  # For SQLite, always use SQLiteMemoryDatabase
+            await source_db.initialize_schema()
 
-        # Add test memories
-        test_memory_ids = []
-        for i in range(5):
-            memory = Memory(
-                type=MemoryType.SOLUTION,
-                title=f"Test Memory {i}",
-                content=f"Test content {i}",
-                tags=["test"],
-                importance=0.5
+            # Add test memories
+            test_memory_ids = []
+            for i in range(5):
+                memory = Memory(
+                    type=MemoryType.SOLUTION,
+                    title=f"Test Memory {i}",
+                    content=f"Test content {i}",
+                    tags=["test"],
+                    importance=0.5
+                )
+                memory_id = await source_db.store_memory(memory)
+                test_memory_ids.append(memory_id)
+
+            # Add test relationships
+            await source_db.create_relationship(
+                from_memory_id=test_memory_ids[0],
+                to_memory_id=test_memory_ids[1],
+                relationship_type=RelationshipType.SOLVES,
+                properties=RelationshipProperties()
             )
-            memory_id = await source_db.store_memory(memory)
-            test_memory_ids.append(memory_id)
 
-        # Add test relationships
-        await source_db.create_relationship(
-            from_memory_id=test_memory_ids[0],
-            to_memory_id=test_memory_ids[1],
-            relationship_type=RelationshipType.SOLVES,
-            properties=RelationshipProperties()
-        )
-
-        await source_backend.disconnect()
+            await source_backend.disconnect()
 
         # Perform migration
         source_config = BackendConfig(
@@ -101,22 +119,24 @@ async def test_migration_dry_run():
         os.environ["MEMORY_BACKEND"] = "sqlite"
         os.environ["MEMORY_SQLITE_PATH"] = source_path
 
-        source_backend = await BackendFactory.create_backend()
-        if isinstance(source_backend, SQLiteFallbackBackend):
-            source_db = SQLiteMemoryDatabase(source_backend)
-        else:
-            source_db = SQLiteMemoryDatabase(source_backend)  # For SQLite, always use SQLiteMemoryDatabase
-        await source_db.initialize_schema()
+        # Factory reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH=source_path):
+            source_backend = await BackendFactory.create_backend()
+            if isinstance(source_backend, SQLiteFallbackBackend):
+                source_db = SQLiteMemoryDatabase(source_backend)
+            else:
+                source_db = SQLiteMemoryDatabase(source_backend)  # For SQLite, always use SQLiteMemoryDatabase
+            await source_db.initialize_schema()
 
-        # Add one test memory
-        memory = Memory(
-            type=MemoryType.SOLUTION,
-            title="Test Memory",
-            content="Test content",
-            tags=["test"]
-        )
-        await source_db.store_memory(memory)
-        await source_backend.disconnect()
+            # Add one test memory
+            memory = Memory(
+                type=MemoryType.SOLUTION,
+                title="Test Memory",
+                content="Test content",
+                tags=["test"]
+            )
+            await source_db.store_memory(memory)
+            await source_backend.disconnect()
 
         # Perform dry-run migration
         source_config = BackendConfig(
@@ -145,19 +165,20 @@ async def test_migration_dry_run():
             # Verify it's empty
             os.environ["MEMORY_BACKEND"] = "sqlite"
             os.environ["MEMORY_SQLITE_PATH"] = target_path
-            target_backend = await BackendFactory.create_backend()
-            if isinstance(target_backend, SQLiteFallbackBackend):
-                target_db = SQLiteMemoryDatabase(target_backend)
-            else:
-                target_db = SQLiteMemoryDatabase(target_backend)
+            with patch_config(BACKEND="sqlite", SQLITE_PATH=target_path):
+                target_backend = await BackendFactory.create_backend()
+                if isinstance(target_backend, SQLiteFallbackBackend):
+                    target_db = SQLiteMemoryDatabase(target_backend)
+                else:
+                    target_db = SQLiteMemoryDatabase(target_backend)
 
-            # Check it has no memories
-            from src.memorygraph.models import SearchQuery
-            query = SearchQuery(query="", limit=1000, offset=0, match_mode="any")
-            memories = await target_db.search_memories(query)
-            assert len(memories) == 0, "Dry-run should not import any data"
+                # Check it has no memories
+                from src.memorygraph.models import SearchQuery
+                query = SearchQuery(query="", limit=1000, offset=0, match_mode="any")
+                memories = await target_db.search_memories(query)
+                assert len(memories) == 0, "Dry-run should not import any data"
 
-            await target_backend.disconnect()
+                await target_backend.disconnect()
 
 
 @pytest.mark.asyncio

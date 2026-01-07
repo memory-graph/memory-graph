@@ -14,11 +14,28 @@ Tests cover:
 import pytest
 import tempfile
 import os
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch, Mock
 from pathlib import Path
 
 from memorygraph.backends.turso import TursoBackend
 from memorygraph.models import DatabaseConnectionError, SchemaError
+from memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 @pytest.fixture
@@ -90,11 +107,12 @@ class TestTursoBackendInitialization:
         assert backend.auth_token == "test_token"
 
     def test_initialization_from_env_vars(self, mock_libsql, mock_networkx):
-        """Test initialization from environment variables."""
-        with patch.dict('os.environ', {
-            'TURSO_DATABASE_URL': 'libsql://env.turso.io',
-            'TURSO_AUTH_TOKEN': 'env_token'
-        }):
+        """Test initialization from Config (was: environment variables)."""
+        # Backend now reads from Config, not os.environ
+        with patch_config(
+            TURSO_DATABASE_URL='libsql://env.turso.io',
+            TURSO_AUTH_TOKEN='env_token'
+        ):
             backend = TursoBackend()
             assert backend.sync_url == 'libsql://env.turso.io'
             assert backend.auth_token == 'env_token'

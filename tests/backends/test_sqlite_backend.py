@@ -17,10 +17,27 @@ import os
 import json
 import tempfile
 from pathlib import Path
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 from src.memorygraph.models import DatabaseConnectionError, SchemaError
+from src.memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 class TestSQLiteBackendInitialization:
@@ -44,13 +61,15 @@ class TestSQLiteBackendInitialization:
         assert backend.db_path == expected_path
 
     def test_init_from_env_var(self, tmp_path, monkeypatch):
-        """Test initialization from environment variable."""
+        """Test initialization from Config (was: environment variable)."""
         db_path = str(tmp_path / "env_test.db")
         monkeypatch.setenv("MEMORY_SQLITE_PATH", db_path)
 
-        backend = SQLiteFallbackBackend()
+        # Backend now reads from Config, not os.environ
+        with patch_config(SQLITE_PATH=db_path):
+            backend = SQLiteFallbackBackend()
 
-        assert backend.db_path == db_path
+            assert backend.db_path == db_path
 
     def test_init_without_networkx(self):
         """Test initialization fails gracefully without NetworkX."""
@@ -220,7 +239,7 @@ class TestSQLiteBackendSchema:
         """Test schema initialization fails when not connected."""
         backend = SQLiteFallbackBackend(db_path=str(tmp_path / "test.db"))
 
-        with pytest.raises(SchemaError, match="Not connected"):
+        with pytest.raises(SchemaError, match="(?i)not connected"):
             await backend.initialize_schema()
 
     @pytest.mark.asyncio
@@ -243,7 +262,7 @@ class TestSQLiteBackendQueries:
         """Test query execution fails when not connected."""
         backend = SQLiteFallbackBackend(db_path=str(tmp_path / "test.db"))
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected"):
+        with pytest.raises(DatabaseConnectionError, match="(?i)not connected"):
             await backend.execute_query("SELECT 1")
 
     @pytest.mark.asyncio
@@ -299,7 +318,7 @@ class TestSQLiteBackendQueries:
         """Test execute_sync fails when not connected."""
         backend = SQLiteFallbackBackend(db_path=str(tmp_path / "test.db"))
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected"):
+        with pytest.raises(DatabaseConnectionError, match="not valid"):
             backend.execute_sync("SELECT 1")
 
 

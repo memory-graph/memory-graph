@@ -6,6 +6,7 @@ import os
 import tempfile
 import pytest
 from pathlib import Path
+from contextlib import contextmanager
 
 from src.memorygraph.tools.migration_tools import (
     handle_migrate_database,
@@ -14,6 +15,22 @@ from src.memorygraph.tools.migration_tools import (
 from src.memorygraph.backends.factory import BackendFactory
 from src.memorygraph.sqlite_database import SQLiteMemoryDatabase
 from src.memorygraph.models import Memory, MemoryType
+from src.memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 @pytest.mark.asyncio
@@ -28,32 +45,34 @@ async def test_validate_migration_tool():
         os.environ["MEMORY_BACKEND"] = "sqlite"
         os.environ["MEMORY_SQLITE_PATH"] = source_path
 
-        source_backend = await BackendFactory.create_backend()
-        source_db = SQLiteMemoryDatabase(source_backend)
-        await source_db.initialize_schema()
+        # Factory reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH=source_path):
+            source_backend = await BackendFactory.create_backend()
+            source_db = SQLiteMemoryDatabase(source_backend)
+            await source_db.initialize_schema()
 
-        # Add test memory
-        memory = Memory(
-            type=MemoryType.SOLUTION,
-            title="Test Memory",
-            content="Test content",
-            tags=["test"]
-        )
-        await source_db.store_memory(memory)
-        await source_backend.disconnect()
+            # Add test memory
+            memory = Memory(
+                type=MemoryType.SOLUTION,
+                title="Test Memory",
+                content="Test content",
+                tags=["test"]
+            )
+            await source_db.store_memory(memory)
+            await source_backend.disconnect()
 
-        # Test validation
-        result = await handle_validate_migration(
-            target_backend="sqlite",
-            target_config={"path": target_path}
-        )
+            # Test validation
+            result = await handle_validate_migration(
+                target_backend="sqlite",
+                target_config={"path": target_path}
+            )
 
-        # Verify result
-        assert result["success"] is True
-        assert result["dry_run"] is True
-        assert result["source_backend"] == "sqlite"
-        assert result["target_backend"] == "sqlite"
-        assert result["imported_memories"] == 0  # Dry-run doesn't import
+            # Verify result
+            assert result["success"] is True
+            assert result["dry_run"] is True
+            assert result["source_backend"] == "sqlite"
+            assert result["target_backend"] == "sqlite"
+            assert result["imported_memories"] == 0  # Dry-run doesn't import
 
 
 @pytest.mark.asyncio
@@ -67,37 +86,39 @@ async def test_migrate_database_tool():
         os.environ["MEMORY_BACKEND"] = "sqlite"
         os.environ["MEMORY_SQLITE_PATH"] = source_path
 
-        source_backend = await BackendFactory.create_backend()
-        source_db = SQLiteMemoryDatabase(source_backend)
-        await source_db.initialize_schema()
+        # Factory reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH=source_path):
+            source_backend = await BackendFactory.create_backend()
+            source_db = SQLiteMemoryDatabase(source_backend)
+            await source_db.initialize_schema()
 
-        # Add test memories
-        for i in range(3):
-            memory = Memory(
-                type=MemoryType.SOLUTION,
-                title=f"Test Memory {i}",
-                content=f"Test content {i}",
-                tags=["test"]
+            # Add test memories
+            for i in range(3):
+                memory = Memory(
+                    type=MemoryType.SOLUTION,
+                    title=f"Test Memory {i}",
+                    content=f"Test content {i}",
+                    tags=["test"]
+                )
+                await source_db.store_memory(memory)
+
+            await source_backend.disconnect()
+
+            # Perform migration
+            result = await handle_migrate_database(
+                target_backend="sqlite",
+                target_config={"path": target_path},
+                dry_run=False,
+                verify=True
             )
-            await source_db.store_memory(memory)
 
-        await source_backend.disconnect()
-
-        # Perform migration
-        result = await handle_migrate_database(
-            target_backend="sqlite",
-            target_config={"path": target_path},
-            dry_run=False,
-            verify=True
-        )
-
-        # Verify result
-        assert result["success"] is True
-        assert result["dry_run"] is False
-        assert result["imported_memories"] == 3
-        assert result["verification"]["valid"] is True
-        assert result["verification"]["source_count"] == 3
-        assert result["verification"]["target_count"] == 3
+            # Verify result
+            assert result["success"] is True
+            assert result["dry_run"] is False
+            assert result["imported_memories"] == 3
+            assert result["verification"]["valid"] is True
+            assert result["verification"]["source_count"] == 3
+            assert result["verification"]["target_count"] == 3
 
 
 @pytest.mark.asyncio
@@ -140,44 +161,47 @@ async def test_migrate_database_dry_run():
         os.environ["MEMORY_BACKEND"] = "sqlite"
         os.environ["MEMORY_SQLITE_PATH"] = source_path
 
-        source_backend = await BackendFactory.create_backend()
-        source_db = SQLiteMemoryDatabase(source_backend)
-        await source_db.initialize_schema()
+        # Factory reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH=source_path):
+            source_backend = await BackendFactory.create_backend()
+            source_db = SQLiteMemoryDatabase(source_backend)
+            await source_db.initialize_schema()
 
-        # Add test memory
-        memory = Memory(
-            type=MemoryType.SOLUTION,
-            title="Test Memory",
-            content="Test content"
-        )
-        await source_db.store_memory(memory)
-        await source_backend.disconnect()
+            # Add test memory
+            memory = Memory(
+                type=MemoryType.SOLUTION,
+                title="Test Memory",
+                content="Test content"
+            )
+            await source_db.store_memory(memory)
+            await source_backend.disconnect()
 
-        # Dry-run migration
-        result = await handle_migrate_database(
-            target_backend="sqlite",
-            target_config={"path": target_path},
-            dry_run=True
-        )
+            # Dry-run migration
+            result = await handle_migrate_database(
+                target_backend="sqlite",
+                target_config={"path": target_path},
+                dry_run=True
+            )
 
-        # Verify dry-run succeeded but didn't import
-        assert result["success"] is True
-        assert result["dry_run"] is True
-        assert result["imported_memories"] == 0
+            # Verify dry-run succeeded but didn't import
+            assert result["success"] is True
+            assert result["dry_run"] is True
+            assert result["imported_memories"] == 0
 
         # Verify target doesn't have data (may not even exist)
         if os.path.exists(target_path):
             # If it exists, verify it's empty
             os.environ["MEMORY_SQLITE_PATH"] = target_path
-            target_backend = await BackendFactory.create_backend()
-            target_db = SQLiteMemoryDatabase(target_backend)
+            with patch_config(BACKEND="sqlite", SQLITE_PATH=target_path):
+                target_backend = await BackendFactory.create_backend()
+                target_db = SQLiteMemoryDatabase(target_backend)
 
-            from src.memorygraph.models import SearchQuery
-            query = SearchQuery(query="", limit=100, offset=0, match_mode="any")
-            memories = await target_db.search_memories(query)
-            assert len(memories) == 0
+                from src.memorygraph.models import SearchQuery
+                query = SearchQuery(query="", limit=100, offset=0, match_mode="any")
+                memories = await target_db.search_memories(query)
+                assert len(memories) == 0
 
-            await target_backend.disconnect()
+                await target_backend.disconnect()
 
 
 @pytest.mark.asyncio
@@ -191,34 +215,36 @@ async def test_migrate_database_with_verification():
         os.environ["MEMORY_BACKEND"] = "sqlite"
         os.environ["MEMORY_SQLITE_PATH"] = source_path
 
-        source_backend = await BackendFactory.create_backend()
-        source_db = SQLiteMemoryDatabase(source_backend)
-        await source_db.initialize_schema()
+        # Factory reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH=source_path):
+            source_backend = await BackendFactory.create_backend()
+            source_db = SQLiteMemoryDatabase(source_backend)
+            await source_db.initialize_schema()
 
-        # Add test memory
-        memory = Memory(
-            type=MemoryType.SOLUTION,
-            title="Test Memory",
-            content="Test content"
-        )
-        await source_db.store_memory(memory)
-        await source_backend.disconnect()
+            # Add test memory
+            memory = Memory(
+                type=MemoryType.SOLUTION,
+                title="Test Memory",
+                content="Test content"
+            )
+            await source_db.store_memory(memory)
+            await source_backend.disconnect()
 
-        # Migrate with verification
-        result = await handle_migrate_database(
-            target_backend="sqlite",
-            target_config={"path": target_path},
-            verify=True
-        )
+            # Migrate with verification
+            result = await handle_migrate_database(
+                target_backend="sqlite",
+                target_config={"path": target_path},
+                verify=True
+            )
 
-        # Verify result includes verification details
-        assert result["success"] is True
-        assert "verification" in result
-        assert result["verification"]["valid"] is True
-        assert result["verification"]["source_count"] == 1
-        assert result["verification"]["target_count"] == 1
-        assert result["verification"]["sample_checks"] >= 1
-        assert result["verification"]["sample_passed"] >= 1
+            # Verify result includes verification details
+            assert result["success"] is True
+            assert "verification" in result
+            assert result["verification"]["valid"] is True
+            assert result["verification"]["source_count"] == 1
+            assert result["verification"]["target_count"] == 1
+            assert result["verification"]["sample_checks"] >= 1
+            assert result["verification"]["sample_passed"] >= 1
 
 
 @pytest.mark.asyncio
@@ -232,42 +258,44 @@ async def test_migrate_database_skip_duplicates():
         os.environ["MEMORY_BACKEND"] = "sqlite"
         os.environ["MEMORY_SQLITE_PATH"] = source_path
 
-        source_backend = await BackendFactory.create_backend()
-        source_db = SQLiteMemoryDatabase(source_backend)
-        await source_db.initialize_schema()
+        # Factory reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH=source_path):
+            source_backend = await BackendFactory.create_backend()
+            source_db = SQLiteMemoryDatabase(source_backend)
+            await source_db.initialize_schema()
 
-        # Add test memories
-        memory_ids = []
-        for i in range(2):
-            memory = Memory(
-                type=MemoryType.SOLUTION,
-                title=f"Test Memory {i}",
-                content=f"Test content {i}"
+            # Add test memories
+            memory_ids = []
+            for i in range(2):
+                memory = Memory(
+                    type=MemoryType.SOLUTION,
+                    title=f"Test Memory {i}",
+                    content=f"Test content {i}"
+                )
+                memory_id = await source_db.store_memory(memory)
+                memory_ids.append(memory_id)
+
+            await source_backend.disconnect()
+
+            # First migration
+            result1 = await handle_migrate_database(
+                target_backend="sqlite",
+                target_config={"path": target_path},
+                skip_duplicates=False,
+                verify=True
             )
-            memory_id = await source_db.store_memory(memory)
-            memory_ids.append(memory_id)
 
-        await source_backend.disconnect()
+            assert result1["success"] is True
+            assert result1["imported_memories"] == 2
 
-        # First migration
-        result1 = await handle_migrate_database(
-            target_backend="sqlite",
-            target_config={"path": target_path},
-            skip_duplicates=False,
-            verify=True
-        )
+            # Second migration with skip_duplicates=True
+            result2 = await handle_migrate_database(
+                target_backend="sqlite",
+                target_config={"path": target_path},
+                skip_duplicates=True,
+                verify=False
+            )
 
-        assert result1["success"] is True
-        assert result1["imported_memories"] == 2
-
-        # Second migration with skip_duplicates=True
-        result2 = await handle_migrate_database(
-            target_backend="sqlite",
-            target_config={"path": target_path},
-            skip_duplicates=True,
-            verify=False
-        )
-
-        # Should skip duplicates
-        assert result2["success"] is True
-        assert result2["skipped_memories"] >= 0  # May skip some or all
+            # Should skip duplicates
+            assert result2["success"] is True
+            assert result2["skipped_memories"] >= 0  # May skip some or all

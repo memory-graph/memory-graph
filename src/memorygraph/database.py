@@ -23,6 +23,7 @@ from .models import (
     MemoryError, MemoryNotFoundError, RelationshipError,
     ValidationError, DatabaseConnectionError, SchemaError, PaginatedResult
 )
+from .config import Config
 
 
 logger = logging.getLogger(__name__)
@@ -49,9 +50,9 @@ class Neo4jConnection:
         Raises:
             DatabaseConnectionError: If password is not provided
         """
-        self.uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
-        self.user = user or os.getenv("NEO4J_USER", "neo4j")
-        self.password = password or os.getenv("NEO4J_PASSWORD")
+        self.uri = uri if uri is not None else (Config.NEO4J_URI or "bolt://localhost:7687")
+        self.user = user if user is not None else (Config.NEO4J_USER or "neo4j")
+        self.password = password if password is not None else Config.NEO4J_PASSWORD
         self.database = database
         self.driver: Optional[AsyncDriver] = None
 
@@ -114,7 +115,7 @@ class Neo4jConnection:
             DatabaseConnectionError: If not connected
         """
         if not self.driver:
-            raise DatabaseConnectionError("Not connected to Neo4j. Call connect() first.")
+            raise DatabaseConnectionError("Connection failed: not connected to Neo4j (call connect() first)")
 
         session = self.driver.session(database=database or self.database)
         try:
@@ -693,9 +694,14 @@ class MemoryDatabase:
             DatabaseConnectionError: If query fails
         """
         try:
-            # Build relationship type filter
+            # Build relationship type filter with validation
             rel_filter = ""
             if relationship_types:
+                # Validate all types are valid RelationshipType enum values
+                valid_types = {rt.value for rt in RelationshipType}
+                for rt in relationship_types:
+                    if rt.value not in valid_types:
+                        raise ValidationError(f"Invalid relationship type: {rt}")
                 rel_types = "|".join([rt.value for rt in relationship_types])
                 rel_filter = f":{rel_types}"
 
@@ -769,63 +775,8 @@ class MemoryDatabase:
     
     def _neo4j_to_memory(self, node_data: Dict[str, Any]) -> Optional[Memory]:
         """Convert Neo4j node data to Memory object."""
-        try:
-            # Extract basic memory fields
-            memory_data = {
-                "id": node_data.get("id"),
-                "type": MemoryType(node_data.get("type")),
-                "title": node_data.get("title"),
-                "content": node_data.get("content"),
-                "summary": node_data.get("summary"),
-                "tags": node_data.get("tags", []),
-                "importance": node_data.get("importance", 0.5),
-                "confidence": node_data.get("confidence", 0.8),
-                "effectiveness": node_data.get("effectiveness"),
-                "usage_count": node_data.get("usage_count", 0),
-                "created_at": datetime.fromisoformat(node_data.get("created_at")),
-                "updated_at": datetime.fromisoformat(node_data.get("updated_at")),
-            }
-            
-            # Handle optional last_accessed field
-            if node_data.get("last_accessed"):
-                memory_data["last_accessed"] = datetime.fromisoformat(node_data["last_accessed"])
-            
-            # Extract context information
-            import json
-            context_data = {}
-            for key, value in node_data.items():
-                if key.startswith("context_") and value is not None:
-                    context_key = key[8:]  # Remove "context_" prefix
-
-                    # Deserialize JSON strings back to Python objects
-                    if isinstance(value, str) and context_key in ["additional_metadata"]:
-                        try:
-                            context_data[context_key] = json.loads(value)
-                        except json.JSONDecodeError:
-                            context_data[context_key] = value
-                    # Handle JSON-serialized lists/dicts
-                    elif isinstance(value, str) and value.startswith(('[', '{')):
-                        try:
-                            context_data[context_key] = json.loads(value)
-                        except json.JSONDecodeError:
-                            context_data[context_key] = value
-                    else:
-                        context_data[context_key] = value
-
-            if context_data:
-                # Handle timestamp fields in context
-                for time_field in ["timestamp"]:
-                    if time_field in context_data:
-                        if isinstance(context_data[time_field], str):
-                            context_data[time_field] = datetime.fromisoformat(context_data[time_field])
-
-                memory_data["context"] = MemoryContext(**context_data)
-            
-            return Memory(**memory_data)
-            
-        except Exception as e:
-            logger.error(f"Failed to convert Neo4j node to Memory: {e}")
-            return None
+        from .utils.memory_parser import parse_memory_from_properties
+        return parse_memory_from_properties(node_data, source="Neo4j")
 
     async def update_relationship_properties(
         self,

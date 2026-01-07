@@ -202,7 +202,7 @@ class TestProfileArgument:
     @patch.dict(os.environ, {}, clear=True)
     def test_profile_arg_sets_env_var(self, mock_run, mock_server):
         """Test --profile argument sets environment variable."""
-        with patch('sys.argv', ['memorygraph', '--profile', 'full']):
+        with patch('sys.argv', ['memorygraph', '--profile', 'extended']):
             # Mock asyncio.run to prevent actual server start
             mock_run.side_effect = KeyboardInterrupt()
 
@@ -210,7 +210,7 @@ class TestProfileArgument:
                 main()
 
             # Environment variable should be set
-            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'full'
+            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'extended'
 
 
 class TestLogLevelArgument:
@@ -297,7 +297,8 @@ class TestCombinedArguments:
                 main()
 
             assert os.environ.get('MEMORY_BACKEND') == 'neo4j'
-            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'full'
+            # 'full' is deprecated and maps to 'extended'
+            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'extended'
 
     @patch('memorygraph.cli.server_main', new_callable=AsyncMock)
     @patch('asyncio.run')
@@ -307,7 +308,7 @@ class TestCombinedArguments:
         with patch('sys.argv', [
             'memorygraph',
             '--backend', 'sqlite',
-            '--profile', 'standard',
+            '--profile', 'extended',
             '--log-level', 'DEBUG'
         ]):
             mock_run.side_effect = KeyboardInterrupt()
@@ -316,7 +317,7 @@ class TestCombinedArguments:
                 main()
 
             assert os.environ.get('MEMORY_BACKEND') == 'sqlite'
-            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'standard'
+            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'extended'
             assert os.environ.get('MEMORY_LOG_LEVEL') == 'DEBUG'
 
 
@@ -382,4 +383,5 @@ class TestEnvironmentVariables:
 
             # CLI args should override
             assert os.environ.get('MEMORY_BACKEND') == 'neo4j'
-            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'full'
+            # 'full' is deprecated and maps to 'extended'
+            assert os.environ.get('MEMORY_TOOL_PROFILE') == 'extended'

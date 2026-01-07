@@ -51,9 +51,9 @@ class FalkorDBBackend(GraphBackend):
             password: FalkorDB password (defaults to FALKORDB_PASSWORD env var)
             graph_name: Name of the graph database (defaults to 'memorygraph')
         """
-        self.host = host or os.getenv("FALKORDB_HOST", "localhost")
-        self.port = port or int(os.getenv("FALKORDB_PORT", "6379"))
-        self.password = password or os.getenv("FALKORDB_PASSWORD")
+        self.host = host if host is not None else (Config.FALKORDB_HOST or "localhost")
+        self.port = port if port is not None else (Config.FALKORDB_PORT or 6379)
+        self.password = password if password is not None else Config.FALKORDB_PASSWORD
         self.graph_name = graph_name
         self.client = None
         self.graph = None
@@ -126,7 +126,7 @@ class FalkorDBBackend(GraphBackend):
             DatabaseConnectionError: If not connected or query fails
         """
         if not self._connected or not self.graph:
-            raise DatabaseConnectionError("Not connected to FalkorDB. Call connect() first.")
+            raise DatabaseConnectionError("Connection failed: not connected to FalkorDB (call connect() first)")
 
         params = parameters or {}
 
@@ -522,9 +522,14 @@ class FalkorDBBackend(GraphBackend):
             DatabaseConnectionError: If query fails
         """
         try:
-            # Build relationship type filter
+            # Build relationship type filter with validation
             rel_filter = ""
             if relationship_types:
+                # Validate all types are valid RelationshipType enum values
+                valid_types = {rt.value for rt in RelationshipType}
+                for rt in relationship_types:
+                    if rt.value not in valid_types:
+                        raise ValidationError(f"Invalid relationship type: {rt}")
                 rel_types = "|".join([rt.value for rt in relationship_types])
                 rel_filter = f":{rel_types}"
 
@@ -668,62 +673,8 @@ class FalkorDBBackend(GraphBackend):
         Returns:
             Memory object or None if conversion fails
         """
-        try:
-            # Extract basic memory fields
-            memory_data = {
-                "id": node_data.get("id"),
-                "type": MemoryType(node_data.get("type")),
-                "title": node_data.get("title"),
-                "content": node_data.get("content"),
-                "summary": node_data.get("summary"),
-                "tags": node_data.get("tags", []),
-                "importance": node_data.get("importance", 0.5),
-                "confidence": node_data.get("confidence", 0.8),
-                "effectiveness": node_data.get("effectiveness"),
-                "usage_count": node_data.get("usage_count", 0),
-                "created_at": datetime.fromisoformat(node_data.get("created_at")),
-                "updated_at": datetime.fromisoformat(node_data.get("updated_at")),
-            }
-
-            # Handle optional last_accessed field
-            if node_data.get("last_accessed"):
-                memory_data["last_accessed"] = datetime.fromisoformat(node_data["last_accessed"])
-
-            # Extract context information
-            context_data = {}
-            for key, value in node_data.items():
-                if key.startswith("context_") and value is not None:
-                    context_key = key[8:]  # Remove "context_" prefix
-
-                    # Deserialize JSON strings back to Python objects
-                    if isinstance(value, str) and context_key in ["additional_metadata"]:
-                        try:
-                            context_data[context_key] = json.loads(value)
-                        except json.JSONDecodeError:
-                            context_data[context_key] = value
-                    # Handle JSON-serialized lists/dicts
-                    elif isinstance(value, str) and value.startswith(('[', '{')):
-                        try:
-                            context_data[context_key] = json.loads(value)
-                        except json.JSONDecodeError:
-                            context_data[context_key] = value
-                    else:
-                        context_data[context_key] = value
-
-            if context_data:
-                # Handle timestamp fields in context
-                for time_field in ["timestamp"]:
-                    if time_field in context_data:
-                        if isinstance(context_data[time_field], str):
-                            context_data[time_field] = datetime.fromisoformat(context_data[time_field])
-
-                memory_data["context"] = MemoryContext(**context_data)
-
-            return Memory(**memory_data)
-
-        except Exception as e:
-            logger.error(f"Failed to convert FalkorDB node to Memory: {e}")
-            return None
+        from ..utils.memory_parser import parse_memory_from_properties
+        return parse_memory_from_properties(node_data, source="FalkorDB")
 
     @classmethod
     async def create(

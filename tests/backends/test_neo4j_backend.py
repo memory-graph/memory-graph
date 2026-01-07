@@ -199,7 +199,7 @@ class TestNeo4jBackendQueries:
         """Test that executing query without connection raises error."""
         backend = Neo4jBackend(uri="bolt://test:7687", password="test")
 
-        with pytest.raises(DatabaseConnectionError, match="Not connected"):
+        with pytest.raises(DatabaseConnectionError, match="(?i)not connected"):
             await backend.execute_query("RETURN 1")
 
     @pytest.mark.asyncio

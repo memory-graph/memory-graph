@@ -4,6 +4,7 @@ Tests for migration data models.
 
 import os
 import pytest
+from contextlib import contextmanager
 from unittest.mock import patch
 from src.memorygraph.migration.models import (
     BackendType,
@@ -13,6 +14,22 @@ from src.memorygraph.migration.models import (
     VerificationResult,
     MigrationResult
 )
+from src.memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """Context manager to temporarily patch Config class attributes."""
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 class TestBackendConfig:
@@ -52,29 +69,28 @@ class TestBackendConfig:
         errors = config.validate()
         assert len(errors) == 0
 
-    @patch.dict(os.environ, {
-        "MEMORY_BACKEND": "sqlite",
-        "MEMORY_SQLITE_PATH": "/tmp/test.db"
-    }, clear=False)
     def test_from_env_sqlite(self):
-        """Test creating config from environment for SQLite."""
-        config = BackendConfig.from_env()
-        assert config.backend_type == BackendType.SQLITE
-        assert config.path == "/tmp/test.db"
+        """Test creating config from Config for SQLite."""
+        # BackendConfig.from_env() now reads from Config, not os.environ
+        with patch_config(BACKEND="sqlite", SQLITE_PATH="/tmp/test.db"):
+            config = BackendConfig.from_env()
+            assert config.backend_type == BackendType.SQLITE
+            assert config.path == "/tmp/test.db"
 
-    @patch.dict(os.environ, {
-        "MEMORY_BACKEND": "neo4j",
-        "MEMORY_NEO4J_URI": "bolt://localhost:7687",
-        "MEMORY_NEO4J_USER": "neo4j",
-        "MEMORY_NEO4J_PASSWORD": "password"
-    }, clear=False)
     def test_from_env_neo4j(self):
-        """Test creating config from environment for Neo4j."""
-        config = BackendConfig.from_env()
-        assert config.backend_type == BackendType.NEO4J
-        assert config.uri == "bolt://localhost:7687"
-        assert config.username == "neo4j"
-        assert config.password == "password"
+        """Test creating config from Config for Neo4j."""
+        # BackendConfig.from_env() now reads from Config, not os.environ
+        with patch_config(
+            BACKEND="neo4j",
+            NEO4J_URI="bolt://localhost:7687",
+            NEO4J_USER="neo4j",
+            NEO4J_PASSWORD="password"
+        ):
+            config = BackendConfig.from_env()
+            assert config.backend_type == BackendType.NEO4J
+            assert config.uri == "bolt://localhost:7687"
+            assert config.username == "neo4j"
+            assert config.password == "password"
 
 
 class TestMigrationOptions:

@@ -20,8 +20,25 @@ from ..models import (
     RelationshipProperties, SearchQuery, DatabaseConnectionError,
     MemoryNotFoundError, ValidationError
 )
+from ..config import Config
 
 logger = logging.getLogger(__name__)
+
+
+def _mask_sensitive(value: str, visible_chars: int = 4) -> str:
+    """
+    Mask sensitive value, showing only first few characters.
+
+    Args:
+        value: Sensitive string to mask
+        visible_chars: Number of characters to show (default: 4)
+
+    Returns:
+        Masked string with format "mg_1***"
+    """
+    if not value or len(value) <= visible_chars:
+        return "***"
+    return f"{value[:visible_chars]}{'*' * (len(value) - visible_chars)}"
 
 
 class CircuitBreaker:
@@ -47,52 +64,56 @@ class CircuitBreaker:
         self.failure_count = 0
         self.last_failure_time: Optional[float] = None
         self.state = "closed"  # closed, open, half_open
+        self._lock = asyncio.Lock()
 
-    def can_execute(self) -> bool:
+    async def can_execute(self) -> bool:
         """
         Check if request should be allowed to proceed.
 
         Returns:
             True if request should proceed, False to fail fast
         """
-        if self.state == "closed":
+        async with self._lock:
+            if self.state == "closed":
+                return True
+
+            if self.state == "open":
+                # Check if recovery timeout has passed
+                if self.last_failure_time and (time.time() - self.last_failure_time >= self.recovery_timeout):
+                    logger.info("Circuit breaker entering half-open state for recovery attempt")
+                    self.state = "half_open"
+                    return True
+                return False
+
+            # half_open state - allow the request through
             return True
 
-        if self.state == "open":
-            # Check if recovery timeout has passed
-            if self.last_failure_time and (time.time() - self.last_failure_time >= self.recovery_timeout):
-                logger.info("Circuit breaker entering half-open state for recovery attempt")
-                self.state = "half_open"
-                return True
-            return False
-
-        # half_open state - allow the request through
-        return True
-
-    def record_success(self) -> None:
+    async def record_success(self) -> None:
         """Record a successful request."""
-        if self.state == "half_open":
-            logger.info("Circuit breaker closing after successful recovery")
-        self.failure_count = 0
-        self.last_failure_time = None
-        self.state = "closed"
+        async with self._lock:
+            if self.state == "half_open":
+                logger.info("Circuit breaker closing after successful recovery")
+            self.failure_count = 0
+            self.last_failure_time = None
+            self.state = "closed"
 
-    def record_failure(self) -> None:
+    async def record_failure(self) -> None:
         """Record a failed request."""
-        self.failure_count += 1
-        self.last_failure_time = time.time()
+        async with self._lock:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
 
-        if self.state == "half_open":
-            # Failed during recovery, reopen circuit
-            logger.warning("Circuit breaker reopening after failed recovery attempt")
-            self.state = "open"
-        elif self.failure_count >= self.failure_threshold:
-            # Too many failures, open circuit
-            logger.warning(
-                f"Circuit breaker opening after {self.failure_count} consecutive failures. "
-                f"Will retry in {self.recovery_timeout} seconds"
-            )
-            self.state = "open"
+            if self.state == "half_open":
+                # Failed during recovery, reopen circuit
+                logger.warning("Circuit breaker reopening after failed recovery attempt")
+                self.state = "open"
+            elif self.failure_count >= self.failure_threshold:
+                # Too many failures, open circuit
+                logger.warning(
+                    f"Circuit breaker opening after {self.failure_count} consecutive failures. "
+                    f"Will retry in {self.recovery_timeout} seconds"
+                )
+                self.state = "open"
 
 
 class CloudBackendError(Exception):
@@ -146,8 +167,6 @@ class CloudRESTAdapter(GraphBackend):
     # Production API URL - configurable via MEMORYGRAPH_API_URL environment variable
     DEFAULT_API_URL = "https://graph-api.memorygraph.dev"
     DEFAULT_TIMEOUT = 30
-    MAX_RETRIES = 3
-    RETRY_BACKOFF_BASE = 1.0  # seconds
 
     def __init__(
         self,
@@ -167,13 +186,9 @@ class CloudRESTAdapter(GraphBackend):
         Raises:
             DatabaseConnectionError: If API key is not provided.
         """
-        self.api_key = api_key or os.getenv("MEMORYGRAPH_API_KEY")
-        self.api_url = (
-            api_url or
-            os.getenv("MEMORYGRAPH_API_URL") or
-            self.DEFAULT_API_URL
-        ).rstrip("/")
-        self.timeout = timeout or int(os.getenv("MEMORYGRAPH_TIMEOUT", str(self.DEFAULT_TIMEOUT)))
+        self.api_key = api_key if api_key is not None else Config.MEMORYGRAPH_API_KEY
+        self.api_url = (api_url if api_url is not None else (Config.MEMORYGRAPH_API_URL or self.DEFAULT_API_URL)).rstrip("/")
+        self.timeout = timeout if timeout is not None else (Config.MEMORYGRAPH_TIMEOUT or self.DEFAULT_TIMEOUT)
 
         if not self.api_key:
             raise DatabaseConnectionError(
@@ -182,8 +197,9 @@ class CloudRESTAdapter(GraphBackend):
             )
 
         if not self.api_key.startswith("mg_"):
+            masked_key = _mask_sensitive(self.api_key)
             logger.warning(
-                "API key does not start with 'mg_' prefix. "
+                f"API key {masked_key} does not start with 'mg_' prefix. "
                 "Ensure you're using a valid MemoryGraph API key."
             )
 
@@ -240,7 +256,7 @@ class CloudRESTAdapter(GraphBackend):
             DatabaseConnectionError: For network or server errors
         """
         # Check circuit breaker
-        if not self._circuit_breaker.can_execute():
+        if not await self._circuit_breaker.can_execute():
             raise CircuitBreakerOpenError(
                 "Circuit breaker is open due to repeated failures. "
                 f"Will retry in {self._circuit_breaker.recovery_timeout} seconds."
@@ -286,24 +302,24 @@ class CloudRESTAdapter(GraphBackend):
 
             if response.status_code >= 500:
                 # Server error - retry with backoff
-                self._circuit_breaker.record_failure()
-                if retry_count < self.MAX_RETRIES:
-                    backoff = self.RETRY_BACKOFF_BASE * (2 ** retry_count)
+                await self._circuit_breaker.record_failure()
+                if retry_count < Config.CLOUD_MAX_RETRIES:
+                    backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
                     logger.warning(
                         f"Server error {response.status_code}, "
-                        f"retrying in {backoff}s (attempt {retry_count + 1}/{self.MAX_RETRIES})"
+                        f"retrying in {backoff}s (attempt {retry_count + 1}/{Config.CLOUD_MAX_RETRIES})"
                     )
                     await asyncio.sleep(backoff)
                     return await self._request(method, path, json, params, retry_count + 1)
                 else:
                     raise DatabaseConnectionError(
-                        f"Graph API server error after {self.MAX_RETRIES} retries: {response.status_code}"
+                        f"Graph API server error after {Config.CLOUD_MAX_RETRIES} retries: {response.status_code}"
                     )
 
             response.raise_for_status()
 
             # Record success with circuit breaker
-            self._circuit_breaker.record_success()
+            await self._circuit_breaker.record_success()
 
             if response.status_code == 204:
                 return {}
@@ -311,26 +327,26 @@ class CloudRESTAdapter(GraphBackend):
             return response.json()
 
         except httpx.TimeoutException:
-            self._circuit_breaker.record_failure()
-            if retry_count < self.MAX_RETRIES:
-                backoff = self.RETRY_BACKOFF_BASE * (2 ** retry_count)
+            await self._circuit_breaker.record_failure()
+            if retry_count < Config.CLOUD_MAX_RETRIES:
+                backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
                 logger.warning(
                     f"Request timeout, retrying in {backoff}s "
-                    f"(attempt {retry_count + 1}/{self.MAX_RETRIES})"
+                    f"(attempt {retry_count + 1}/{Config.CLOUD_MAX_RETRIES})"
                 )
                 await asyncio.sleep(backoff)
                 return await self._request(method, path, json, params, retry_count + 1)
             raise DatabaseConnectionError(
-                f"Request timeout after {self.MAX_RETRIES} retries"
+                f"Request timeout after {Config.CLOUD_MAX_RETRIES} retries"
             )
 
         except httpx.ConnectError as e:
-            self._circuit_breaker.record_failure()
-            if retry_count < self.MAX_RETRIES:
-                backoff = self.RETRY_BACKOFF_BASE * (2 ** retry_count)
+            await self._circuit_breaker.record_failure()
+            if retry_count < Config.CLOUD_MAX_RETRIES:
+                backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
                 logger.warning(
                     f"Connection error, retrying in {backoff}s "
-                    f"(attempt {retry_count + 1}/{self.MAX_RETRIES})"
+                    f"(attempt {retry_count + 1}/{Config.CLOUD_MAX_RETRIES})"
                 )
                 await asyncio.sleep(backoff)
                 return await self._request(method, path, json, params, retry_count + 1)

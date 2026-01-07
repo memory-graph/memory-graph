@@ -1,4 +1,17 @@
-"""Tool handler registry for MCP server."""
+"""
+Tool registry for MemoryGraph MCP server.
+
+This module maps MCP tool names to their handler functions. The registry
+pattern allows for clean separation between tool definitions and implementations.
+
+To add a new tool:
+1. Create the handler function in the appropriate module under tools/
+2. Add the mapping to TOOL_HANDLERS dictionary
+3. Add the tool definition to the server's tool collection
+
+Tool handlers receive a ToolContext and kwargs from the tool call,
+and return the result to be sent back to the MCP client.
+"""
 from typing import Any, Awaitable, Callable, Dict
 
 from mcp.types import CallToolResult
@@ -44,5 +57,18 @@ TOOL_HANDLERS: Dict[str, ToolHandler] = {
 }
 
 def get_handler(tool_name: str) -> ToolHandler | None:
-    """Get handler for a tool by name."""
+    """
+    Get handler function for a tool by name.
+
+    Args:
+        tool_name: Name of the MCP tool to get handler for
+
+    Returns:
+        Handler function if found, None otherwise
+
+    Example:
+        handler = get_handler("store_memory")
+        if handler:
+            result = await handler(context, kwargs)
+    """
     return TOOL_HANDLERS.get(tool_name)

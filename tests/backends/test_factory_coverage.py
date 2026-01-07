@@ -7,13 +7,43 @@ This test suite covers:
 - Error handling for missing configurations
 - Helper methods (create_from_config, _create_*_with_* methods)
 - Configuration validation
+
+NOTE: After WP33 refactor, factory reads from Config class, not os.getenv().
+Tests must patch Config.* values in addition to os.environ for full coverage.
 """
 
 import pytest
 import os
 import sys
 from unittest.mock import patch, MagicMock, AsyncMock, Mock
+from contextlib import contextmanager
 from src.memorygraph.models import DatabaseConnectionError
+from src.memorygraph.config import Config
+
+
+@contextmanager
+def patch_config(**kwargs):
+    """
+    Context manager to temporarily patch Config class attributes.
+
+    Usage:
+        with patch_config(BACKEND='neo4j', NEO4J_PASSWORD='test'):
+            # Config.BACKEND is now 'neo4j'
+            ...
+        # Config.BACKEND is restored
+
+    This is needed because factory.py now reads from Config, not os.getenv().
+    """
+    original_values = {}
+    for key, value in kwargs.items():
+        if hasattr(Config, key):
+            original_values[key] = getattr(Config, key)
+            setattr(Config, key, value)
+    try:
+        yield
+    finally:
+        for key, value in original_values.items():
+            setattr(Config, key, value)
 
 
 # Helper function to patch lazily imported backends
@@ -74,7 +104,7 @@ class TestBackendTypeDetection:
         from src.memorygraph.backends.factory import BackendFactory
         from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 
-        with patch.dict('os.environ', {'MEMORY_BACKEND': 'sqlite'}, clear=True):
+        with patch_config(BACKEND='sqlite'):
             with patch.object(SQLiteFallbackBackend, 'connect', new=AsyncMock()):
                 with patch.object(SQLiteFallbackBackend, 'initialize_schema', new=AsyncMock()):
                     backend = await BackendFactory.create_backend()
@@ -85,10 +115,7 @@ class TestBackendTypeDetection:
         """Test Neo4j detection from environment."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_BACKEND': 'neo4j',
-            'MEMORY_NEO4J_PASSWORD': 'test_password'
-        }, clear=True):
+        with patch_config(BACKEND='neo4j', NEO4J_PASSWORD='test_password'):
             # Patch the Neo4jBackend where it's imported (in the method)
             with patch('src.memorygraph.backends.neo4j_backend.Neo4jBackend') as MockNeo4j:
                 mock_instance = MagicMock()
@@ -104,10 +131,7 @@ class TestBackendTypeDetection:
         """Test Memgraph detection from environment."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_BACKEND': 'memgraph',
-            'MEMORY_MEMGRAPH_URI': 'bolt://localhost:7687'
-        }, clear=True):
+        with patch_config(BACKEND='memgraph', MEMGRAPH_URI='bolt://localhost:7687'):
             with patch('src.memorygraph.backends.memgraph_backend.MemgraphBackend') as MockMemgraph:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -122,10 +146,7 @@ class TestBackendTypeDetection:
         """Test FalkorDB detection from environment."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_BACKEND': 'falkordb',
-            'MEMORY_FALKORDB_HOST': 'localhost'
-        }, clear=True):
+        with patch_config(BACKEND='falkordb', FALKORDB_HOST='localhost'):
             with patch('src.memorygraph.backends.falkordb_backend.FalkorDBBackend') as MockFalkorDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -140,9 +161,7 @@ class TestBackendTypeDetection:
         """Test FalkorDBLite detection from environment."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_BACKEND': 'falkordblite'
-        }, clear=True):
+        with patch_config(BACKEND='falkordblite'):
             with patch('src.memorygraph.backends.falkordblite_backend.FalkorDBLiteBackend') as MockFalkorDBLite:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -157,9 +176,7 @@ class TestBackendTypeDetection:
         """Test Turso detection from environment."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_BACKEND': 'turso'
-        }, clear=True):
+        with patch_config(BACKEND='turso'):
             with patch('src.memorygraph.backends.turso.TursoBackend') as MockTurso:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -175,10 +192,7 @@ class TestBackendTypeDetection:
         """Test cloud backend detection from environment."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_BACKEND': 'cloud',
-            'MEMORYGRAPH_API_KEY': 'test_api_key'
-        }, clear=True):
+        with patch_config(BACKEND='cloud', MEMORYGRAPH_API_KEY='test_api_key'):
             with patch('src.memorygraph.backends.cloud_backend.CloudRESTAdapter') as MockCloud:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -193,9 +207,7 @@ class TestBackendTypeDetection:
         """Test LadybugDB detection from environment."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_BACKEND': 'ladybugdb'
-        }, clear=True):
+        with patch_config(BACKEND='ladybugdb'):
             with patch('src.memorygraph.backends.ladybugdb_backend.LadybugDBBackend') as MockLadybugDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -211,7 +223,7 @@ class TestBackendTypeDetection:
         from src.memorygraph.backends.factory import BackendFactory
         from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 
-        with patch.dict('os.environ', {'MEMORY_BACKEND': 'auto'}, clear=True):
+        with patch_config(BACKEND='auto'):
             with patch.object(SQLiteFallbackBackend, 'connect', new=AsyncMock()):
                 with patch.object(SQLiteFallbackBackend, 'initialize_schema', new=AsyncMock()):
                     backend = await BackendFactory.create_backend()
@@ -227,11 +239,7 @@ class TestBackendCreation:
         """Test Neo4j backend creation with all environment variables."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_NEO4J_URI': 'bolt://test:7687',
-            'MEMORY_NEO4J_USER': 'testuser',
-            'MEMORY_NEO4J_PASSWORD': 'testpass'
-        }, clear=True):
+        with patch_config(NEO4J_URI='bolt://test:7687', NEO4J_USER='testuser', NEO4J_PASSWORD='testpass'):
             with patch('src.memorygraph.backends.neo4j_backend.Neo4jBackend') as MockNeo4j:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -251,11 +259,7 @@ class TestBackendCreation:
         """Test Neo4j creation with fallback environment variable names."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'NEO4J_URI': 'bolt://fallback:7687',
-            'NEO4J_USER': 'fallbackuser',
-            'NEO4J_PASSWORD': 'fallbackpass'
-        }, clear=True):
+        with patch_config(NEO4J_URI='bolt://fallback:7687', NEO4J_USER='fallbackuser', NEO4J_PASSWORD='fallbackpass'):
             with patch('src.memorygraph.backends.neo4j_backend.Neo4jBackend') as MockNeo4j:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -274,11 +278,7 @@ class TestBackendCreation:
         """Test Memgraph backend creation with credentials."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_MEMGRAPH_URI': 'bolt://memgraph:7687',
-            'MEMORY_MEMGRAPH_USER': 'memuser',
-            'MEMORY_MEMGRAPH_PASSWORD': 'mempass'
-        }, clear=True):
+        with patch_config(MEMGRAPH_URI='bolt://memgraph:7687', MEMGRAPH_USER='memuser', MEMGRAPH_PASSWORD='mempass'):
             with patch('src.memorygraph.backends.memgraph_backend.MemgraphBackend') as MockMemgraph:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -297,11 +297,7 @@ class TestBackendCreation:
         """Test FalkorDB creation with all environment variables."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_FALKORDB_HOST': 'falkorhost',
-            'MEMORY_FALKORDB_PORT': '6380',
-            'MEMORY_FALKORDB_PASSWORD': 'falkorpass'
-        }, clear=True):
+        with patch_config(FALKORDB_HOST='falkorhost', FALKORDB_PORT=6380, FALKORDB_PASSWORD='falkorpass'):
             with patch('src.memorygraph.backends.falkordb_backend.FalkorDBBackend') as MockFalkorDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -320,11 +316,7 @@ class TestBackendCreation:
         """Test FalkorDB creation with fallback environment variables."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'FALKORDB_HOST': 'fallbackhost',
-            'FALKORDB_PORT': '6381',
-            'FALKORDB_PASSWORD': 'fallbackpass'
-        }, clear=True):
+        with patch_config(FALKORDB_HOST='fallbackhost', FALKORDB_PORT=6381, FALKORDB_PASSWORD='fallbackpass'):
             with patch('src.memorygraph.backends.falkordb_backend.FalkorDBBackend') as MockFalkorDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -343,9 +335,7 @@ class TestBackendCreation:
         """Test FalkorDBLite creation with path."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_FALKORDBLITE_PATH': '/path/to/falkordblite.db'
-        }, clear=True):
+        with patch_config(FALKORDBLITE_PATH='/path/to/falkordblite.db'):
             with patch('src.memorygraph.backends.falkordblite_backend.FalkorDBLiteBackend') as MockFalkorDBLite:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -360,9 +350,7 @@ class TestBackendCreation:
         """Test LadybugDB creation with path."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_LADYBUGDB_PATH': '/path/to/ladybug.db'
-        }, clear=True):
+        with patch_config(LADYBUGDB_PATH='/path/to/ladybug.db'):
             with patch('src.memorygraph.backends.ladybugdb_backend.LadybugDBBackend') as MockLadybugDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -378,9 +366,7 @@ class TestBackendCreation:
         from src.memorygraph.backends.factory import BackendFactory
         from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 
-        with patch.dict('os.environ', {
-            'MEMORY_SQLITE_PATH': '/tmp/custom_path_sqlite.db'
-        }, clear=True):
+        with patch_config(SQLITE_PATH='/tmp/custom_path_sqlite.db'):
             with patch.object(SQLiteFallbackBackend, 'connect', new=AsyncMock()):
                 with patch.object(SQLiteFallbackBackend, 'initialize_schema', new=AsyncMock()):
                     backend = await BackendFactory._create_sqlite()
@@ -392,11 +378,7 @@ class TestBackendCreation:
         """Test Turso creation with full configuration."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_TURSO_PATH': '/path/to/turso.db',
-            'TURSO_DATABASE_URL': 'libsql://example.turso.io',
-            'TURSO_AUTH_TOKEN': 'test_token'
-        }, clear=True):
+        with patch_config(TURSO_PATH='/path/to/turso.db', TURSO_DATABASE_URL='libsql://example.turso.io', TURSO_AUTH_TOKEN='test_token'):
             with patch('src.memorygraph.backends.turso.TursoBackend') as MockTurso:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -416,11 +398,7 @@ class TestBackendCreation:
         """Test Cloud backend creation with full configuration."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORYGRAPH_API_KEY': 'test_api_key',
-            'MEMORYGRAPH_API_URL': 'https://api.memorygraph.dev',
-            'MEMORYGRAPH_TIMEOUT': '60'
-        }, clear=True):
+        with patch_config(MEMORYGRAPH_API_KEY='test_api_key', MEMORYGRAPH_API_URL='https://api.memorygraph.dev', MEMORYGRAPH_TIMEOUT=60):
             with patch('src.memorygraph.backends.cloud_backend.CloudRESTAdapter') as MockCloud:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -443,7 +421,7 @@ class TestBackendCreationErrors:
         """Test error on invalid backend type."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {'MEMORY_BACKEND': 'invalid_type'}, clear=True):
+        with patch_config(BACKEND='invalid_type'):
             with pytest.raises(DatabaseConnectionError) as exc_info:
                 await BackendFactory.create_backend()
 
@@ -455,7 +433,7 @@ class TestBackendCreationErrors:
         """Test error when Neo4j password is missing."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch_config(NEO4J_PASSWORD=None):
             with pytest.raises(DatabaseConnectionError) as exc_info:
                 await BackendFactory._create_neo4j()
 
@@ -466,7 +444,7 @@ class TestBackendCreationErrors:
         """Test error when cloud API key is missing."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch_config(MEMORYGRAPH_API_KEY=None):
             with pytest.raises(DatabaseConnectionError) as exc_info:
                 await BackendFactory._create_cloud()
 
@@ -481,9 +459,7 @@ class TestAutoSelectionPaths:
         """Test auto-selection tries Neo4j first when password configured."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_NEO4J_PASSWORD': 'test'
-        }, clear=True):
+        with patch_config(NEO4J_PASSWORD='test'):
             with patch('src.memorygraph.backends.neo4j_backend.Neo4jBackend') as MockNeo4j:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
@@ -498,10 +474,7 @@ class TestAutoSelectionPaths:
         """Test auto-selection falls back to Memgraph when Neo4j fails."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {
-            'MEMORY_NEO4J_PASSWORD': 'test',
-            'MEMORY_MEMGRAPH_URI': 'bolt://localhost:7687'
-        }, clear=True):
+        with patch_config(NEO4J_PASSWORD='test', MEMGRAPH_URI='bolt://localhost:7687'):
             with patch('src.memorygraph.backends.neo4j_backend.Neo4jBackend') as MockNeo4j:
                 MockNeo4j.return_value.connect = AsyncMock(
                     side_effect=DatabaseConnectionError("Neo4j failed")
@@ -522,10 +495,7 @@ class TestAutoSelectionPaths:
         from src.memorygraph.backends.factory import BackendFactory
         from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 
-        with patch.dict('os.environ', {
-            'MEMORY_NEO4J_PASSWORD': 'test',
-            'MEMORY_MEMGRAPH_URI': 'bolt://localhost:7687'
-        }, clear=True):
+        with patch_config(NEO4J_PASSWORD='test', MEMGRAPH_URI='bolt://localhost:7687'):
             with patch('src.memorygraph.backends.neo4j_backend.Neo4jBackend') as MockNeo4j:
                 MockNeo4j.return_value.connect = AsyncMock(
                     side_effect=DatabaseConnectionError("Neo4j failed")
@@ -548,9 +518,7 @@ class TestAutoSelectionPaths:
         from src.memorygraph.backends.factory import BackendFactory
         from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 
-        with patch.dict('os.environ', {
-            'MEMORY_NEO4J_PASSWORD': 'test'
-        }, clear=True):
+        with patch_config(NEO4J_PASSWORD='test'):
             with patch('src.memorygraph.backends.neo4j_backend.Neo4jBackend') as MockNeo4j:
                 MockNeo4j.return_value.connect = AsyncMock(
                     side_effect=DatabaseConnectionError("Neo4j failed")
@@ -986,22 +954,22 @@ class TestEdgeCases:
     def test_is_backend_configured_neo4j_with_fallback_var(self):
         """Test is_backend_configured for Neo4j using fallback NEO4J_PASSWORD."""
         from src.memorygraph.backends.factory import BackendFactory
-        
-        with patch.dict('os.environ', {'NEO4J_PASSWORD': 'test'}, clear=True):
+
+        with patch_config(NEO4J_PASSWORD='test'):
             assert BackendFactory.is_backend_configured('neo4j') is True
     
     def test_is_backend_configured_memgraph_false(self):
         """Test is_backend_configured for Memgraph returns False when not configured."""
         from src.memorygraph.backends.factory import BackendFactory
-        
-        with patch.dict('os.environ', {}, clear=True):
+
+        with patch_config(MEMGRAPH_URI=None):
             assert BackendFactory.is_backend_configured('memgraph') is False
     
     def test_is_backend_configured_sqlite_always_true(self):
         """Test is_backend_configured for SQLite always returns True."""
         from src.memorygraph.backends.factory import BackendFactory
-        
-        with patch.dict('os.environ', {}, clear=True):
+
+        with patch_config(SQLITE_PATH=None):
             # SQLite is always available
             assert BackendFactory.is_backend_configured('sqlite') is True
 
@@ -1013,14 +981,14 @@ class TestConfigurationHelpers:
         """Test get_configured_backend_type returns default."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch_config(BACKEND='auto'):
             assert BackendFactory.get_configured_backend_type() == 'auto'
 
     def test_get_configured_backend_type_custom(self):
         """Test get_configured_backend_type returns custom value."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {'MEMORY_BACKEND': 'NEO4J'}, clear=True):
+        with patch_config(BACKEND='NEO4J'):
             # Should be lowercased
             assert BackendFactory.get_configured_backend_type() == 'neo4j'
 
@@ -1028,13 +996,13 @@ class TestConfigurationHelpers:
         """Test is_backend_configured for FalkorDB."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {'MEMORY_FALKORDB_HOST': 'localhost'}, clear=True):
+        with patch_config(FALKORDB_HOST='localhost'):
             assert BackendFactory.is_backend_configured('falkordb') is True
 
-        with patch.dict('os.environ', {'FALKORDB_HOST': 'localhost'}, clear=True):
+        with patch_config(FALKORDB_HOST='localhost'):
             assert BackendFactory.is_backend_configured('falkordb') is True
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch_config(FALKORDB_HOST=None):
             assert BackendFactory.is_backend_configured('falkordb') is False
 
     def test_is_backend_configured_falkordblite(self):
@@ -1048,26 +1016,26 @@ class TestConfigurationHelpers:
         """Test is_backend_configured for Turso."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {'TURSO_DATABASE_URL': 'libsql://test'}, clear=True):
+        with patch_config(TURSO_DATABASE_URL='libsql://test'):
             assert BackendFactory.is_backend_configured('turso') is True
 
-        with patch.dict('os.environ', {'MEMORYGRAPH_TURSO_URL': 'libsql://test'}, clear=True):
+        with patch_config(MEMORYGRAPH_TURSO_URL='libsql://test'):
             assert BackendFactory.is_backend_configured('turso') is True
 
-        with patch.dict('os.environ', {'MEMORY_TURSO_PATH': '/path'}, clear=True):
+        with patch_config(TURSO_PATH='/path'):
             assert BackendFactory.is_backend_configured('turso') is True
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch_config(TURSO_DATABASE_URL=None, MEMORYGRAPH_TURSO_URL=None, TURSO_PATH=None):
             assert BackendFactory.is_backend_configured('turso') is False
 
     def test_is_backend_configured_cloud(self):
         """Test is_backend_configured for Cloud."""
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch.dict('os.environ', {'MEMORYGRAPH_API_KEY': 'test_key'}, clear=True):
+        with patch_config(MEMORYGRAPH_API_KEY='test_key'):
             assert BackendFactory.is_backend_configured('cloud') is True
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch_config(MEMORYGRAPH_API_KEY=None):
             assert BackendFactory.is_backend_configured('cloud') is False
 
     def test_is_backend_configured_unknown_type(self):

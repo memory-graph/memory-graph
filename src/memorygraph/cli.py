@@ -648,17 +648,25 @@ Environment Variables:
 
     args = parser.parse_args()
 
-    # Apply CLI arguments to environment variables
+    # Apply CLI arguments to environment variables AND Config class
+    # Note: Config class attributes are evaluated at import time, so we must
+    # update both the environment variable (for child processes) and the
+    # Config class attribute directly (for current process)
     if args.backend:
         validate_backend(args.backend)
         os.environ["MEMORY_BACKEND"] = args.backend
+        Config.BACKEND = args.backend  # Fix: Update Config directly since it was loaded at import time
 
     if args.profile:
         validate_profile(args.profile)
-        os.environ["MEMORY_TOOL_PROFILE"] = args.profile
+        # Map legacy profiles to new ones
+        profile = {"lite": "core", "standard": "extended", "full": "extended"}.get(args.profile, args.profile)
+        os.environ["MEMORY_TOOL_PROFILE"] = profile
+        Config.TOOL_PROFILE = profile  # Fix: Update Config directly
 
     if args.log_level:
         os.environ["MEMORY_LOG_LEVEL"] = args.log_level
+        Config.LOG_LEVEL = args.log_level  # Fix: Update Config directly
 
     # Configure logging
     logging.basicConfig(
