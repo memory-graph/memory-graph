@@ -464,3 +464,55 @@ class TestPatternQuality:
 
         # Results depend on backend filtering in actual implementation
         assert isinstance(high_threshold_results, list)
+
+
+class TestPatternRecognitionErrorHandling:
+    """Test error handling in pattern recognition."""
+
+    @pytest.mark.asyncio
+    async def test_find_entity_co_occurrences_handles_backend_error(self):
+        """Test that _find_entity_co_occurrences handles backend errors gracefully."""
+        backend = MockBackend()
+
+        # Make execute_query raise an exception
+        async def failing_query(query, params):
+            raise Exception("Database connection lost")
+
+        backend.execute_query = failing_query
+
+        recognizer = PatternRecognizer(backend)
+
+        # Should return empty list on error, not raise
+        result = await recognizer._find_entity_co_occurrences("technology", min_occurrences=2)
+
+        assert result == []
+        assert isinstance(result, list)
+
+    @pytest.mark.asyncio
+    async def test_find_entity_co_occurrences_with_results(self):
+        """Test _find_entity_co_occurrences with actual results from backend."""
+        backend = MockBackend()
+        backend.test_data["co_occurrences"] = [
+            {
+                "entity1": "Python",
+                "entity2": "pytest",
+                "occurrence_count": 5,
+                "memory_ids": ["m1", "m2", "m3"],
+            },
+            {
+                "entity1": "FastAPI",
+                "entity2": "async",
+                "occurrence_count": 3,
+                "memory_ids": ["m4", "m5"],
+            },
+        ]
+
+        recognizer = PatternRecognizer(backend)
+
+        result = await recognizer._find_entity_co_occurrences("technology", min_occurrences=2)
+
+        assert len(result) == 2
+        assert all(isinstance(p, Pattern) for p in result)
+        assert result[0].name == "Co-occurrence: Python + pytest"
+        assert result[0].occurrences == 5
+        assert result[1].name == "Co-occurrence: FastAPI + async"

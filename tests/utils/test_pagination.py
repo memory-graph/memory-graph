@@ -265,3 +265,50 @@ async def test_paginate_memories_empty_database():
 
     # Should get no batches (empty list is not yielded)
     assert len(batches) == 0
+
+@pytest.mark.asyncio
+async def test_count_relationships_handles_errors_gracefully():
+    """Test that count_relationships continues even if some memories fail."""
+    # Create test memories
+    memories = [
+        Memory(id="m1", type=MemoryType.TASK, title="M1", content="C1"),
+        Memory(id="m2", type=MemoryType.TASK, title="M2", content="C2"),
+        Memory(id="m3", type=MemoryType.TASK, title="M3", content="C3"),
+    ]
+    
+    # Create test relationships
+    rel1 = Relationship(
+        from_memory_id="m1",
+        to_memory_id="m2",
+        type=RelationshipType.RELATED_TO,
+        properties=RelationshipProperties()
+    )
+    rel2 = Relationship(
+        from_memory_id="m2",
+        to_memory_id="m3",
+        type=RelationshipType.RELATED_TO,
+        properties=RelationshipProperties()
+    )
+    
+    # Mock database
+    db = MagicMock()
+    db.search_memories_paginated = AsyncMock(return_value=create_paginated_result(
+        memories, 3, False
+    ))
+    
+    # Make get_related_memories fail for m2, but work for m1 and m3
+    async def mock_get_related(memory_id, max_depth=1):
+        if memory_id == "m2":
+            raise Exception("Database error for m2")
+        elif memory_id == "m1":
+            return [(memories[1], rel1)]
+        else:
+            return [(memories[2], rel2)]
+    
+    db.get_related_memories = mock_get_related
+    
+    # Should still count relationships from m1 and m3, skipping m2
+    count = await count_relationships(db)
+    
+    # Should have 2 relationships (from m1 and m3), m2's error was handled
+    assert count == 2
