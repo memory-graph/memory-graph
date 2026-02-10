@@ -95,6 +95,14 @@ class _EnvVar:
             return val.lower() == "true"
         return self.cast(val)  # type: ignore[operator]
 
+    def is_set(self) -> bool:
+        """Return True if any of the env var names are explicitly set in os.environ.
+
+        Uses membership testing (``in os.environ``), not truthiness.
+        This distinguishes "user explicitly configured" from "using default".
+        """
+        return any(name in os.environ for name in self.env_names)
+
     def __repr__(self) -> str:
         return f"_EnvVar({', '.join(repr(n) for n in self.env_names)}, default={self.default!r})"
 
@@ -249,14 +257,32 @@ class Config:
             return BackendType.AUTO
 
     @classmethod
+    def is_env_set(cls, attr_name: str) -> bool:
+        """Check if a Config attribute's underlying env var is explicitly set.
+
+        When the attribute is still an ``_EnvVar`` descriptor, delegates to
+        ``_EnvVar.is_set()`` which checks ``os.environ`` membership (not
+        truthiness).  If the descriptor has been replaced by direct assignment
+        (e.g. in tests via ``Config.X = val``), returns ``True`` since the
+        caller explicitly configured it.
+        """
+        descriptor = cls.__dict__.get(attr_name)
+        # Use duck typing (hasattr) instead of isinstance to survive
+        # module reloads that create a new _EnvVar class.
+        if hasattr(descriptor, "is_set"):
+            return descriptor.is_set()
+        # Direct assignment means it was explicitly configured
+        return attr_name in cls.__dict__
+
+    @classmethod
     def is_neo4j_configured(cls) -> bool:
         """Check if Neo4j backend is properly configured."""
-        return bool(cls.NEO4J_PASSWORD)
+        return cls.is_env_set("NEO4J_PASSWORD")
 
     @classmethod
     def is_memgraph_configured(cls) -> bool:
         """Check if Memgraph backend is configured."""
-        return bool(cls.MEMGRAPH_URI)
+        return cls.is_env_set("MEMGRAPH_URI")
 
     @classmethod
     def is_multi_tenant_mode(cls) -> bool:

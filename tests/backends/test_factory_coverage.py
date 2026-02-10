@@ -963,11 +963,15 @@ class TestEdgeCases:
             assert BackendFactory.is_backend_configured('neo4j') is True
     
     def test_is_backend_configured_memgraph_false(self):
-        """Test is_backend_configured for Memgraph returns False when not configured."""
+        """Test is_backend_configured for Memgraph returns False when not configured.
+
+        is_backend_configured now checks if the env var is explicitly set
+        (via _EnvVar.is_set), not whether the resolved value is truthy.
+        """
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch_config(MEMGRAPH_URI=None):
-            assert BackendFactory.is_backend_configured('memgraph') is False
+        # Without MEMORY_MEMGRAPH_URI set in env, Memgraph is not configured
+        assert BackendFactory.is_backend_configured('memgraph') is False
     
     def test_is_backend_configured_sqlite_always_true(self):
         """Test is_backend_configured for SQLite always returns True."""
@@ -997,17 +1001,17 @@ class TestConfigurationHelpers:
             assert BackendFactory.get_configured_backend_type() == 'neo4j'
 
     def test_is_backend_configured_falkordb(self):
-        """Test is_backend_configured for FalkorDB."""
+        """Test is_backend_configured for FalkorDB.
+
+        is_backend_configured now checks if the env var is explicitly set.
+        """
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch_config(FALKORDB_HOST='localhost'):
+        with patch.dict(os.environ, {"MEMORY_FALKORDB_HOST": "localhost"}):
             assert BackendFactory.is_backend_configured('falkordb') is True
 
-        with patch_config(FALKORDB_HOST='localhost'):
-            assert BackendFactory.is_backend_configured('falkordb') is True
-
-        with patch_config(FALKORDB_HOST=None):
-            assert BackendFactory.is_backend_configured('falkordb') is False
+        # Without env var set, FalkorDB is not configured (despite truthy default)
+        assert BackendFactory.is_backend_configured('falkordb') is False
 
     def test_is_backend_configured_falkordblite(self):
         """Test is_backend_configured for FalkorDBLite (always True)."""
@@ -1017,30 +1021,33 @@ class TestConfigurationHelpers:
         assert BackendFactory.is_backend_configured('falkordblite') is True
 
     def test_is_backend_configured_turso(self):
-        """Test is_backend_configured for Turso."""
+        """Test is_backend_configured for Turso.
+
+        is_backend_configured now checks if env vars are explicitly set.
+        """
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch_config(TURSO_DATABASE_URL='libsql://test'):
+        with patch.dict(os.environ, {"TURSO_DATABASE_URL": "libsql://test"}):
             assert BackendFactory.is_backend_configured('turso') is True
 
-        with patch_config(MEMORYGRAPH_TURSO_URL='libsql://test'):
+        with patch.dict(os.environ, {"MEMORY_TURSO_PATH": "/path"}):
             assert BackendFactory.is_backend_configured('turso') is True
 
-        with patch_config(TURSO_PATH='/path'):
-            assert BackendFactory.is_backend_configured('turso') is True
-
-        with patch_config(TURSO_DATABASE_URL=None, MEMORYGRAPH_TURSO_URL=None, TURSO_PATH=None):
-            assert BackendFactory.is_backend_configured('turso') is False
+        # Without env vars set, Turso is not configured
+        assert BackendFactory.is_backend_configured('turso') is False
 
     def test_is_backend_configured_cloud(self):
-        """Test is_backend_configured for Cloud."""
+        """Test is_backend_configured for Cloud.
+
+        is_backend_configured now checks if env var is explicitly set.
+        """
         from src.memorygraph.backends.factory import BackendFactory
 
-        with patch_config(MEMORYGRAPH_API_KEY='test_key'):
+        with patch.dict(os.environ, {"MEMORYGRAPH_API_KEY": "test_key"}):
             assert BackendFactory.is_backend_configured('cloud') is True
 
-        with patch_config(MEMORYGRAPH_API_KEY=None):
-            assert BackendFactory.is_backend_configured('cloud') is False
+        # Without env var set, Cloud is not configured
+        assert BackendFactory.is_backend_configured('cloud') is False
 
     def test_is_backend_configured_unknown_type(self):
         """Test is_backend_configured for unknown backend type."""

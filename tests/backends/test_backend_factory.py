@@ -177,15 +177,15 @@ class TestBackendFactoryHelpers:
     def test_is_backend_configured_memgraph(self):
         """Test checking if Memgraph is configured.
 
-        Note: Memgraph has a default URI (bolt://localhost:7687), so
-        is_backend_configured always returns True when Config has a default.
+        Uses is_env_set() to check if MEMORY_MEMGRAPH_URI is explicitly set,
+        rather than checking truthiness of the default value.
         """
         with patch.dict(os.environ, {"MEMORY_MEMGRAPH_URI": "bolt://test:7687"}):
             assert BackendFactory.is_backend_configured("memgraph") is True
 
         with patch.dict(os.environ, {}, clear=True):
-            # Default URI "bolt://localhost:7687" is truthy
-            assert BackendFactory.is_backend_configured("memgraph") is True
+            # No env var set — default URI doesn't count as "configured"
+            assert BackendFactory.is_backend_configured("memgraph") is False
 
     def test_is_backend_configured_sqlite(self):
         """Test checking if SQLite is configured (always True)."""

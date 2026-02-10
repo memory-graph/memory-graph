@@ -110,8 +110,8 @@ class BackendFactory:
         Raises:
             DatabaseConnectionError: If no backend can be connected
         """
-        # Try Neo4j first (if password is configured)
-        if Config.NEO4J_PASSWORD:
+        # Try Neo4j first (if password is explicitly configured)
+        if Config.is_env_set("NEO4J_PASSWORD"):
             try:
                 logger.info("Attempting to connect to Neo4j...")
                 backend = await BackendFactory._create_neo4j()
@@ -120,8 +120,8 @@ class BackendFactory:
             except DatabaseConnectionError as e:
                 logger.warning("Neo4j connection failed: %s", e)
 
-        # Try Memgraph (Community Edition typically has no auth)
-        if Config.MEMGRAPH_URI:
+        # Try Memgraph (only if URI is explicitly configured)
+        if Config.is_env_set("MEMGRAPH_URI"):
             try:
                 logger.info("Attempting to connect to Memgraph...")
                 backend = await BackendFactory._create_memgraph()
@@ -468,13 +468,13 @@ class BackendFactory:
     # Callables return True if the backend appears configured.
     # True means the backend is always available (embedded).
     _BACKEND_CONFIGURED_CHECKS = {
-        "neo4j": lambda: bool(Config.NEO4J_PASSWORD),
-        "memgraph": lambda: bool(Config.MEMGRAPH_URI),
-        "falkordb": lambda: bool(Config.FALKORDB_HOST),
+        "neo4j": lambda: Config.is_env_set("NEO4J_PASSWORD"),
+        "memgraph": lambda: Config.is_env_set("MEMGRAPH_URI"),
+        "falkordb": lambda: Config.is_env_set("FALKORDB_HOST"),
         "falkordblite": lambda: True,
         "sqlite": lambda: True,
-        "turso": lambda: bool(Config.TURSO_DATABASE_URL or Config.TURSO_PATH),
-        "cloud": lambda: bool(Config.MEMORYGRAPH_API_KEY),
+        "turso": lambda: Config.is_env_set("TURSO_DATABASE_URL") or Config.is_env_set("TURSO_PATH"),
+        "cloud": lambda: Config.is_env_set("MEMORYGRAPH_API_KEY"),
     }
 
     @staticmethod

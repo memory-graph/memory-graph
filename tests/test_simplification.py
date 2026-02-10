@@ -9,6 +9,7 @@ Tests cover:
 - Legacy aliases for backward compatibility
 """
 
+import os
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -216,24 +217,25 @@ class TestBackendConfiguredLookup:
     """Test is_backend_configured() lookup-table pattern."""
 
     def test_known_backends_return_correct_values(self):
-        """is_backend_configured should return correct values for each backend type."""
-        with patch_config(NEO4J_PASSWORD="pass"):
-            assert BackendFactory.is_backend_configured("neo4j") is True
-        with patch_config(NEO4J_PASSWORD=None):
-            assert BackendFactory.is_backend_configured("neo4j") is False
+        """is_backend_configured should return correct values for each backend type.
 
-        with patch_config(MEMGRAPH_URI="bolt://localhost:7687"):
+        is_backend_configured now checks if env vars are explicitly set
+        (via _EnvVar.is_set), not whether resolved values are truthy.
+        """
+        with patch.dict(os.environ, {"MEMORY_NEO4J_PASSWORD": "pass"}):
+            assert BackendFactory.is_backend_configured("neo4j") is True
+        assert BackendFactory.is_backend_configured("neo4j") is False
+
+        with patch.dict(os.environ, {"MEMORY_MEMGRAPH_URI": "bolt://localhost:7687"}):
             assert BackendFactory.is_backend_configured("memgraph") is True
-        with patch_config(MEMGRAPH_URI=None):
-            assert BackendFactory.is_backend_configured("memgraph") is False
+        assert BackendFactory.is_backend_configured("memgraph") is False
 
         assert BackendFactory.is_backend_configured("sqlite") is True
         assert BackendFactory.is_backend_configured("falkordblite") is True
 
-        with patch_config(MEMORYGRAPH_API_KEY="key"):
+        with patch.dict(os.environ, {"MEMORYGRAPH_API_KEY": "key"}):
             assert BackendFactory.is_backend_configured("cloud") is True
-        with patch_config(MEMORYGRAPH_API_KEY=None):
-            assert BackendFactory.is_backend_configured("cloud") is False
+        assert BackendFactory.is_backend_configured("cloud") is False
 
     def test_unknown_backend_returns_false(self):
         """Unknown backend types should return False."""
