@@ -359,6 +359,14 @@ class Config:
                 "api_key_configured": bool(cls.MEMORYGRAPH_API_KEY),
                 "timeout": cls.MEMORYGRAPH_TIMEOUT
             },
+            "falkordb": {
+                "host": cls.FALKORDB_HOST,
+                "port": cls.FALKORDB_PORT,
+                "password_configured": bool(cls.FALKORDB_PASSWORD),
+            },
+            "falkordblite": {
+                "path": cls.FALKORDBLITE_PATH,
+            },
             "logging": {
                 "level": cls.LOG_LEVEL
             },

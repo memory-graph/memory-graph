@@ -373,12 +373,12 @@ def print_config_summary() -> None:
         _eprint(f"  Cloud Timeout: {config['cloud']['timeout']}s")
 
     if config['backend'] in ['falkordb', 'auto']:
-        _eprint(f"\n  FalkorDB: Client-server mode")
-        _eprint(f"  Note: Configuration via MEMORY_FALKORDB_* environment variables")
+        _eprint(f"\n  FalkorDB Host: {config['falkordb']['host']}")
+        _eprint(f"  FalkorDB Port: {config['falkordb']['port']}")
+        _eprint(f"  FalkorDB Password: {'[configured]' if config['falkordb']['password_configured'] else '[not set]'}")
 
     if config['backend'] in ['falkordblite', 'auto']:
-        _eprint(f"\n  FalkorDBLite: Embedded database")
-        _eprint(f"  Note: Configuration via MEMORY_FALKORDBLITE_PATH environment variable")
+        _eprint(f"\n  FalkorDBLite Path: {config['falkordblite']['path']}")
 
     _eprint()
 

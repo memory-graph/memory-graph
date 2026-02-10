@@ -117,6 +117,22 @@ class TestConfigMultiTenancy:
         assert "jwt_secret_configured" in summary["multi_tenancy"]
         assert "jwt_secret" not in summary["multi_tenancy"]
 
+    def test_config_summary_includes_falkordb(self):
+        """Test that config summary includes FalkorDB details."""
+        summary = Config.get_config_summary()
+
+        assert "falkordb" in summary
+        assert "host" in summary["falkordb"]
+        assert "port" in summary["falkordb"]
+        assert "password_configured" in summary["falkordb"]
+
+    def test_config_summary_includes_falkordblite(self):
+        """Test that config summary includes FalkorDBLite details."""
+        summary = Config.get_config_summary()
+
+        assert "falkordblite" in summary
+        assert "path" in summary["falkordblite"]
+
 
 class TestConfigBackwardCompatibility:
     """Test backward compatibility of configuration."""
