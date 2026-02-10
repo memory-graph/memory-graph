@@ -20,26 +20,25 @@ Tests cover:
 - Auto-selection logic reads Config
 """
 
-import os
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any
+
+import pytest
 
 # Check for optional dependencies
 try:
-    import neo4j
+    import neo4j  # noqa: F401
     HAS_NEO4J = True
 except ImportError:
     HAS_NEO4J = False
 
 try:
-    import mgclient
+    import mgclient  # noqa: F401
     HAS_MEMGRAPH = True
 except ImportError:
     HAS_MEMGRAPH = False
 
-from memorygraph.config import Config
 from memorygraph.backends.factory import BackendFactory
+from memorygraph.config import Config
 from memorygraph.models import DatabaseConnectionError
 
 
@@ -50,42 +49,11 @@ class TestFactoryReadsConfig:
     Pattern: Set Config attribute to one value, set os.environ to a DIFFERENT
     value, then verify factory uses the Config value (not env var).
 
-    These tests MUST FAIL initially (RED phase) because the current factory.py
-    implementation uses os.getenv() directly.
+    Config descriptors are restored by the autouse ``reset_config`` fixture
+    in conftest.py; environment variables are cleaned up via ``monkeypatch``.
     """
 
-    @pytest.fixture(autouse=True)
-    def save_and_restore_config(self):
-        """Save and restore Config values around each test.
-
-        Saves raw class dict entries (including _EnvVar descriptors) so that
-        dynamic env var resolution is restored on exit.
-        """
-        config_keys = [
-            "BACKEND", "NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD",
-            "MEMGRAPH_URI", "MEMGRAPH_USER", "MEMGRAPH_PASSWORD",
-            "SQLITE_PATH", "TURSO_PATH", "TURSO_DATABASE_URL",
-            "TURSO_AUTH_TOKEN", "MEMORYGRAPH_API_KEY",
-            "MEMORYGRAPH_API_URL", "MEMORYGRAPH_TIMEOUT",
-        ]
-        original_values = {
-            key: Config.__dict__[key] for key in config_keys if key in Config.__dict__
-        }
-
-        # Save original environment
-        original_env = os.environ.copy()
-
-        yield
-
-        # Restore Config values (including descriptors)
-        for key, value in original_values.items():
-            setattr(Config, key, value)
-
-        # Restore environment
-        os.environ.clear()
-        os.environ.update(original_env)
-
-    def test_factory_reads_config_backend_not_env_var(self):
+    def test_factory_reads_config_backend_not_env_var(self, monkeypatch):
         """
         Factory should read Config.BACKEND, not os.getenv('MEMORY_BACKEND').
 
@@ -102,7 +70,7 @@ class TestFactoryReadsConfig:
         Config.BACKEND = "cloud"
 
         # Set env var to sqlite (conflicting value)
-        os.environ["MEMORY_BACKEND"] = "sqlite"
+        monkeypatch.setenv("MEMORY_BACKEND", "sqlite")
 
         # Mock cloud backend creation to verify it's called
         with patch.object(BackendFactory, "_create_cloud", new_callable=AsyncMock) as mock_cloud:
@@ -119,7 +87,7 @@ class TestFactoryReadsConfig:
             )
 
     @pytest.mark.asyncio
-    async def test_factory_reads_config_sqlite_path(self):
+    async def test_factory_reads_config_sqlite_path(self, monkeypatch):
         """
         Factory should read Config.SQLITE_PATH, not os.getenv('MEMORY_SQLITE_PATH').
 
@@ -131,8 +99,8 @@ class TestFactoryReadsConfig:
         Config.BACKEND = "sqlite"
 
         # Set env var to different path
-        os.environ["MEMORY_SQLITE_PATH"] = "/wrong/env/path.db"
-        os.environ["MEMORY_BACKEND"] = "sqlite"
+        monkeypatch.setenv("MEMORY_SQLITE_PATH", "/wrong/env/path.db")
+        monkeypatch.setenv("MEMORY_BACKEND", "sqlite")
 
         # Mock SQLite backend to capture initialization (lazy import)
         with patch("memorygraph.backends.sqlite_fallback.SQLiteFallbackBackend") as mock_backend_class:
@@ -159,7 +127,7 @@ class TestFactoryReadsConfig:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not HAS_NEO4J, reason="neo4j package not installed")
-    async def test_factory_reads_config_neo4j_credentials(self):
+    async def test_factory_reads_config_neo4j_credentials(self, monkeypatch):
         """
         Factory should read Config.NEO4J_* values, not os.getenv('MEMORY_NEO4J_*').
 
@@ -172,10 +140,10 @@ class TestFactoryReadsConfig:
         Config.BACKEND = "neo4j"
 
         # Set env vars to different values
-        os.environ["MEMORY_NEO4J_URI"] = "bolt://env-host:7687"
-        os.environ["MEMORY_NEO4J_USER"] = "env-user"
-        os.environ["MEMORY_NEO4J_PASSWORD"] = "env-password"
-        os.environ["MEMORY_BACKEND"] = "neo4j"
+        monkeypatch.setenv("MEMORY_NEO4J_URI", "bolt://env-host:7687")
+        monkeypatch.setenv("MEMORY_NEO4J_USER", "env-user")
+        monkeypatch.setenv("MEMORY_NEO4J_PASSWORD", "env-password")
+        monkeypatch.setenv("MEMORY_BACKEND", "neo4j")
 
         # Mock Neo4j backend (lazy import)
         with patch("memorygraph.backends.neo4j_backend.Neo4jBackend") as mock_backend_class:
@@ -203,7 +171,7 @@ class TestFactoryReadsConfig:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not HAS_MEMGRAPH, reason="memgraph (mgclient) package not installed")
-    async def test_factory_reads_config_memgraph_credentials(self):
+    async def test_factory_reads_config_memgraph_credentials(self, monkeypatch):
         """
         Factory should read Config.MEMGRAPH_* values, not os.getenv('MEMORY_MEMGRAPH_*').
 
@@ -216,10 +184,10 @@ class TestFactoryReadsConfig:
         Config.BACKEND = "memgraph"
 
         # Set env vars to different values
-        os.environ["MEMORY_MEMGRAPH_URI"] = "bolt://env-memgraph:7687"
-        os.environ["MEMORY_MEMGRAPH_USER"] = "env-memgraph-user"
-        os.environ["MEMORY_MEMGRAPH_PASSWORD"] = "env-memgraph-pass"
-        os.environ["MEMORY_BACKEND"] = "memgraph"
+        monkeypatch.setenv("MEMORY_MEMGRAPH_URI", "bolt://env-memgraph:7687")
+        monkeypatch.setenv("MEMORY_MEMGRAPH_USER", "env-memgraph-user")
+        monkeypatch.setenv("MEMORY_MEMGRAPH_PASSWORD", "env-memgraph-pass")
+        monkeypatch.setenv("MEMORY_BACKEND", "memgraph")
 
         # Mock Memgraph backend (lazy import)
         with patch("memorygraph.backends.memgraph_backend.MemgraphBackend") as mock_backend_class:
@@ -246,7 +214,7 @@ class TestFactoryReadsConfig:
             )
 
     @pytest.mark.asyncio
-    async def test_factory_reads_config_turso_settings(self):
+    async def test_factory_reads_config_turso_settings(self, monkeypatch):
         """
         Factory should read Config.TURSO_* values, not os.getenv('TURSO_*').
 
@@ -259,10 +227,10 @@ class TestFactoryReadsConfig:
         Config.BACKEND = "turso"
 
         # Set env vars to different values
-        os.environ["MEMORY_TURSO_PATH"] = "/env/turso.db"
-        os.environ["TURSO_DATABASE_URL"] = "libsql://env.turso.io"
-        os.environ["TURSO_AUTH_TOKEN"] = "env-token-456"
-        os.environ["MEMORY_BACKEND"] = "turso"
+        monkeypatch.setenv("MEMORY_TURSO_PATH", "/env/turso.db")
+        monkeypatch.setenv("TURSO_DATABASE_URL", "libsql://env.turso.io")
+        monkeypatch.setenv("TURSO_AUTH_TOKEN", "env-token-456")
+        monkeypatch.setenv("MEMORY_BACKEND", "turso")
 
         # Mock Turso backend (lazy import)
         with patch("memorygraph.backends.turso.TursoBackend") as mock_backend_class:
@@ -290,7 +258,7 @@ class TestFactoryReadsConfig:
             )
 
     @pytest.mark.asyncio
-    async def test_factory_reads_config_cloud_api_key(self):
+    async def test_factory_reads_config_cloud_api_key(self, monkeypatch):
         """
         Factory should read Config.MEMORYGRAPH_API_KEY, not os.getenv('MEMORYGRAPH_API_KEY').
 
@@ -303,10 +271,10 @@ class TestFactoryReadsConfig:
         Config.BACKEND = "cloud"
 
         # Set env vars to different values
-        os.environ["MEMORYGRAPH_API_KEY"] = "env-api-key-xyz"
-        os.environ["MEMORYGRAPH_API_URL"] = "https://env-api.memorygraph.dev"
-        os.environ["MEMORYGRAPH_TIMEOUT"] = "30"
-        os.environ["MEMORY_BACKEND"] = "cloud"
+        monkeypatch.setenv("MEMORYGRAPH_API_KEY", "env-api-key-xyz")
+        monkeypatch.setenv("MEMORYGRAPH_API_URL", "https://env-api.memorygraph.dev")
+        monkeypatch.setenv("MEMORYGRAPH_TIMEOUT", "30")
+        monkeypatch.setenv("MEMORY_BACKEND", "cloud")
 
         # Mock Cloud backend (lazy import)
         with patch("memorygraph.backends.cloud_backend.CloudRESTAdapter") as mock_backend_class:
@@ -333,7 +301,7 @@ class TestFactoryReadsConfig:
             )
 
     @pytest.mark.asyncio
-    async def test_factory_reads_config_falkordb_settings(self):
+    async def test_factory_reads_config_falkordb_settings(self, monkeypatch):
         """
         Factory should read Config.FALKORDB_* values from Config class.
 
@@ -346,9 +314,9 @@ class TestFactoryReadsConfig:
         # have FALKORDB_* attributes yet. The refactor should add them.
 
         # For now, test that factory at least doesn't use hardcoded env vars
-        os.environ["MEMORY_FALKORDB_HOST"] = "localhost"
-        os.environ["MEMORY_FALKORDB_PORT"] = "6379"
-        os.environ["MEMORY_FALKORDB_PASSWORD"] = "test-password"
+        monkeypatch.setenv("MEMORY_FALKORDB_HOST", "localhost")
+        monkeypatch.setenv("MEMORY_FALKORDB_PORT", "6379")
+        monkeypatch.setenv("MEMORY_FALKORDB_PASSWORD", "test-password")
 
         with patch("memorygraph.backends.falkordb_backend.FalkorDBBackend") as mock_backend_class:
             mock_instance = AsyncMock()
@@ -363,7 +331,7 @@ class TestFactoryReadsConfig:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not HAS_NEO4J, reason="neo4j package not installed")
-    async def test_factory_auto_select_reads_config_neo4j_password(self):
+    async def test_factory_auto_select_reads_config_neo4j_password(self, monkeypatch):
         """
         Factory auto-selection should check Config.NEO4J_PASSWORD, not env var.
 
@@ -375,8 +343,8 @@ class TestFactoryReadsConfig:
         Config.NEO4J_USER = "neo4j"
 
         # Clear env var
-        os.environ.pop("MEMORY_NEO4J_PASSWORD", None)
-        os.environ.pop("NEO4J_PASSWORD", None)
+        monkeypatch.delenv("MEMORY_NEO4J_PASSWORD", raising=False)
+        monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
 
         # Mock _create_neo4j to track if it's called
         mock_instance = AsyncMock()
@@ -384,14 +352,14 @@ class TestFactoryReadsConfig:
             mock_create.return_value = mock_instance
 
             # Auto-select should try Neo4j because Config.NEO4J_PASSWORD is set
-            result = await BackendFactory._auto_select_backend()
+            await BackendFactory._auto_select_backend()
 
             # Should call _create_neo4j() because Config has password
             mock_create.assert_called_once()
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not HAS_MEMGRAPH, reason="memgraph (mgclient) package not installed")
-    async def test_factory_auto_select_reads_config_memgraph_uri(self):
+    async def test_factory_auto_select_reads_config_memgraph_uri(self, monkeypatch):
         """
         Factory auto-selection should check Config.MEMGRAPH_URI, not env var.
 
@@ -404,9 +372,9 @@ class TestFactoryReadsConfig:
         Config.MEMGRAPH_PASSWORD = ""
 
         # Clear env var
-        os.environ.pop("MEMORY_MEMGRAPH_URI", None)
-        os.environ.pop("MEMORY_NEO4J_PASSWORD", None)
-        os.environ.pop("NEO4J_PASSWORD", None)
+        monkeypatch.delenv("MEMORY_MEMGRAPH_URI", raising=False)
+        monkeypatch.delenv("MEMORY_NEO4J_PASSWORD", raising=False)
+        monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
 
         # Mock Memgraph backend (lazy import)
         with patch("memorygraph.backends.memgraph_backend.MemgraphBackend") as mock_backend_class:
@@ -419,14 +387,14 @@ class TestFactoryReadsConfig:
                 mock_create.return_value = mock_instance
 
                 # Auto-select should try Memgraph because Config.MEMGRAPH_URI is set
-                result = await BackendFactory._auto_select_backend()
+                await BackendFactory._auto_select_backend()
 
                 # This assertion WILL FAIL with current implementation
                 # Current code checks os.getenv(), which is None, so skips Memgraph
                 # Expected: Should call _create_memgraph() because Config has URI
                 mock_create.assert_called_once()
 
-    def test_is_backend_configured_reads_config_neo4j(self):
+    def test_is_backend_configured_reads_config_neo4j(self, monkeypatch):
         """
         is_backend_configured() should check Config.NEO4J_PASSWORD, not env var.
 
@@ -436,8 +404,8 @@ class TestFactoryReadsConfig:
         Config.NEO4J_PASSWORD = "config-password"
 
         # Clear env vars
-        os.environ.pop("MEMORY_NEO4J_PASSWORD", None)
-        os.environ.pop("NEO4J_PASSWORD", None)
+        monkeypatch.delenv("MEMORY_NEO4J_PASSWORD", raising=False)
+        monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
 
         # Check if Neo4j is configured
         is_configured = BackendFactory.is_backend_configured("neo4j")
@@ -449,7 +417,7 @@ class TestFactoryReadsConfig:
             "Should return True when Config.NEO4J_PASSWORD is set"
         )
 
-    def test_is_backend_configured_reads_config_memgraph(self):
+    def test_is_backend_configured_reads_config_memgraph(self, monkeypatch):
         """
         is_backend_configured() should check Config.MEMGRAPH_URI, not env var.
 
@@ -459,7 +427,7 @@ class TestFactoryReadsConfig:
         Config.MEMGRAPH_URI = "bolt://config-memgraph:7687"
 
         # Clear env var
-        os.environ.pop("MEMORY_MEMGRAPH_URI", None)
+        monkeypatch.delenv("MEMORY_MEMGRAPH_URI", raising=False)
 
         # Check if Memgraph is configured
         is_configured = BackendFactory.is_backend_configured("memgraph")
@@ -471,7 +439,7 @@ class TestFactoryReadsConfig:
             "Should return True when Config.MEMGRAPH_URI is set"
         )
 
-    def test_is_backend_configured_reads_config_cloud(self):
+    def test_is_backend_configured_reads_config_cloud(self, monkeypatch):
         """
         is_backend_configured() should check Config.MEMORYGRAPH_API_KEY, not env var.
 
@@ -481,7 +449,7 @@ class TestFactoryReadsConfig:
         Config.MEMORYGRAPH_API_KEY = "config-api-key"
 
         # Clear env var
-        os.environ.pop("MEMORYGRAPH_API_KEY", None)
+        monkeypatch.delenv("MEMORYGRAPH_API_KEY", raising=False)
 
         # Check if Cloud is configured
         is_configured = BackendFactory.is_backend_configured("cloud")
@@ -494,7 +462,7 @@ class TestFactoryReadsConfig:
         )
 
     @pytest.mark.asyncio
-    async def test_create_backend_reads_config_for_backend_selection(self):
+    async def test_create_backend_reads_config_for_backend_selection(self, monkeypatch):
         """
         create_backend() should read Config.BACKEND for backend type selection.
 
@@ -507,7 +475,7 @@ class TestFactoryReadsConfig:
         Config.NEO4J_PASSWORD = "test-pass"
 
         # Set env var to different backend
-        os.environ["MEMORY_BACKEND"] = "sqlite"
+        monkeypatch.setenv("MEMORY_BACKEND", "sqlite")
 
         # Mock Neo4j backend
         with patch.object(BackendFactory, "_create_neo4j", new_callable=AsyncMock) as mock_neo4j:
@@ -523,27 +491,15 @@ class TestFactoryReadsConfig:
 
 
 class TestFactoryConfigEdgeCases:
-    """Test edge cases and error conditions for Config-based factory."""
+    """Test edge cases and error conditions for Config-based factory.
 
-    @pytest.fixture(autouse=True)
-    def save_and_restore_config(self):
-        """Save and restore Config values (including descriptors)."""
-        config_keys = ["BACKEND", "NEO4J_PASSWORD", "MEMORYGRAPH_API_KEY"]
-        original_values = {
-            key: Config.__dict__[key] for key in config_keys if key in Config.__dict__
-        }
-        original_env = os.environ.copy()
-
-        yield
-
-        for key, value in original_values.items():
-            setattr(Config, key, value)
-        os.environ.clear()
-        os.environ.update(original_env)
+    Config descriptors are restored by the autouse ``reset_config`` fixture
+    in conftest.py; environment variables are cleaned up via ``monkeypatch``.
+    """
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not HAS_NEO4J, reason="neo4j package not installed")
-    async def test_factory_raises_error_when_neo4j_password_missing_in_config(self):
+    async def test_factory_raises_error_when_neo4j_password_missing_in_config(self, monkeypatch):
         """
         Factory should check Config.NEO4J_PASSWORD and raise error if missing.
 
@@ -555,15 +511,15 @@ class TestFactoryConfigEdgeCases:
         Config.NEO4J_PASSWORD = None
 
         # Ensure env var is also not set
-        os.environ.pop("MEMORY_NEO4J_PASSWORD", None)
-        os.environ.pop("NEO4J_PASSWORD", None)
+        monkeypatch.delenv("MEMORY_NEO4J_PASSWORD", raising=False)
+        monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
 
         # Should raise error about missing password
         with pytest.raises(DatabaseConnectionError, match="password not configured"):
             await BackendFactory._create_neo4j()
 
     @pytest.mark.asyncio
-    async def test_factory_raises_error_when_cloud_api_key_missing_in_config(self):
+    async def test_factory_raises_error_when_cloud_api_key_missing_in_config(self, monkeypatch):
         """
         Factory should check Config.MEMORYGRAPH_API_KEY and raise error if missing.
         """
@@ -572,19 +528,19 @@ class TestFactoryConfigEdgeCases:
         Config.MEMORYGRAPH_API_KEY = None
 
         # Ensure env var is also not set
-        os.environ.pop("MEMORYGRAPH_API_KEY", None)
+        monkeypatch.delenv("MEMORYGRAPH_API_KEY", raising=False)
 
         # Should raise error about missing API key
         with pytest.raises(DatabaseConnectionError, match="API key"):
             await BackendFactory._create_cloud()
 
-    def test_config_backend_case_insensitive(self):
+    def test_config_backend_case_insensitive(self, monkeypatch):
         """
         Config.BACKEND should be case-insensitive (lowercased before use).
         """
         # Set Config with mixed case
         Config.BACKEND = "NeO4J"
-        os.environ["MEMORY_BACKEND"] = "sqlite"  # Different, to ensure Config is used
+        monkeypatch.setenv("MEMORY_BACKEND", "sqlite")  # Different, to ensure Config is used
 
         # get_configured_backend_type should return lowercase
         backend_type = BackendFactory.get_configured_backend_type()
@@ -600,27 +556,13 @@ class TestFactoryConfigIntegration:
 
     These tests verify that changing Config values affects factory behavior,
     confirming that Config is the source of truth.
+
+    Config descriptors are restored by the autouse ``reset_config`` fixture
+    in conftest.py; environment variables are cleaned up via ``monkeypatch``.
     """
 
-    @pytest.fixture(autouse=True)
-    def save_and_restore_config(self):
-        """Save and restore Config and environment (including descriptors)."""
-        config_keys = ["BACKEND", "SQLITE_PATH", "NEO4J_PASSWORD",
-                        "MEMGRAPH_URI", "MEMORYGRAPH_API_KEY"]
-        original_values = {
-            key: Config.__dict__[key] for key in config_keys if key in Config.__dict__
-        }
-        original_env = os.environ.copy()
-
-        yield
-
-        for key, value in original_values.items():
-            setattr(Config, key, value)
-        os.environ.clear()
-        os.environ.update(original_env)
-
     @pytest.mark.asyncio
-    async def test_changing_config_backend_changes_factory_behavior(self):
+    async def test_changing_config_backend_changes_factory_behavior(self, monkeypatch):
         """
         Changing Config.BACKEND should change which backend factory creates.
 
@@ -631,7 +573,7 @@ class TestFactoryConfigIntegration:
         Config.SQLITE_PATH = "/test/path.db"
 
         # Conflicting env var
-        os.environ["MEMORY_BACKEND"] = "neo4j"
+        monkeypatch.setenv("MEMORY_BACKEND", "neo4j")
 
         with patch("memorygraph.backends.sqlite_fallback.SQLiteFallbackBackend") as mock_sqlite:
             mock_instance = AsyncMock()
@@ -647,7 +589,7 @@ class TestFactoryConfigIntegration:
             mock_sqlite.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_config_values_override_env_vars_consistently(self):
+    async def test_config_values_override_env_vars_consistently(self, monkeypatch):
         """
         Config values should consistently override environment variables across all backends.
 
@@ -660,10 +602,10 @@ class TestFactoryConfigIntegration:
         Config.MEMGRAPH_URI = "bolt://config:7687"
 
         # Set conflicting env vars
-        os.environ["MEMORY_BACKEND"] = "neo4j"
-        os.environ["MEMORY_SQLITE_PATH"] = "/env/test.db"
-        os.environ["MEMORY_NEO4J_PASSWORD"] = "env-pass"
-        os.environ["MEMORY_MEMGRAPH_URI"] = "bolt://env:7687"
+        monkeypatch.setenv("MEMORY_BACKEND", "neo4j")
+        monkeypatch.setenv("MEMORY_SQLITE_PATH", "/env/test.db")
+        monkeypatch.setenv("MEMORY_NEO4J_PASSWORD", "env-pass")
+        monkeypatch.setenv("MEMORY_MEMGRAPH_URI", "bolt://env:7687")
 
         # Test 1: Backend selection uses Config
         backend_type = BackendFactory.get_configured_backend_type()

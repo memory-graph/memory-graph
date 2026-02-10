@@ -437,3 +437,48 @@ class TestBackendAutoDetectionFix:
         from memorygraph.backends.factory import BackendFactory
         os.environ["TURSO_DATABASE_URL"] = "libsql://test.turso.io"
         assert BackendFactory.is_backend_configured("turso") is True
+
+
+class TestPatchConfigCleanup:
+    """Tests for patch_config context manager cleanup behaviour."""
+
+    def test_patch_config_restores_existing_key(self):
+        """patch_config restores an existing Config attribute to its original value."""
+        original = Config.BACKEND
+        with patch_config(BACKEND="neo4j"):
+            assert Config.BACKEND == "neo4j"
+        assert Config.BACKEND == original
+
+    def test_patch_config_removes_new_key_on_exit(self):
+        """patch_config deletes attributes that didn't exist before the context."""
+        key = "_TEST_ONLY_NEW_ATTR"
+        assert key not in Config.__dict__, "precondition: key should not exist"
+        with patch_config(**{key: "temp_value"}):
+            assert getattr(Config, key) == "temp_value"
+        assert key not in Config.__dict__, "new key should be removed on exit"
+
+    def test_patch_config_removes_new_key_even_on_exception(self):
+        """Cleanup of new keys happens even if the body raises an exception."""
+        key = "_TEST_ONLY_EXCEPTION_ATTR"
+        assert key not in Config.__dict__
+        try:
+            with patch_config(**{key: "value"}):
+                raise RuntimeError("boom")
+        except RuntimeError:
+            pass
+        assert key not in Config.__dict__, "new key should be cleaned up after exception"
+
+    def test_patch_config_mixed_existing_and_new_keys(self):
+        """patch_config handles a mix of existing and new keys correctly."""
+        new_key = "_TEST_ONLY_MIXED_NEW"
+        original_backend = Config.__dict__.get("BACKEND")
+        assert new_key not in Config.__dict__
+
+        with patch_config(BACKEND="turso", **{new_key: 42}):
+            assert Config.BACKEND == "turso"
+            assert getattr(Config, new_key) == 42
+
+        # Existing key restored
+        assert Config.__dict__.get("BACKEND") is original_backend
+        # New key removed
+        assert new_key not in Config.__dict__

@@ -93,7 +93,9 @@ def patch_config(**kwargs):
     """Context manager to temporarily patch Config class attributes.
 
     Saves raw class dict entries (including _EnvVar descriptors) so that
-    dynamic env var resolution is restored on exit.
+    dynamic env var resolution is restored on exit.  Keys that did not
+    previously exist in ``Config.__dict__`` are deleted on exit so they
+    don't leak into subsequent tests.
 
     Patches all loaded Config classes (both ``memorygraph.config.Config``
     and ``src.memorygraph.config.Config``) to avoid divergence when test
@@ -109,11 +111,14 @@ def patch_config(**kwargs):
     """
     configs = _get_all_config_classes()
     saved = []  # list of (cls, key, original_descriptor) tuples
+    new_keys = []  # list of (cls, key) for attrs that didn't exist before
 
     for cfg in configs:
         for key, value in kwargs.items():
             if key in cfg.__dict__:
                 saved.append((cfg, key, cfg.__dict__[key]))
+            else:
+                new_keys.append((cfg, key))
             setattr(cfg, key, value)
 
     try:
@@ -121,3 +126,8 @@ def patch_config(**kwargs):
     finally:
         for cfg, key, original in saved:
             setattr(cfg, key, original)
+        for cfg, key in new_keys:
+            try:
+                delattr(cfg, key)
+            except AttributeError:
+                pass
