@@ -70,23 +70,14 @@ class TestFalkorDBBackendConfig:
                 # Clean up
                 os.environ.pop("FALKORDB_PASSWORD", None)
 
-    def test_falkordb_uses_default_when_config_is_none(self):
-        """FalkorDBBackend should use defaults when Config values are None."""
-        with patch_config(FALKORDB_HOST=None, FALKORDB_PORT=None, FALKORDB_PASSWORD=None):
-            # Clear environment variables
-            os.environ.pop("FALKORDB_HOST", None)
-            os.environ.pop("FALKORDB_PORT", None)
-            os.environ.pop("FALKORDB_PASSWORD", None)
+    def test_falkordb_uses_config_defaults(self):
+        """FalkorDBBackend should use Config defaults (single source of truth)."""
+        backend = FalkorDBBackend()
 
-            backend = FalkorDBBackend()
-
-            # Should use documented defaults
-            assert backend.host == "localhost", \
-                f"Expected default 'localhost' but got '{backend.host}'"
-            assert backend.port == 6379, \
-                f"Expected default 6379 but got {backend.port}"
-            assert backend.password is None, \
-                f"Expected default None but got '{backend.password}'"
+        # Config provides the defaults
+        assert backend.host == Config.FALKORDB_HOST
+        assert backend.port == Config.FALKORDB_PORT
+        assert backend.password == Config.FALKORDB_PASSWORD
 
     def test_falkordb_constructor_params_override_config(self):
         """FalkorDBBackend constructor parameters should override Config values."""
@@ -118,18 +109,14 @@ class TestFalkorDBLiteBackendConfig:
                 # Clean up
                 os.environ.pop("FALKORDBLITE_PATH", None)
 
-    def test_falkordblite_uses_default_when_config_is_none(self):
-        """FalkorDBLiteBackend should use ~/.memorygraph/falkordblite.db when Config is None."""
-        with patch_config(FALKORDBLITE_PATH=None):
-            # Clear environment variable
-            os.environ.pop("FALKORDBLITE_PATH", None)
+    def test_falkordblite_uses_config_default(self):
+        """FalkorDBLiteBackend should use Config.FALKORDBLITE_PATH default."""
+        backend = FalkorDBLiteBackend()
 
-            backend = FalkorDBLiteBackend()
-
-            # Should use default path
-            expected_default = str(Path.home() / ".memorygraph" / "falkordblite.db")
-            assert backend.db_path == expected_default, \
-                f"Expected default '{expected_default}' but got '{backend.db_path}'"
+        # Config provides the default (~/.memorygraph/falkordblite.db)
+        expected_default = str(Path.home() / ".memorygraph" / "falkordblite.db")
+        assert backend.db_path == expected_default, \
+            f"Expected default '{expected_default}' but got '{backend.db_path}'"
 
     def test_falkordblite_constructor_param_overrides_config(self):
         """FalkorDBLiteBackend constructor db_path parameter should override Config."""
@@ -163,22 +150,18 @@ class TestLadybugDBBackendConfig:
                 # Clean up
                 os.environ.pop("LADYBUGDB_PATH", None)
 
-    def test_ladybugdb_uses_default_when_config_is_none(self):
-        """LadybugDBBackend should use ~/.memorygraph/ladybugdb.db when Config is None."""
-        with patch_config(LADYBUGDB_PATH=None):
-            # Clear environment variable
-            os.environ.pop("LADYBUGDB_PATH", None)
+    def test_ladybugdb_uses_config_default(self):
+        """LadybugDBBackend should use Config.LADYBUGDB_PATH default."""
+        try:
+            backend = LadybugDBBackend()
 
-            try:
-                backend = LadybugDBBackend()
-
-                # Should use default path
-                expected_default = str(Path.home() / ".memorygraph" / "ladybugdb.db")
-                assert backend.db_path == expected_default, \
-                    f"Expected default '{expected_default}' but got '{backend.db_path}'"
-            except ImportError:
-                # LadybugDB not installed, skip this test
-                pytest.skip("LadybugDB (real_ladybug) not installed")
+            # Config provides the default (~/.memorygraph/ladybugdb.db)
+            expected_default = str(Path.home() / ".memorygraph" / "ladybugdb.db")
+            assert backend.db_path == expected_default, \
+                f"Expected default '{expected_default}' but got '{backend.db_path}'"
+        except ImportError:
+            # LadybugDB not installed, skip this test
+            pytest.skip("LadybugDB (real_ladybug) not installed")
 
     def test_ladybugdb_constructor_param_overrides_config(self):
         """LadybugDBBackend constructor db_path parameter should override Config."""
@@ -343,29 +326,19 @@ class TestNeo4jConnectionConfig:
                 # Clean up
                 os.environ.pop("NEO4J_PASSWORD", None)
 
-    def test_neo4j_uses_default_uri_when_config_is_none(self):
-        """Neo4jConnection should use bolt://localhost:7687 when Config.NEO4J_URI is None."""
-        with patch_config(NEO4J_URI=None, NEO4J_PASSWORD="password"):
-            # Clear environment variable
-            os.environ.pop("NEO4J_URI", None)
-
+    def test_neo4j_uses_config_default_uri(self):
+        """Neo4jConnection should use Config.NEO4J_URI default."""
+        with patch_config(NEO4J_PASSWORD="password"):
             conn = Neo4jConnection()
 
-            # Should use default URI
-            assert conn.uri == "bolt://localhost:7687", \
-                f"Expected default 'bolt://localhost:7687' but got '{conn.uri}'"
+            assert conn.uri == Config.NEO4J_URI
 
-    def test_neo4j_uses_default_user_when_config_is_none(self):
-        """Neo4jConnection should use 'neo4j' when Config.NEO4J_USER is None."""
-        with patch_config(NEO4J_USER=None, NEO4J_PASSWORD="password"):
-            # Clear environment variable
-            os.environ.pop("NEO4J_USER", None)
-
+    def test_neo4j_uses_config_default_user(self):
+        """Neo4jConnection should use Config.NEO4J_USER default."""
+        with patch_config(NEO4J_PASSWORD="password"):
             conn = Neo4jConnection()
 
-            # Should use default user
-            assert conn.user == "neo4j", \
-                f"Expected default 'neo4j' but got '{conn.user}'"
+            assert conn.user == Config.NEO4J_USER
 
     def test_neo4j_constructor_params_override_config(self):
         """Neo4jConnection constructor parameters should override Config values."""

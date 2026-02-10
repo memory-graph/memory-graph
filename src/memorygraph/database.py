@@ -5,7 +5,6 @@ This module handles all database operations, connection management, and provides
 a high-level interface for interacting with the Neo4j graph database.
 """
 
-import os
 import logging
 from typing import Dict, List, Optional, Any, Union, Tuple, TYPE_CHECKING
 from contextlib import asynccontextmanager
@@ -50,8 +49,8 @@ class Neo4jConnection:
         Raises:
             DatabaseConnectionError: If password is not provided
         """
-        self.uri = uri if uri is not None else (Config.NEO4J_URI or "bolt://localhost:7687")
-        self.user = user if user is not None else (Config.NEO4J_USER or "neo4j")
+        self.uri = uri if uri is not None else Config.NEO4J_URI
+        self.user = user if user is not None else Config.NEO4J_USER
         self.password = password if password is not None else Config.NEO4J_PASSWORD
         self.database = database
         self.driver: Optional[AsyncDriver] = None

@@ -36,8 +36,8 @@ class FalkorDBBackend(BaseFalkorDBBackend):
             password: FalkorDB password (defaults to FALKORDB_PASSWORD env var)
             graph_name: Name of the graph database (defaults to 'memorygraph')
         """
-        self.host = host if host is not None else (Config.FALKORDB_HOST or "localhost")
-        self.port = port if port is not None else (Config.FALKORDB_PORT or 6379)
+        self.host = host if host is not None else Config.FALKORDB_HOST
+        self.port = port if port is not None else Config.FALKORDB_PORT
         self.password = password if password is not None else Config.FALKORDB_PASSWORD
         self.graph_name = graph_name
         self.client = None

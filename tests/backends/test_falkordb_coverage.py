@@ -131,15 +131,12 @@ class TestFalkorDBConnectionEdgeCases:
     """Test edge cases in connection handling."""
 
     def test_backend_initialization_with_defaults(self):
-        """Test backend initialization with default values."""
-        with patch.object(Config, 'FALKORDB_HOST', None):
-            with patch.object(Config, 'FALKORDB_PORT', None):
-                with patch.object(Config, 'FALKORDB_PASSWORD', None):
-                    backend = FalkorDBBackend()
+        """Test backend initialization uses Config defaults directly."""
+        backend = FalkorDBBackend()
 
-                    assert backend.host == "localhost"
-                    assert backend.port == 6379
-                    assert backend.password is None
+        assert backend.host == Config.FALKORDB_HOST
+        assert backend.port == Config.FALKORDB_PORT
+        assert backend.password == Config.FALKORDB_PASSWORD
 
     def test_backend_initialization_with_config(self):
         """Test backend initialization with config values."""

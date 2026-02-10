@@ -168,13 +168,13 @@ class TestFalkorDBLiteConnectionEdgeCases:
     # and requires complex import mocking
 
     def test_backend_initialization_with_default_path(self):
-        """Test backend initialization with default path."""
-        with patch.object(Config, 'FALKORDBLITE_PATH', None):
-            backend = FalkorDBLiteBackend()
+        """Test backend initialization uses Config default path."""
+        backend = FalkorDBLiteBackend()
 
-            # Should use default path
-            assert '.memorygraph' in backend.db_path
-            assert 'falkordblite.db' in backend.db_path
+        # Config.FALKORDBLITE_PATH provides the default
+        assert backend.db_path == Config.FALKORDBLITE_PATH
+        assert '.memorygraph' in backend.db_path
+        assert 'falkordblite.db' in backend.db_path
 
     def test_backend_initialization_with_config_path(self):
         """Test backend initialization with config path."""

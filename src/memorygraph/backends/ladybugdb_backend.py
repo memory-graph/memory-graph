@@ -6,9 +6,7 @@ LadybugDB is a graph database that uses Cypher queries, similar to Kuzu.
 """
 
 import logging
-import os
 from typing import Any, Optional, List, Tuple, Dict
-from pathlib import Path
 
 try:
     import real_ladybug as lb
@@ -61,10 +59,6 @@ class LadybugDBBackend(GraphBackend):
             )
         if db_path is None:
             db_path = Config.LADYBUGDB_PATH
-            if db_path is None:
-                # Default to ~/.memorygraph/ladybugdb.db and ensure directory exists
-                db_path = os.path.expanduser("~/.memorygraph/ladybugdb.db")
-                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
         self.db_path = db_path
         self.graph_name = graph_name

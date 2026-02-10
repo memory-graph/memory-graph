@@ -7,8 +7,6 @@ Unlike FalkorDB (client-server), FalkorDBLite uses a file path for embedded loca
 """
 
 import logging
-import os
-from pathlib import Path
 from typing import Any, Optional
 
 from ..config import Config
@@ -37,9 +35,6 @@ class FalkorDBLiteBackend(BaseFalkorDBBackend):
         """
         if db_path is None:
             db_path = Config.FALKORDBLITE_PATH
-            if db_path is None:
-                db_path = os.path.expanduser("~/.memorygraph/falkordblite.db")
-                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
         self.db_path = db_path
         self.graph_name = graph_name
