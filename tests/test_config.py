@@ -275,6 +275,26 @@ class TestEnvVarIsSet:
             assert desc.is_set() is False
             assert Config.FALKORDB_HOST == "localhost"
 
+    def test_empty_string_env_var_returns_empty_string(self):
+        """Setting env var to empty string returns '' instead of falling to default."""
+        os.environ["TEST_IS_SET_VAR"] = ""
+        desc = _EnvVar("TEST_IS_SET_VAR", default="fallback")
+        # __get__ should return "" (the empty string), not "fallback"
+        assert desc.__get__(None, None) == ""
+
+    def test_empty_string_with_cast_int(self):
+        """Empty string with int cast raises ValueError (not silently ignored)."""
+        os.environ["TEST_IS_SET_VAR"] = ""
+        desc = _EnvVar("TEST_IS_SET_VAR", default=42, cast=int)
+        with pytest.raises(ValueError):
+            desc.__get__(None, None)
+
+    def test_empty_string_with_cast_bool(self):
+        """Empty string with bool cast returns False ('' != 'true')."""
+        os.environ["TEST_IS_SET_VAR"] = ""
+        desc = _EnvVar("TEST_IS_SET_VAR", default=True, cast=bool)
+        assert desc.__get__(None, None) is False
+
 
 class TestConfigIsEnvSet:
     """Tests for Config.is_env_set() classmethod."""

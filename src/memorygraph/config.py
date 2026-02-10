@@ -71,8 +71,9 @@ class _EnvVar:
         """
         Args:
             env_names: Environment variable names to check in priority order.
-                       Uses truthy check (matching Python's ``or`` chaining):
-                       None and empty strings fall through to the next name.
+                       Uses ``is not None`` check: only unset env vars fall
+                       through. An explicitly set empty string is returned
+                       (consistent with ``is_set()``).
             default: Default value if no env var is set (already the final type).
             cast: Optional type converter (int, float). Use bool for
                   "true"/"false" string parsing.
@@ -84,7 +85,7 @@ class _EnvVar:
     def __get__(self, obj: object, objtype: type = None) -> object:
         for name in self.env_names:
             val = os.getenv(name)
-            if val:
+            if val is not None:
                 return self._convert(val)
         return self.default
 
