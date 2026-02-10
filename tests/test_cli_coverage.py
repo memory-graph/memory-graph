@@ -593,7 +593,7 @@ class TestConfigDisplayAllBackends:
         print_config_summary()
         captured = capsys.readouterr()
         # Auto backend should show multiple sections
-        assert 'Backend:' in captured.out
+        assert 'Backend:' in captured.err
 
 
 class TestProfileValidationLegacy:
@@ -616,23 +616,23 @@ class TestProfileValidationLegacy:
         from memorygraph.cli import validate_profile
         validate_profile('lite')
         captured = capsys.readouterr()
-        assert 'deprecated' in captured.out.lower()
-        assert 'core' in captured.out.lower()
+        assert 'deprecated' in captured.err.lower()
+        assert 'core' in captured.err.lower()
 
     def test_validate_profile_standard_legacy_warning(self, capsys):
         """Test standard profile shows deprecation warning."""
         from memorygraph.cli import validate_profile
         validate_profile('standard')
         captured = capsys.readouterr()
-        assert 'deprecated' in captured.out.lower()
-        assert 'extended' in captured.out.lower()
+        assert 'deprecated' in captured.err.lower()
+        assert 'extended' in captured.err.lower()
 
     def test_validate_profile_full_legacy_warning(self, capsys):
         """Test full profile shows deprecation warning."""
         from memorygraph.cli import validate_profile
         validate_profile('full')
         captured = capsys.readouterr()
-        assert 'deprecated' in captured.out.lower()
+        assert 'deprecated' in captured.err.lower()
 
 
 class TestBackendValidationAllTypes:

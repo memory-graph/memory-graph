@@ -20,6 +20,12 @@ from .server import main as server_main
 logger = logging.getLogger(__name__)
 
 
+def _eprint(*args, **kwargs):
+    """Print to stderr to avoid polluting MCP stdio transport on stdout."""
+    kwargs.setdefault('file', sys.stderr)
+    print(*args, **kwargs)
+
+
 async def handle_export(args: argparse.Namespace) -> None:
     """Handle export command - works with all backends."""
     import time
@@ -34,7 +40,7 @@ async def handle_export(args: argparse.Namespace) -> None:
         backend = await BackendFactory.create_backend()
         backend_name = backend.backend_name()
 
-        print(f"\n📤 Exporting memories from {backend_name} backend...")
+        _eprint(f"\nExporting memories from {backend_name} backend...")
 
         # Create appropriate database wrapper
         if isinstance(backend, SQLiteFallbackBackend):
@@ -49,26 +55,26 @@ async def handle_export(args: argparse.Namespace) -> None:
             result = await export_to_json(db, args.output)
             duration = time.time() - start_time
 
-            print(f"\n✅ Export complete!")
-            print(f"   Backend: {result.get('backend_type', backend_name)}")
-            print(f"   Output: {args.output}")
-            print(f"   Memories: {result['memory_count']}")
-            print(f"   Relationships: {result['relationship_count']}")
-            print(f"   Duration: {duration:.1f} seconds")
+            _eprint(f"\nExport complete!")
+            _eprint(f"   Backend: {result.get('backend_type', backend_name)}")
+            _eprint(f"   Output: {args.output}")
+            _eprint(f"   Memories: {result['memory_count']}")
+            _eprint(f"   Relationships: {result['relationship_count']}")
+            _eprint(f"   Duration: {duration:.1f} seconds")
 
         elif args.format == "markdown":
             await export_to_markdown(db, args.output)
             duration = time.time() - start_time
 
-            print(f"\n✅ Export complete!")
-            print(f"   Backend: {backend_name}")
-            print(f"   Output: {args.output}/")
-            print(f"   Duration: {duration:.1f} seconds")
+            _eprint(f"\nExport complete!")
+            _eprint(f"   Backend: {backend_name}")
+            _eprint(f"   Output: {args.output}/")
+            _eprint(f"   Duration: {duration:.1f} seconds")
 
         await backend.disconnect()
 
     except Exception as e:
-        print(f"❌ Export failed: {e}")
+        _eprint(f"Export failed: {e}")
         logger.error(f"Export failed: {e}", exc_info=True)
         sys.exit(1)
 
@@ -87,7 +93,7 @@ async def handle_import(args: argparse.Namespace) -> None:
         backend = await BackendFactory.create_backend()
         backend_name = backend.backend_name()
 
-        print(f"\n📥 Importing memories to {backend_name} backend...")
+        _eprint(f"\nImporting memories to {backend_name} backend...")
 
         # Create appropriate database wrapper
         if isinstance(backend, SQLiteFallbackBackend):
@@ -104,17 +110,17 @@ async def handle_import(args: argparse.Namespace) -> None:
             result = await import_from_json(db, args.input, skip_duplicates=args.skip_duplicates)
             duration = time.time() - start_time
 
-            print(f"\n✅ Import complete!")
-            print(f"   Backend: {backend_name}")
-            print(f"   Imported: {result['imported_memories']} memories, {result['imported_relationships']} relationships")
+            _eprint(f"\nImport complete!")
+            _eprint(f"   Backend: {backend_name}")
+            _eprint(f"   Imported: {result['imported_memories']} memories, {result['imported_relationships']} relationships")
             if result['skipped_memories'] > 0 or result['skipped_relationships'] > 0:
-                print(f"   Skipped: {result['skipped_memories']} memories, {result['skipped_relationships']} relationships")
-            print(f"   Duration: {duration:.1f} seconds")
+                _eprint(f"   Skipped: {result['skipped_memories']} memories, {result['skipped_relationships']} relationships")
+            _eprint(f"   Duration: {duration:.1f} seconds")
 
         await backend.disconnect()
 
     except Exception as e:
-        print(f"❌ Import failed: {e}")
+        _eprint(f"Import failed: {e}")
         logger.error(f"Import failed: {e}", exc_info=True)
         sys.exit(1)
 
@@ -124,7 +130,7 @@ async def handle_migrate(args: argparse.Namespace) -> None:
     from .migration.manager import MigrationManager
     from .migration.models import BackendConfig, MigrationOptions
 
-    print(f"\n🔄 Migrating memories: {args.source_backend or 'current'} → {args.target_backend}")
+    _eprint(f"\nMigrating memories: {args.source_backend or 'current'} -> {args.target_backend}")
 
     try:
         # Build source config
@@ -144,7 +150,7 @@ async def handle_migrate(args: argparse.Namespace) -> None:
             import os
             target_password = os.environ.get("MEMORYGRAPH_API_KEY")
             if not target_password:
-                print("❌ MEMORYGRAPH_API_KEY environment variable is required for cloud backend")
+                _eprint("Error: MEMORYGRAPH_API_KEY environment variable is required for cloud backend")
                 sys.exit(1)
 
         target_config = BackendConfig(
@@ -169,37 +175,37 @@ async def handle_migrate(args: argparse.Namespace) -> None:
 
         # Display results
         if result.dry_run:
-            print("\n✅ Dry-run successful - migration would proceed safely")
+            _eprint("\nDry-run successful - migration would proceed safely")
             if result.source_stats:
                 memory_count = result.source_stats.get('memory_count', 0)
-                print(f"   Source: {memory_count} memories")
+                _eprint(f"   Source: {memory_count} memories")
             if result.errors:
-                print("\n⚠️  Warnings:")
+                _eprint("\nWarnings:")
                 for error in result.errors:
-                    print(f"   - {error}")
+                    _eprint(f"   - {error}")
 
         elif result.success:
-            print("\n✅ Migration completed successfully!")
-            print(f"   Migrated: {result.imported_memories} memories")
-            print(f"   Migrated: {result.imported_relationships} relationships")
+            _eprint("\nMigration completed successfully!")
+            _eprint(f"   Migrated: {result.imported_memories} memories")
+            _eprint(f"   Migrated: {result.imported_relationships} relationships")
             if result.skipped_memories > 0:
-                print(f"   Skipped: {result.skipped_memories} duplicates")
-            print(f"   Duration: {result.duration_seconds:.1f} seconds")
+                _eprint(f"   Skipped: {result.skipped_memories} duplicates")
+            _eprint(f"   Duration: {result.duration_seconds:.1f} seconds")
 
             if result.verification_result and result.verification_result.valid:
-                print(f"\n✓ Verification passed:")
-                print(f"   Source: {result.verification_result.source_count} memories")
-                print(f"   Target: {result.verification_result.target_count} memories")
-                print(f"   Sample check: {result.verification_result.sample_passed}/{result.verification_result.sample_checks} passed")
+                _eprint(f"\nVerification passed:")
+                _eprint(f"   Source: {result.verification_result.source_count} memories")
+                _eprint(f"   Target: {result.verification_result.target_count} memories")
+                _eprint(f"   Sample check: {result.verification_result.sample_passed}/{result.verification_result.sample_checks} passed")
 
         else:
-            print("\n❌ Migration failed!")
+            _eprint("\nMigration failed!")
             for error in result.errors:
-                print(f"   - {error}")
+                _eprint(f"   - {error}")
             sys.exit(1)
 
     except Exception as e:
-        print(f"❌ Migration failed: {e}")
+        _eprint(f"Migration failed: {e}")
         logger.error(f"Migration failed: {e}", exc_info=True)
         sys.exit(1)
 
@@ -215,27 +221,27 @@ async def handle_migrate_multitenant(args: argparse.Namespace) -> None:
         backend_name = backend.backend_name()
 
         if args.rollback:
-            print(f"\n🔄 Rolling back multi-tenancy migration on {backend_name}...")
+            _eprint(f"\nRolling back multi-tenancy migration on {backend_name}...")
 
             result = await rollback_from_multitenant(backend, dry_run=args.dry_run)
 
             if result['dry_run']:
-                print("\n✅ Dry-run successful - rollback would proceed safely")
-                print(f"   Would clear tenant_id from: {result['memories_updated']} memories")
+                _eprint("\nDry-run successful - rollback would proceed safely")
+                _eprint(f"   Would clear tenant_id from: {result['memories_updated']} memories")
             elif result['success']:
-                print("\n✅ Rollback completed successfully!")
-                print(f"   Cleared tenant_id from: {result['memories_updated']} memories")
+                _eprint("\nRollback completed successfully!")
+                _eprint(f"   Cleared tenant_id from: {result['memories_updated']} memories")
             else:
-                print("\n❌ Rollback failed!")
+                _eprint("\nRollback failed!")
                 for error in result['errors']:
-                    print(f"   - {error}")
+                    _eprint(f"   - {error}")
                 sys.exit(1)
 
         else:
             # Migrate to multi-tenant
-            print(f"\n🔄 Migrating to multi-tenant mode on {backend_name}...")
-            print(f"   Tenant ID: {args.tenant_id}")
-            print(f"   Visibility: {args.visibility}")
+            _eprint(f"\nMigrating to multi-tenant mode on {backend_name}...")
+            _eprint(f"   Tenant ID: {args.tenant_id}")
+            _eprint(f"   Visibility: {args.visibility}")
 
             result = await migrate_to_multitenant(
                 backend,
@@ -245,28 +251,28 @@ async def handle_migrate_multitenant(args: argparse.Namespace) -> None:
             )
 
             if result['dry_run']:
-                print("\n✅ Dry-run successful - migration would proceed safely")
-                print(f"   Would update: {result['memories_updated']} memories")
-                print(f"   Tenant ID would be: {result['tenant_id']}")
-                print(f"   Visibility would be: {result['visibility']}")
+                _eprint("\nDry-run successful - migration would proceed safely")
+                _eprint(f"   Would update: {result['memories_updated']} memories")
+                _eprint(f"   Tenant ID would be: {result['tenant_id']}")
+                _eprint(f"   Visibility would be: {result['visibility']}")
             elif result['success']:
-                print("\n✅ Migration completed successfully!")
-                print(f"   Updated: {result['memories_updated']} memories")
-                print(f"   Tenant ID: {result['tenant_id']}")
-                print(f"   Visibility: {result['visibility']}")
-                print("\nNext steps:")
-                print(f"   1. Set MEMORY_MULTI_TENANT_MODE=true in your environment")
-                print(f"   2. Restart the server to enable multi-tenant indexes")
+                _eprint("\nMigration completed successfully!")
+                _eprint(f"   Updated: {result['memories_updated']} memories")
+                _eprint(f"   Tenant ID: {result['tenant_id']}")
+                _eprint(f"   Visibility: {result['visibility']}")
+                _eprint("\nNext steps:")
+                _eprint(f"   1. Set MEMORY_MULTI_TENANT_MODE=true in your environment")
+                _eprint(f"   2. Restart the server to enable multi-tenant indexes")
             else:
-                print("\n❌ Migration failed!")
+                _eprint("\nMigration failed!")
                 for error in result['errors']:
-                    print(f"   - {error}")
+                    _eprint(f"   - {error}")
                 sys.exit(1)
 
         await backend.disconnect()
 
     except Exception as e:
-        print(f"❌ Migration failed: {e}")
+        _eprint(f"Migration failed: {e}")
         logger.error(f"Migration failed: {e}", exc_info=True)
         sys.exit(1)
 
@@ -338,52 +344,52 @@ async def perform_health_check(timeout: float = 5.0) -> dict:
 
 
 def print_config_summary() -> None:
-    """Print current configuration summary."""
+    """Print current configuration summary to stderr."""
     config = Config.get_config_summary()
 
-    print("\n📋 Current Configuration:")
-    print(f"  Backend: {config['backend']}")
-    print(f"  Tool Profile: {Config.TOOL_PROFILE}")
-    print(f"  Log Level: {config['logging']['level']}")
+    _eprint("\nCurrent Configuration:")
+    _eprint(f"  Backend: {config['backend']}")
+    _eprint(f"  Tool Profile: {Config.TOOL_PROFILE}")
+    _eprint(f"  Log Level: {config['logging']['level']}")
 
     if config['backend'] in ['neo4j', 'auto']:
-        print(f"\n  Neo4j URI: {config['neo4j']['uri']}")
-        print(f"  Neo4j User: {config['neo4j']['user']}")
-        print(f"  Neo4j Password: {'✓ Configured' if config['neo4j']['password_configured'] else '✗ Not set'}")
+        _eprint(f"\n  Neo4j URI: {config['neo4j']['uri']}")
+        _eprint(f"  Neo4j User: {config['neo4j']['user']}")
+        _eprint(f"  Neo4j Password: {'[configured]' if config['neo4j']['password_configured'] else '[not set]'}")
 
     if config['backend'] in ['memgraph', 'auto']:
-        print(f"\n  Memgraph URI: {config['memgraph']['uri']}")
+        _eprint(f"\n  Memgraph URI: {config['memgraph']['uri']}")
 
     if config['backend'] in ['sqlite', 'auto']:
-        print(f"\n  SQLite Path: {config['sqlite']['path']}")
+        _eprint(f"\n  SQLite Path: {config['sqlite']['path']}")
 
     if config['backend'] in ['turso', 'auto']:
-        print(f"\n  Turso URL: {config['turso']['database_url'] or '✗ Not set'}")
-        print(f"  Turso Token: {'✓ Configured' if config['turso']['auth_token_configured'] else '✗ Not set'}")
-        print(f"  Turso Local Path: {config['turso']['path']}")
+        _eprint(f"\n  Turso URL: {config['turso']['database_url'] or '[not set]'}")
+        _eprint(f"  Turso Token: {'[configured]' if config['turso']['auth_token_configured'] else '[not set]'}")
+        _eprint(f"  Turso Local Path: {config['turso']['path']}")
 
     if config['backend'] in ['cloud', 'auto']:
-        print(f"\n  Cloud API URL: {config['cloud']['api_url']}")
-        print(f"  Cloud API Key: {'✓ Configured' if config['cloud']['api_key_configured'] else '✗ Not set'}")
-        print(f"  Cloud Timeout: {config['cloud']['timeout']}s")
+        _eprint(f"\n  Cloud API URL: {config['cloud']['api_url']}")
+        _eprint(f"  Cloud API Key: {'[configured]' if config['cloud']['api_key_configured'] else '[not set]'}")
+        _eprint(f"  Cloud Timeout: {config['cloud']['timeout']}s")
 
     if config['backend'] in ['falkordb', 'auto']:
-        print(f"\n  FalkorDB: Client-server mode")
-        print(f"  Note: Configuration via MEMORY_FALKORDB_* environment variables")
+        _eprint(f"\n  FalkorDB: Client-server mode")
+        _eprint(f"  Note: Configuration via MEMORY_FALKORDB_* environment variables")
 
     if config['backend'] in ['falkordblite', 'auto']:
-        print(f"\n  FalkorDBLite: Embedded database")
-        print(f"  Note: Configuration via MEMORY_FALKORDBLITE_PATH environment variable")
+        _eprint(f"\n  FalkorDBLite: Embedded database")
+        _eprint(f"  Note: Configuration via MEMORY_FALKORDBLITE_PATH environment variable")
 
-    print()
+    _eprint()
 
 
 def validate_backend(backend: str) -> None:
     """Validate backend choice."""
     valid_backends = [b.value for b in BackendType]
     if backend not in valid_backends:
-        print(f"Error: Invalid backend '{backend}'")
-        print(f"Valid options: {', '.join(valid_backends)}")
+        _eprint(f"Error: Invalid backend '{backend}'")
+        _eprint(f"Valid options: {', '.join(valid_backends)}")
         sys.exit(1)
 
 
@@ -391,15 +397,15 @@ def validate_profile(profile: str) -> None:
     """Validate tool profile choice."""
     valid_profiles = list(TOOL_PROFILES.keys()) + ["lite", "standard", "full"]  # Include legacy
     if profile not in valid_profiles:
-        print(f"Error: Invalid profile '{profile}'")
-        print(f"Valid options: core, extended (or legacy: lite, standard, full)")
+        _eprint(f"Error: Invalid profile '{profile}'")
+        _eprint(f"Valid options: core, extended (or legacy: lite, standard, full)")
         sys.exit(1)
 
     # Warn about legacy profiles
     legacy_map = {"lite": "core", "standard": "extended", "full": "extended"}
     if profile in legacy_map:
-        print(f"⚠️  Warning: Profile '{profile}' is deprecated. Using '{legacy_map[profile]}' instead.")
-        print(f"   Update your configuration to use: --profile {legacy_map[profile]}")
+        _eprint(f"Warning: Profile '{profile}' is deprecated. Using '{legacy_map[profile]}' instead.")
+        _eprint(f"   Update your configuration to use: --profile {legacy_map[profile]}")
 
 
 def main() -> None:
@@ -668,15 +674,16 @@ Environment Variables:
         os.environ["MEMORY_LOG_LEVEL"] = args.log_level
         Config.LOG_LEVEL = args.log_level  # Fix: Update Config directly
 
-    # Configure logging
+    # Configure logging to stderr (default) so it doesn't pollute MCP stdout
     logging.basicConfig(
         level=getattr(logging, Config.LOG_LEVEL),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        stream=sys.stderr
     )
 
     # Handle special commands
     if args.show_config:
-        print(f"MemoryGraph MCP Server v{__version__}")
+        _eprint(f"MemoryGraph MCP Server v{__version__}")
         print_config_summary()
         sys.exit(0)
 
@@ -684,40 +691,40 @@ Environment Variables:
         # Perform health check
         result = asyncio.run(perform_health_check(timeout=args.health_timeout))
 
-        # Output in JSON format if requested
+        # Output in JSON format if requested (stdout is intentional for machine-readable output)
         if args.health_json:
             print(json.dumps(result, indent=2))
         else:
-            # Human-readable format
-            print(f"MemoryGraph MCP Server v{__version__}")
-            print("\n🏥 Health Check Results\n")
-            print(f"Status: {'✅ Healthy' if result['status'] == 'healthy' else '❌ Unhealthy'}")
-            print(f"Backend: {result.get('backend_type', 'unknown')}")
-            print(f"Connected: {'Yes' if result.get('connected') else 'No'}")
+            # Human-readable format goes to stderr
+            _eprint(f"MemoryGraph MCP Server v{__version__}")
+            _eprint("\nHealth Check Results\n")
+            _eprint(f"Status: {'Healthy' if result['status'] == 'healthy' else 'Unhealthy'}")
+            _eprint(f"Backend: {result.get('backend_type', 'unknown')}")
+            _eprint(f"Connected: {'Yes' if result.get('connected') else 'No'}")
 
             if result.get('version'):
-                print(f"Version: {result['version']}")
+                _eprint(f"Version: {result['version']}")
 
             if result.get('db_path'):
-                print(f"Database: {result['db_path']}")
+                _eprint(f"Database: {result['db_path']}")
 
             if result.get('statistics'):
                 stats = result['statistics']
-                print(f"\nStatistics:")
+                _eprint(f"\nStatistics:")
                 if 'memory_count' in stats:
-                    print(f"  Memories: {stats['memory_count']}")
+                    _eprint(f"  Memories: {stats['memory_count']}")
                 for key, value in stats.items():
                     if key != 'memory_count':
-                        print(f"  {key.replace('_', ' ').title()}: {value}")
+                        _eprint(f"  {key.replace('_', ' ').title()}: {value}")
 
             if result.get('database_size_bytes'):
                 size_mb = result['database_size_bytes'] / (1024 * 1024)
-                print(f"  Database Size: {size_mb:.2f} MB")
+                _eprint(f"  Database Size: {size_mb:.2f} MB")
 
             if result.get('error'):
-                print(f"\nError: {result['error']}")
+                _eprint(f"\nError: {result['error']}")
 
-            print(f"\nTimestamp: {result['timestamp']}")
+            _eprint(f"\nTimestamp: {result['timestamp']}")
 
         # Exit with appropriate status code
         sys.exit(0 if result['status'] == 'healthy' else 1)
@@ -739,20 +746,21 @@ Environment Variables:
         asyncio.run(handle_migrate_multitenant(args))
         sys.exit(0)
 
-    # Start the server
-    print(f"🚀 Starting MemoryGraph MCP Server v{__version__}")
-    print(f"Backend: {Config.BACKEND}")
-    print(f"Profile: {Config.TOOL_PROFILE}")
-    print(f"Log Level: {Config.LOG_LEVEL}")
-    print("\nPress Ctrl+C to stop the server\n")
+    # Start the server - all diagnostic output to stderr to keep stdout
+    # clean for MCP JSON-RPC transport
+    _eprint(f"Starting MemoryGraph MCP Server v{__version__}")
+    _eprint(f"Backend: {Config.BACKEND}")
+    _eprint(f"Profile: {Config.TOOL_PROFILE}")
+    _eprint(f"Log Level: {Config.LOG_LEVEL}")
+    _eprint("\nPress Ctrl+C to stop the server\n")
 
     try:
         asyncio.run(server_main())
     except KeyboardInterrupt:
-        print("\n\n👋 Server stopped gracefully")
+        _eprint("\n\nServer stopped gracefully")
         sys.exit(0)
     except Exception as e:
-        print(f"\n❌ Server error: {e}")
+        _eprint(f"\nServer error: {e}")
         logger.error(f"Server error: {e}", exc_info=True)
         sys.exit(1)
 

@@ -19,11 +19,33 @@ import pytest
 
 from memorygraph import __version__
 from memorygraph.cli import (
+    _eprint,
     main,
     print_config_summary,
     validate_backend,
     validate_profile,
 )
+
+
+class TestEprintHelper:
+    """Test _eprint() writes to stderr, not stdout."""
+
+    def test_eprint_writes_to_stderr(self, capsys):
+        _eprint("test message")
+        captured = capsys.readouterr()
+        assert captured.err == "test message\n"
+        assert captured.out == ""
+
+    def test_eprint_respects_file_override(self):
+        buf = StringIO()
+        _eprint("custom dest", file=buf)
+        assert buf.getvalue() == "custom dest\n"
+
+    def test_eprint_passes_kwargs(self, capsys):
+        _eprint("a", "b", sep="-", end="!\n")
+        captured = capsys.readouterr()
+        assert captured.err == "a-b!\n"
+        assert captured.out == ""
 
 
 class TestVersionDisplay:
@@ -58,10 +80,10 @@ class TestShowConfig:
             assert exc_info.value.code == 0
 
             captured = capsys.readouterr()
-            assert 'Current Configuration' in captured.out
-            assert 'Backend:' in captured.out
-            assert 'Tool Profile:' in captured.out
-            assert 'Log Level:' in captured.out
+            assert 'Current Configuration' in captured.err
+            assert 'Backend:' in captured.err
+            assert 'Tool Profile:' in captured.err
+            assert 'Log Level:' in captured.err
 
     @patch.dict(os.environ, {'MEMORY_BACKEND': 'neo4j'})
     def test_show_config_with_neo4j(self, capsys):
@@ -73,7 +95,7 @@ class TestShowConfig:
 
             captured = capsys.readouterr()
             # Check for backend being displayed (Config may have cached sqlite)
-            assert 'Backend:' in captured.out
+            assert 'Backend:' in captured.err
 
     @patch.dict(os.environ, {'MEMORY_BACKEND': 'sqlite'}, clear=True)
     def test_show_config_with_sqlite(self, capsys):
@@ -84,7 +106,7 @@ class TestShowConfig:
             assert exc_info.value.code == 0
 
             captured = capsys.readouterr()
-            assert 'SQLite' in captured.out
+            assert 'SQLite' in captured.err
 
 
 class TestHealthCheck:
@@ -98,7 +120,7 @@ class TestHealthCheck:
             assert exc_info.value.code == 0
 
             captured = capsys.readouterr()
-            assert 'health check' in captured.out.lower()
+            assert 'health check' in captured.err.lower()
 
 
 class TestBackendValidation:
@@ -131,8 +153,8 @@ class TestBackendValidation:
         assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
-        assert 'Invalid backend' in captured.out
-        assert 'invalid_backend' in captured.out
+        assert 'Invalid backend' in captured.err
+        assert 'invalid_backend' in captured.err
 
 
 class TestProfileValidation:
@@ -160,8 +182,8 @@ class TestProfileValidation:
         assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
-        assert 'Invalid profile' in captured.out
-        assert 'invalid_profile' in captured.out
+        assert 'Invalid profile' in captured.err
+        assert 'invalid_profile' in captured.err
 
 
 class TestBackendArgument:
@@ -249,7 +271,7 @@ class TestServerStartup:
             mock_run.assert_called_once()
 
             captured = capsys.readouterr()
-            assert 'Starting' in captured.out
+            assert 'Starting' in captured.err
 
     @patch('memorygraph.cli.server_main', new_callable=AsyncMock)
     @patch('asyncio.run')
@@ -264,7 +286,7 @@ class TestServerStartup:
 
             assert exc_info.value.code == 0
             captured = capsys.readouterr()
-            assert 'stopped gracefully' in captured.out.lower()
+            assert 'stopped gracefully' in captured.err.lower()
 
     @patch('memorygraph.cli.server_main', new_callable=AsyncMock)
     @patch('asyncio.run')
@@ -279,7 +301,7 @@ class TestServerStartup:
 
             assert exc_info.value.code == 1
             captured = capsys.readouterr()
-            assert 'error' in captured.out.lower()
+            assert 'error' in captured.err.lower()
 
 
 class TestCombinedArguments:
@@ -330,9 +352,9 @@ class TestPrintConfigSummary:
         print_config_summary()
 
         captured = capsys.readouterr()
-        assert 'Current Configuration' in captured.out
-        assert 'Backend:' in captured.out
-        assert 'Tool Profile:' in captured.out
+        assert 'Current Configuration' in captured.err
+        assert 'Backend:' in captured.err
+        assert 'Tool Profile:' in captured.err
 
 
 class TestEnvironmentVariables:
@@ -351,7 +373,7 @@ class TestEnvironmentVariables:
 
             captured = capsys.readouterr()
             # Check that output contains backend info
-            assert 'Backend:' in captured.out
+            assert 'Backend:' in captured.err
 
     @patch('memorygraph.cli.server_main', new_callable=AsyncMock)
     @patch('asyncio.run')
@@ -365,7 +387,7 @@ class TestEnvironmentVariables:
                 main()
 
             captured = capsys.readouterr()
-            assert 'full' in captured.out.lower()
+            assert 'full' in captured.err.lower()
 
     @patch('memorygraph.cli.server_main', new_callable=AsyncMock)
     @patch('asyncio.run')
