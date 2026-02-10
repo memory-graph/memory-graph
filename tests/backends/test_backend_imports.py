@@ -132,3 +132,45 @@ class TestBackendModuleContents:
 
         assert GraphBackend is not None
         assert BackendFactory is not None
+
+
+# Backend modules that had `import os` removed after WP33 config migration
+_OS_REMOVED_MODULES = [
+    "factory",
+    "neo4j_backend",
+    "memgraph_backend",
+    "cloud_backend",
+    "falkordb_backend",
+]
+
+# Backend modules that still legitimately use `os`
+_OS_REQUIRED_MODULES = [
+    "sqlite_fallback",
+    "turso",
+]
+
+
+class TestNoUnusedOsImport:
+    """Verify that os is not imported in backend files that don't need it.
+
+    After the WP33 config migration to _EnvVar descriptors, these 5 backend
+    files no longer reference os.environ / os.getenv / os.path directly.
+    """
+
+    def test_os_not_in_cleaned_modules(self):
+        """The 5 migrated backend modules should not have 'os' in their namespace."""
+        for name in _OS_REMOVED_MODULES:
+            mod = importlib.import_module(f"memorygraph.backends.{name}")
+            assert "os" not in vars(mod), (
+                f"memorygraph.backends.{name} still imports 'os' — "
+                "it should have been removed after config migration"
+            )
+
+    def test_os_present_in_modules_that_need_it(self):
+        """sqlite_fallback and turso still use os and should import it."""
+        for name in _OS_REQUIRED_MODULES:
+            mod = importlib.import_module(f"memorygraph.backends.{name}")
+            assert "os" in vars(mod), (
+                f"memorygraph.backends.{name} should import 'os' — "
+                "it uses os.path.expanduser / os.path.getsize"
+            )
