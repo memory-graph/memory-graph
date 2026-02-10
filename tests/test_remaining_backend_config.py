@@ -16,7 +16,6 @@ Files tested:
 import os
 import pytest
 from pathlib import Path
-from unittest.mock import patch
 
 from src.memorygraph.config import Config
 from src.memorygraph.backends.falkordb_backend import FalkorDBBackend
