@@ -10,11 +10,12 @@ import json
 import logging
 import os
 import sys
+import time
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Tuple
 
 from . import __version__
-from .config import Config, BackendType, TOOL_PROFILES
+from .config import TOOL_PROFILES, BackendType, Config
 from .server import main as server_main
 
 logger = logging.getLogger(__name__)
@@ -26,36 +27,43 @@ def _eprint(*args, **kwargs):
     print(*args, **kwargs)
 
 
+async def _create_backend_and_db() -> Tuple:
+    """Create a backend and the appropriate database wrapper.
+
+    Returns a (backend, backend_name, db) tuple. The caller is responsible
+    for calling ``await backend.disconnect()`` when finished.
+    """
+    from .backends.factory import BackendFactory
+    from .backends.sqlite_fallback import SQLiteFallbackBackend
+    from .database import MemoryDatabase
+    from .sqlite_database import SQLiteMemoryDatabase
+
+    backend = await BackendFactory.create_backend()
+    backend_name = backend.backend_name()
+
+    if isinstance(backend, SQLiteFallbackBackend):
+        db = SQLiteMemoryDatabase(backend)
+    else:
+        db = MemoryDatabase(backend)
+
+    return backend, backend_name, db
+
+
 async def handle_export(args: argparse.Namespace) -> None:
     """Handle export command - works with all backends."""
-    import time
-    from .backends.factory import BackendFactory
-    from .sqlite_database import SQLiteMemoryDatabase
-    from .database import MemoryDatabase
-    from .backends.sqlite_fallback import SQLiteFallbackBackend
     from .utils.export_import import export_to_json, export_to_markdown
 
     try:
-        # Connect to database
-        backend = await BackendFactory.create_backend()
-        backend_name = backend.backend_name()
-
+        backend, backend_name, db = await _create_backend_and_db()
         _eprint(f"\nExporting memories from {backend_name} backend...")
-
-        # Create appropriate database wrapper
-        if isinstance(backend, SQLiteFallbackBackend):
-            db = SQLiteMemoryDatabase(backend)
-        else:
-            db = MemoryDatabase(backend)
 
         start_time = time.time()
 
-        # Perform export with progress tracking
         if args.format == "json":
             result = await export_to_json(db, args.output)
             duration = time.time() - start_time
 
-            _eprint(f"\nExport complete!")
+            _eprint("\nExport complete!")
             _eprint(f"   Backend: {result.get('backend_type', backend_name)}")
             _eprint(f"   Output: {args.output}")
             _eprint(f"   Memories: {result['memory_count']}")
@@ -66,7 +74,7 @@ async def handle_export(args: argparse.Namespace) -> None:
             await export_to_markdown(db, args.output)
             duration = time.time() - start_time
 
-            _eprint(f"\nExport complete!")
+            _eprint("\nExport complete!")
             _eprint(f"   Backend: {backend_name}")
             _eprint(f"   Output: {args.output}/")
             _eprint(f"   Duration: {duration:.1f} seconds")
@@ -81,36 +89,21 @@ async def handle_export(args: argparse.Namespace) -> None:
 
 async def handle_import(args: argparse.Namespace) -> None:
     """Handle import command - works with all backends."""
-    import time
-    from .backends.factory import BackendFactory
-    from .sqlite_database import SQLiteMemoryDatabase
-    from .database import MemoryDatabase
-    from .backends.sqlite_fallback import SQLiteFallbackBackend
     from .utils.export_import import import_from_json
 
     try:
-        # Connect to database
-        backend = await BackendFactory.create_backend()
-        backend_name = backend.backend_name()
-
+        backend, backend_name, db = await _create_backend_and_db()
         _eprint(f"\nImporting memories to {backend_name} backend...")
-
-        # Create appropriate database wrapper
-        if isinstance(backend, SQLiteFallbackBackend):
-            db = SQLiteMemoryDatabase(backend)
-        else:
-            db = MemoryDatabase(backend)
 
         await db.initialize_schema()
 
         start_time = time.time()
 
-        # Perform import
         if args.format == "json":
             result = await import_from_json(db, args.input, skip_duplicates=args.skip_duplicates)
             duration = time.time() - start_time
 
-            _eprint(f"\nImport complete!")
+            _eprint("\nImport complete!")
             _eprint(f"   Backend: {backend_name}")
             _eprint(f"   Imported: {result['imported_memories']} memories, {result['imported_relationships']} relationships")
             if result['skipped_memories'] > 0 or result['skipped_relationships'] > 0:
@@ -192,7 +185,7 @@ async def handle_migrate(args: argparse.Namespace) -> None:
             _eprint(f"   Duration: {result.duration_seconds:.1f} seconds")
 
             if result.verification_result and result.verification_result.valid:
-                _eprint(f"\nVerification passed:")
+                _eprint("\nVerification passed:")
                 _eprint(f"   Source: {result.verification_result.source_count} memories")
                 _eprint(f"   Target: {result.verification_result.target_count} memories")
                 _eprint(f"   Sample check: {result.verification_result.sample_passed}/{result.verification_result.sample_checks} passed")
@@ -260,8 +253,8 @@ async def handle_migrate_multitenant(args: argparse.Namespace) -> None:
                 _eprint(f"   Tenant ID: {result['tenant_id']}")
                 _eprint(f"   Visibility: {result['visibility']}")
                 _eprint("\nNext steps:")
-                _eprint(f"   1. Set MEMORY_MULTI_TENANT_MODE=true in your environment")
-                _eprint(f"   2. Restart the server to enable multi-tenant indexes")
+                _eprint("   1. Set MEMORY_MULTI_TENANT_MODE=true in your environment")
+                _eprint("   2. Restart the server to enable multi-tenant indexes")
             else:
                 _eprint("\nMigration failed!")
                 for error in result['errors']:
@@ -315,28 +308,20 @@ async def perform_health_check(timeout: float = 5.0) -> dict:
             timeout=timeout
         )
 
-        # Update result with health check information
         result.update(health_info)
+        connected = health_info.get("connected", False)
+        result["status"] = "healthy" if connected else "unhealthy"
+        if not connected and "error" not in result:
+            result["error"] = "Backend reports disconnected status"
 
-        # Determine overall status
-        if health_info.get("connected", False):
-            result["status"] = "healthy"
-        else:
-            result["status"] = "unhealthy"
-            if "error" not in result:
-                result["error"] = "Backend reports disconnected status"
-
-        # Clean up
         await backend.disconnect()
 
     except asyncio.TimeoutError:
         result["error"] = f"Health check timed out after {timeout} seconds"
-        result["status"] = "unhealthy"
         logger.error(f"Health check timeout after {timeout}s")
 
     except Exception as e:
         result["error"] = str(e)
-        result["status"] = "unhealthy"
         logger.error(f"Health check failed: {e}", exc_info=True)
 
     return result
@@ -397,7 +382,7 @@ def validate_profile(profile: str) -> None:
     valid_profiles = list(TOOL_PROFILES.keys()) + ["lite", "standard", "full"]  # Include legacy
     if profile not in valid_profiles:
         _eprint(f"Error: Invalid profile '{profile}'")
-        _eprint(f"Valid options: core, extended (or legacy: lite, standard, full)")
+        _eprint("Valid options: core, extended (or legacy: lite, standard, full)")
         sys.exit(1)
 
     # Warn about legacy profiles
@@ -704,7 +689,7 @@ Environment Variables:
 
             if result.get('statistics'):
                 stats = result['statistics']
-                _eprint(f"\nStatistics:")
+                _eprint("\nStatistics:")
                 if 'memory_count' in stats:
                     _eprint(f"  Memories: {stats['memory_count']}")
                 for key, value in stats.items():

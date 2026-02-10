@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from memorygraph.cli import (
+    _create_backend_and_db,
     handle_export,
     handle_import,
     handle_migrate,
@@ -817,3 +818,40 @@ class TestSubcommandIntegration:
 
                 assert exc_info.value.code == 0
                 mock_handler.assert_called_once()
+
+
+class TestCreateBackendAndDb:
+    """Test the _create_backend_and_db helper."""
+
+    @pytest.mark.asyncio
+    @patch('memorygraph.backends.factory.BackendFactory.create_backend')
+    async def test_returns_sqlite_wrapper_for_fallback_backend(self, mock_factory):
+        """Test that SQLiteFallbackBackend gets SQLiteMemoryDatabase wrapper."""
+        from memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
+
+        mock_backend = MagicMock(spec=SQLiteFallbackBackend)
+        mock_backend.backend_name.return_value = "sqlite"
+        mock_factory.return_value = mock_backend
+
+        backend, backend_name, db = await _create_backend_and_db()
+
+        assert backend is mock_backend
+        assert backend_name == "sqlite"
+        # Should use SQLiteMemoryDatabase for SQLiteFallbackBackend
+        from memorygraph.sqlite_database import SQLiteMemoryDatabase
+        assert isinstance(db, SQLiteMemoryDatabase)
+
+    @pytest.mark.asyncio
+    @patch('memorygraph.backends.factory.BackendFactory.create_backend')
+    async def test_returns_memory_db_for_non_sqlite_backend(self, mock_factory):
+        """Test that non-SQLite backends get MemoryDatabase wrapper."""
+        mock_backend = MagicMock()
+        mock_backend.backend_name.return_value = "neo4j"
+        mock_factory.return_value = mock_backend
+
+        backend, backend_name, db = await _create_backend_and_db()
+
+        assert backend is mock_backend
+        assert backend_name == "neo4j"
+        from memorygraph.database import MemoryDatabase
+        assert isinstance(db, MemoryDatabase)
