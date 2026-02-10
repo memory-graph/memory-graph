@@ -144,11 +144,10 @@ async def handle_migrate(args: argparse.Namespace) -> None:
             source_config = BackendConfig.from_env()
 
         # Build target config
-        # For cloud backend, read API key from environment
+        # For cloud backend, read API key from Config
         target_password = None
         if args.target_backend == "cloud":
-            import os
-            target_password = os.environ.get("MEMORYGRAPH_API_KEY")
+            target_password = Config.MEMORYGRAPH_API_KEY
             if not target_password:
                 _eprint("Error: MEMORYGRAPH_API_KEY environment variable is required for cloud backend")
                 sys.exit(1)
@@ -654,25 +653,20 @@ Environment Variables:
 
     args = parser.parse_args()
 
-    # Apply CLI arguments to environment variables AND Config class
-    # Note: Config class attributes are evaluated at import time, so we must
-    # update both the environment variable (for child processes) and the
-    # Config class attribute directly (for current process)
+    # Apply CLI arguments to environment variables.
+    # Config uses _EnvVar descriptors that read os.environ dynamically,
+    # so setting env vars is sufficient for the current process.
     if args.backend:
         validate_backend(args.backend)
         os.environ["MEMORY_BACKEND"] = args.backend
-        Config.BACKEND = args.backend  # Fix: Update Config directly since it was loaded at import time
 
     if args.profile:
         validate_profile(args.profile)
-        # Map legacy profiles to new ones
         profile = {"lite": "core", "standard": "extended", "full": "extended"}.get(args.profile, args.profile)
         os.environ["MEMORY_TOOL_PROFILE"] = profile
-        Config.TOOL_PROFILE = profile  # Fix: Update Config directly
 
     if args.log_level:
         os.environ["MEMORY_LOG_LEVEL"] = args.log_level
-        Config.LOG_LEVEL = args.log_level  # Fix: Update Config directly
 
     # Configure logging to stderr (default) so it doesn't pollute MCP stdout
     logging.basicConfig(
