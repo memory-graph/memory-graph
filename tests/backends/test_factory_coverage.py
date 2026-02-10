@@ -16,28 +16,10 @@ import pytest
 import os
 import sys
 from unittest.mock import patch, MagicMock, AsyncMock, Mock
-from contextlib import contextmanager
 from src.memorygraph.models import DatabaseConnectionError
 from src.memorygraph.config import Config
 
-
-@contextmanager
-def patch_config(**kwargs):
-    """Context manager to temporarily patch Config class attributes.
-
-    Saves raw class dict entries (including _EnvVar descriptors) so that
-    dynamic env var resolution is restored on exit.
-    """
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+from tests.conftest import patch_config
 
 
 # Helper function to patch lazily imported backends

@@ -15,7 +15,6 @@ Files tested:
 
 import os
 import pytest
-from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
@@ -26,24 +25,7 @@ from src.memorygraph.backends.ladybugdb_backend import LadybugDBBackend
 from src.memorygraph.backends.cloud_backend import CloudRESTAdapter
 from src.memorygraph.database import Neo4jConnection
 
-
-@contextmanager
-def patch_config(**kwargs):
-    """Context manager to temporarily patch Config class attributes.
-
-    Saves raw class dict entries (including _EnvVar descriptors) so that
-    dynamic env var resolution is restored on exit.
-    """
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+from tests.conftest import patch_config
 
 
 class TestFalkorDBBackendConfig:

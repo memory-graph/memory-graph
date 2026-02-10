@@ -2,10 +2,10 @@
 Pytest configuration and fixtures for memorygraph tests.
 """
 
-import os
 import sys
-import pytest
 from contextlib import contextmanager
+
+import pytest
 
 import memorygraph.config as _config_module
 from memorygraph.config import Config
@@ -82,12 +82,28 @@ def reset_config():
         setattr(_ORIGINAL_CONFIG_CLASS, key, value)
 
 
+def _get_all_config_classes():
+    """Return all loaded Config class objects (handles src. and non-src. import paths)."""
+    classes = [Config]
+    # src.memorygraph.config may load a separate Config class; patch it too.
+    src_mod = sys.modules.get("src.memorygraph.config")
+    if src_mod is not None:
+        src_config = getattr(src_mod, "Config", None)
+        if src_config is not None and src_config is not Config:
+            classes.append(src_config)
+    return classes
+
+
 @contextmanager
 def patch_config(**kwargs):
     """Context manager to temporarily patch Config class attributes.
 
     Saves raw class dict entries (including _EnvVar descriptors) so that
     dynamic env var resolution is restored on exit.
+
+    Patches all loaded Config classes (both ``memorygraph.config.Config``
+    and ``src.memorygraph.config.Config``) to avoid divergence when test
+    files mix import paths.
 
     Usage:
         with patch_config(NEO4J_URI="bolt://test:7687", NEO4J_PASSWORD="test"):
@@ -97,14 +113,17 @@ def patch_config(**kwargs):
     Args:
         **kwargs: Config attributes to patch (e.g., NEO4J_URI="value")
     """
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
+    configs = _get_all_config_classes()
+    saved = []  # list of (cls, key, original_descriptor) tuples
+
+    for cfg in configs:
+        for key, value in kwargs.items():
+            if key in cfg.__dict__:
+                saved.append((cfg, key, cfg.__dict__[key]))
+            setattr(cfg, key, value)
 
     try:
         yield
     finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+        for cfg, key, original in saved:
+            setattr(cfg, key, original)

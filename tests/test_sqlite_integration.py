@@ -11,7 +11,6 @@ import pytest
 import tempfile
 import os
 from pathlib import Path
-from contextlib import contextmanager
 
 from memorygraph.backends.factory import BackendFactory
 from memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
@@ -19,24 +18,7 @@ from memorygraph.sqlite_database import SQLiteMemoryDatabase
 from memorygraph.models import Memory, MemoryType
 from memorygraph.config import Config
 
-
-@contextmanager
-def patch_config(**kwargs):
-    """Context manager to temporarily patch Config class attributes.
-
-    Saves raw class dict entries (including _EnvVar descriptors) so that
-    dynamic env var resolution is restored on exit.
-    """
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+from tests.conftest import patch_config
 
 
 class TestSQLiteIntegration:

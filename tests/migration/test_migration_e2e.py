@@ -6,8 +6,6 @@ import os
 import tempfile
 import pytest
 from pathlib import Path
-from contextlib import contextmanager
-
 from src.memorygraph.migration.manager import MigrationManager
 from src.memorygraph.migration.models import BackendConfig, MigrationOptions
 from src.memorygraph.config import BackendType, Config
@@ -16,24 +14,7 @@ from src.memorygraph.sqlite_database import SQLiteMemoryDatabase
 from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 from src.memorygraph.models import Memory, MemoryType, RelationshipType, RelationshipProperties
 
-
-@contextmanager
-def patch_config(**kwargs):
-    """Context manager to temporarily patch Config class attributes.
-
-    Saves raw class dict entries (including _EnvVar descriptors) so that
-    dynamic env var resolution is restored on exit.
-    """
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+from tests.conftest import patch_config
 
 
 @pytest.mark.asyncio

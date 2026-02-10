@@ -7,10 +7,11 @@ ensuring proper environment variable handling and backward compatibility.
 
 import os
 import pytest
-from contextlib import contextmanager
 from unittest import mock
 
 from memorygraph.config import Config, _EnvVar
+
+from tests.conftest import patch_config
 
 
 class TestConfigMultiTenancy:
@@ -187,21 +188,6 @@ class TestConfigValidation:
 
         # 'yes' is not 'true', so should be False
         assert ReloadedConfig.MULTI_TENANT_MODE is False
-
-
-@contextmanager
-def patch_config(**kwargs):
-    """Temporarily patch Config attributes, restoring raw descriptors on exit."""
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
 
 
 class TestEnvVarIsSet:

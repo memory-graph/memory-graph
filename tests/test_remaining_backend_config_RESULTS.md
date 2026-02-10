@@ -62,22 +62,10 @@ These tests pass because the backends properly handle constructor parameters and
 
 ## Test Pattern
 
-The tests use a `patch_config()` context manager to temporarily override Config class attributes:
+The tests use the shared `patch_config()` context manager from `tests/_helpers.py` to temporarily override Config class attributes:
 
 ```python
-@contextmanager
-def patch_config(**kwargs):
-    """Context manager to temporarily patch Config class attributes."""
-    original_values = {}
-    for key, value in kwargs.items():
-        if hasattr(Config, key):
-            original_values[key] = getattr(Config, key)
-            setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+from tests._helpers import patch_config
 ```
 
 ### Test Structure

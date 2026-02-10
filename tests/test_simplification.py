@@ -10,7 +10,6 @@ Tests cover:
 """
 
 import os
-from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -19,20 +18,7 @@ from memorygraph.backends.factory import _UNSET, BackendFactory
 from memorygraph.config import _CORE_TOOLS, _EXTENDED_EXTRA_TOOLS, TOOL_PROFILES, Config
 from memorygraph.models import DatabaseConnectionError
 
-
-@contextmanager
-def patch_config(**kwargs):
-    """Temporarily patch Config class attributes, restoring descriptors on exit."""
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+from tests.conftest import patch_config
 
 
 class TestToolProfilesDeduplication:

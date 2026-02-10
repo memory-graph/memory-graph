@@ -14,7 +14,6 @@ Tests cover:
 import pytest
 import tempfile
 import os
-from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch, Mock
 from pathlib import Path
 
@@ -22,24 +21,7 @@ from memorygraph.backends.turso import TursoBackend
 from memorygraph.models import DatabaseConnectionError, SchemaError
 from memorygraph.config import Config
 
-
-@contextmanager
-def patch_config(**kwargs):
-    """Context manager to temporarily patch Config class attributes.
-
-    Saves raw class dict entries (including _EnvVar descriptors) so that
-    dynamic env var resolution is restored on exit.
-    """
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
+from tests.conftest import patch_config
 
 
 @pytest.fixture

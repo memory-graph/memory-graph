@@ -26,47 +26,18 @@ the single source of truth for all configuration.
 import os
 import pytest
 import importlib.util
-from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 from typing import Any, Dict
 
 from memorygraph.config import Config
 from memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 
+from tests.conftest import patch_config
+
 # Check for optional dependencies
 HAS_NEO4J = importlib.util.find_spec("neo4j") is not None
 HAS_MEMGRAPH = importlib.util.find_spec("mgclient") is not None
 HAS_LIBSQL = importlib.util.find_spec("libsql_experimental") is not None
-
-
-@contextmanager
-def patch_config(**kwargs):
-    """
-    Context manager to temporarily patch Config attributes.
-
-    Usage:
-        with patch_config(NEO4J_URI="bolt://test:7687", NEO4J_PASSWORD="test"):
-            backend = Neo4jBackend()
-            assert backend.uri == "bolt://test:7687"
-
-    Args:
-        **kwargs: Config attributes to patch (e.g., NEO4J_URI="value")
-
-    Note:
-        Saves raw class dict entries (including _EnvVar descriptors) so that
-        dynamic env var resolution is restored on exit.
-    """
-    original_values = {}
-    for key, value in kwargs.items():
-        if key in Config.__dict__:
-            original_values[key] = Config.__dict__[key]
-        setattr(Config, key, value)
-
-    try:
-        yield
-    finally:
-        for key, value in original_values.items():
-            setattr(Config, key, value)
 
 
 class TestNeo4jBackendReadsConfig:
