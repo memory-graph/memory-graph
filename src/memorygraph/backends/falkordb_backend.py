@@ -63,10 +63,10 @@ class FalkorDBBackend(BaseFalkorDBBackend):
                     "Install with: pip install falkordb"
                 ) from e
 
+            conn_kwargs: dict[str, Any] = {"host": self.host, "port": self.port}
             if self.password:
-                self.client = FalkorDB(host=self.host, port=self.port, password=self.password)
-            else:
-                self.client = FalkorDB(host=self.host, port=self.port)
+                conn_kwargs["password"] = self.password
+            self.client = FalkorDB(**conn_kwargs)
 
             self.graph = self.client.select_graph(self.graph_name)
             self._connected = True
@@ -75,6 +75,8 @@ class FalkorDBBackend(BaseFalkorDBBackend):
             return True
 
         except Exception as e:
+            if isinstance(e, DatabaseConnectionError):
+                raise
             logger.error(f"Failed to connect to FalkorDB: {e}")
             raise DatabaseConnectionError(f"Failed to connect to FalkorDB: {e}") from e
 

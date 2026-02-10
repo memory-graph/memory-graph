@@ -9,9 +9,9 @@ import logging
 import re
 from typing import Optional, Union
 
-from .base import GraphBackend
 from ..config import Config
 from ..models import DatabaseConnectionError
+from .base import GraphBackend
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ class BackendFactory:
             raise DatabaseConnectionError(
                 "Could not connect to any backend. "
                 "Please configure Neo4j, Memgraph, or ensure NetworkX is installed for SQLite fallback."
-            )
+            ) from e
 
     @staticmethod
     async def _create_neo4j(
@@ -426,12 +426,14 @@ class BackendFactory:
                 f"Valid options: neo4j, memgraph, falkordb, falkordblite, sqlite, turso, cloud"
             )
 
+        except DatabaseConnectionError:
+            raise
         except Exception as e:
             logger.error("Failed to create backend from config: %s", e)
-            raise DatabaseConnectionError(f"Failed to create backend: {e}")
+            raise DatabaseConnectionError(f"Failed to create backend: {e}") from e
 
     @staticmethod
-    def _parse_falkordb_uri(uri: Optional[str]) -> tuple:
+    def _parse_falkordb_uri(uri: Optional[str]) -> tuple[str, int]:
         """Parse host and port from a FalkorDB Redis URI (redis://host:port)."""
         if not uri:
             raise DatabaseConnectionError("FalkorDB requires URI")
@@ -475,6 +477,7 @@ class BackendFactory:
         "sqlite": lambda: True,
         "turso": lambda: Config.is_env_set("TURSO_DATABASE_URL") or Config.is_env_set("TURSO_PATH"),
         "cloud": lambda: Config.is_env_set("MEMORYGRAPH_API_KEY"),
+        "ladybugdb": lambda: True,
     }
 
     @staticmethod

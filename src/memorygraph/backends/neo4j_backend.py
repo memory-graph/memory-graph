@@ -6,15 +6,15 @@ wrapping the existing Neo4j connection and query logic.
 """
 
 import logging
+from contextlib import asynccontextmanager
 from typing import Any, Optional
 
-from neo4j import AsyncGraphDatabase, AsyncDriver
-from neo4j.exceptions import ServiceUnavailable, AuthError, Neo4jError
-from contextlib import asynccontextmanager
+from neo4j import AsyncDriver, AsyncGraphDatabase
+from neo4j.exceptions import AuthError, Neo4jError, ServiceUnavailable
 
-from .base import GraphBackend
-from ..models import DatabaseConnectionError, SchemaError
 from ..config import Config
+from ..models import DatabaseConnectionError, SchemaError
+from .base import GraphBackend
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class Neo4jBackend(GraphBackend):
         uri: Optional[str] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
-        database: str = "neo4j"
+        database: str = "neo4j",
     ):
         """
         Initialize Neo4j backend.
@@ -69,7 +69,7 @@ class Neo4jBackend(GraphBackend):
                 auth=(self.user, self.password),
                 max_connection_lifetime=30 * 60,  # 30 minutes
                 max_connection_pool_size=50,
-                connection_acquisition_timeout=30.0
+                connection_acquisition_timeout=30.0,
             )
 
             # Verify connectivity
@@ -80,13 +80,17 @@ class Neo4jBackend(GraphBackend):
 
         except ServiceUnavailable as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
-            raise DatabaseConnectionError(f"Failed to connect to Neo4j: {e}")
+            raise DatabaseConnectionError(f"Failed to connect to Neo4j: {e}") from e
         except AuthError as e:
             logger.error(f"Authentication failed for Neo4j: {e}")
-            raise DatabaseConnectionError(f"Authentication failed for Neo4j: {e}")
+            raise DatabaseConnectionError(
+                f"Authentication failed for Neo4j: {e}"
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error connecting to Neo4j: {e}")
-            raise DatabaseConnectionError(f"Unexpected error connecting to Neo4j: {e}")
+            raise DatabaseConnectionError(
+                f"Unexpected error connecting to Neo4j: {e}"
+            ) from e
 
     async def disconnect(self) -> None:
         """Close the database connection."""
@@ -100,7 +104,7 @@ class Neo4jBackend(GraphBackend):
         self,
         query: str,
         parameters: Optional[dict[str, Any]] = None,
-        write: bool = False
+        write: bool = False,
     ) -> list[dict[str, Any]]:
         """
         Execute a Cypher query and return results.
@@ -117,26 +121,34 @@ class Neo4jBackend(GraphBackend):
             DatabaseConnectionError: If not connected or query fails
         """
         if not self._connected or not self.driver:
-            raise DatabaseConnectionError("Connection failed: not connected to Neo4j (call connect() first)")
+            raise DatabaseConnectionError(
+                "Connection failed: not connected to Neo4j (call connect() first)"
+            )
 
         params = parameters or {}
 
         try:
             async with self._session() as session:
                 if write:
-                    result = await session.execute_write(self._run_query_async, query, params)
+                    result = await session.execute_write(
+                        self._run_query_async, query, params
+                    )
                 else:
-                    result = await session.execute_read(self._run_query_async, query, params)
+                    result = await session.execute_read(
+                        self._run_query_async, query, params
+                    )
                 return result
         except Neo4jError as e:
             logger.error(f"Query execution failed: {e}")
-            raise DatabaseConnectionError(f"Query execution failed: {e}")
+            raise DatabaseConnectionError(f"Query execution failed: {e}") from e
 
     @asynccontextmanager
     async def _session(self):
         """Async context manager for Neo4j session."""
         if not self.driver:
-            raise DatabaseConnectionError("Connection failed: not connected to Neo4j (call connect() first)")
+            raise DatabaseConnectionError(
+                "Connection failed: not connected to Neo4j (call connect() first)"
+            )
 
         session = self.driver.session(database=self.database)
         try:
@@ -145,7 +157,9 @@ class Neo4jBackend(GraphBackend):
             await session.close()
 
     @staticmethod
-    async def _run_query_async(tx, query: str, parameters: dict[str, Any]) -> list[dict[str, Any]]:
+    async def _run_query_async(
+        tx, query: str, parameters: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """
         Helper method to run a query within an async transaction.
 
@@ -200,23 +214,19 @@ class Neo4jBackend(GraphBackend):
             logger.info("Multi-tenant mode enabled, adding tenant indexes")
 
         # Execute schema creation
-        for constraint in constraints:
-            try:
-                await self.execute_query(constraint, write=True)
-                logger.debug(f"Created constraint: {constraint}")
-            except DatabaseConnectionError as e:
-                if "already exists" not in str(e).lower():
-                    raise SchemaError(f"Failed to create constraint: {e}")
-
-        for index in indexes:
-            try:
-                await self.execute_query(index, write=True)
-                logger.debug(f"Created index: {index}")
-            except DatabaseConnectionError as e:
-                if "already exists" not in str(e).lower():
-                    raise SchemaError(f"Failed to create index: {e}")
+        for statement in constraints + indexes:
+            await self._execute_schema_statement(statement)
 
         logger.info("Schema initialization completed")
+
+    async def _execute_schema_statement(self, statement: str) -> None:
+        """Execute a single schema statement, ignoring 'already exists' errors."""
+        try:
+            await self.execute_query(statement, write=True)
+            logger.debug(f"Executed schema statement: {statement}")
+        except DatabaseConnectionError as e:
+            if "already exists" not in str(e).lower():
+                raise SchemaError(f"Failed to execute schema statement: {e}") from e
 
     async def health_check(self) -> dict[str, Any]:
         """
@@ -229,7 +239,7 @@ class Neo4jBackend(GraphBackend):
             "connected": self._connected,
             "backend_type": "neo4j",
             "uri": self.uri,
-            "database": self.database
+            "database": self.database,
         }
 
         if self._connected:
@@ -279,7 +289,7 @@ class Neo4jBackend(GraphBackend):
         uri: Optional[str] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
-        database: str = "neo4j"
+        database: str = "neo4j",
     ) -> "Neo4jBackend":
         """
         Factory method to create and connect to a Neo4j backend.

@@ -7,15 +7,15 @@ with some Cypher dialect adaptations.
 """
 
 import logging
+from contextlib import asynccontextmanager
 from typing import Any, Optional
 
-from neo4j import AsyncGraphDatabase, AsyncDriver
-from neo4j.exceptions import ServiceUnavailable, AuthError, Neo4jError
-from contextlib import asynccontextmanager
+from neo4j import AsyncDriver, AsyncGraphDatabase
+from neo4j.exceptions import AuthError, Neo4jError, ServiceUnavailable
 
-from .base import GraphBackend
-from ..models import DatabaseConnectionError, SchemaError
 from ..config import Config
+from ..models import DatabaseConnectionError
+from .base import GraphBackend
 
 logger = logging.getLogger(__name__)
 
@@ -81,13 +81,13 @@ class MemgraphBackend(GraphBackend):
 
         except ServiceUnavailable as e:
             logger.error(f"Failed to connect to Memgraph: {e}")
-            raise DatabaseConnectionError(f"Failed to connect to Memgraph: {e}")
+            raise DatabaseConnectionError(f"Failed to connect to Memgraph: {e}") from e
         except AuthError as e:
             logger.error(f"Authentication failed for Memgraph: {e}")
-            raise DatabaseConnectionError(f"Authentication failed for Memgraph: {e}")
+            raise DatabaseConnectionError(f"Authentication failed for Memgraph: {e}") from e
         except Exception as e:
             logger.error(f"Unexpected error connecting to Memgraph: {e}")
-            raise DatabaseConnectionError(f"Unexpected error connecting to Memgraph: {e}")
+            raise DatabaseConnectionError(f"Unexpected error connecting to Memgraph: {e}") from e
 
     async def disconnect(self) -> None:
         """Close the database connection."""
@@ -127,13 +127,11 @@ class MemgraphBackend(GraphBackend):
 
         try:
             async with self._session() as session:
-                # Memgraph doesn't distinguish between read/write transactions in the same way
-                # We'll use execute_write for both to ensure consistency
-                result = await session.execute_write(self._run_query_async, adapted_query, params)
-                return result
+                # Memgraph uses execute_write for all queries (no read/write distinction)
+                return await session.execute_write(self._run_query_async, adapted_query, params)
         except Neo4jError as e:
             logger.error(f"Query execution failed: {e}")
-            raise DatabaseConnectionError(f"Query execution failed: {e}")
+            raise DatabaseConnectionError(f"Query execution failed: {e}") from e
 
     @asynccontextmanager
     async def _session(self):
@@ -183,7 +181,7 @@ class MemgraphBackend(GraphBackend):
         # Memgraph uses CREATE TEXT INDEX instead of CREATE FULLTEXT INDEX
         # But it doesn't support fulltext the same way, so we skip it
         if "CREATE FULLTEXT INDEX" in query:
-            logger.debug(f"Skipping fulltext index creation for Memgraph (not fully supported)")
+            logger.debug("Skipping fulltext index creation for Memgraph (not fully supported)")
             return "RETURN 1"  # No-op query
 
         # Memgraph uses different constraint syntax pre-v2.11

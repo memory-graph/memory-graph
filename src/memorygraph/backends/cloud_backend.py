@@ -13,28 +13,26 @@ from typing import Any, Optional
 
 import httpx
 
-from .base import GraphBackend
-from ..models import (
-    Memory, MemoryType, MemoryContext, Relationship, RelationshipType,
-    RelationshipProperties, SearchQuery, DatabaseConnectionError,
-    MemoryNotFoundError, ValidationError
-)
 from ..config import Config
+from ..models import (
+    DatabaseConnectionError,
+    Memory,
+    MemoryContext,
+    MemoryNotFoundError,
+    MemoryType,
+    Relationship,
+    RelationshipProperties,
+    RelationshipType,
+    SearchQuery,
+    ValidationError,
+)
+from .base import GraphBackend
 
 logger = logging.getLogger(__name__)
 
 
 def _mask_sensitive(value: str, visible_chars: int = 4) -> str:
-    """
-    Mask sensitive value, showing only first few characters.
-
-    Args:
-        value: Sensitive string to mask
-        visible_chars: Number of characters to show (default: 4)
-
-    Returns:
-        Masked string with format "mg_1***"
-    """
+    """Mask a sensitive value, showing only the first ``visible_chars`` characters."""
     if not value or len(value) <= visible_chars:
         return "***"
     return f"{value[:visible_chars]}{'*' * (len(value) - visible_chars)}"
@@ -228,6 +226,32 @@ class CloudRESTAdapter(GraphBackend):
             )
         return self._client
 
+    async def _retry_or_raise(
+        self,
+        error_message: str,
+        method: str,
+        path: str,
+        json: Optional[dict],
+        params: Optional[dict],
+        retry_count: int,
+        log_prefix: str,
+    ) -> dict[str, Any]:
+        """Record a circuit-breaker failure and either retry with backoff or raise.
+
+        Consolidates the repeated retry-with-backoff logic used for
+        server errors, timeouts, and connection failures.
+        """
+        await self._circuit_breaker.record_failure()
+        if retry_count < Config.CLOUD_MAX_RETRIES:
+            backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
+            logger.warning(
+                f"{log_prefix}, retrying in {backoff}s "
+                f"(attempt {retry_count + 1}/{Config.CLOUD_MAX_RETRIES})"
+            )
+            await asyncio.sleep(backoff)
+            return await self._request(method, path, json, params, retry_count + 1)
+        raise DatabaseConnectionError(error_message)
+
     async def _request(
         self,
         method: str,
@@ -257,7 +281,6 @@ class CloudRESTAdapter(GraphBackend):
             CircuitBreakerOpenError: If circuit breaker is open
             DatabaseConnectionError: For network or server errors
         """
-        # Check circuit breaker
         if not await self._circuit_breaker.can_execute():
             raise CircuitBreakerOpenError(
                 "Circuit breaker is open due to repeated failures. "
@@ -287,7 +310,6 @@ class CloudRESTAdapter(GraphBackend):
                 )
 
             if response.status_code == 404:
-                # Raise consistent exception for not found
                 raise MemoryNotFoundError(f"Resource not found: {path}")
 
             if response.status_code == 413:
@@ -303,24 +325,14 @@ class CloudRESTAdapter(GraphBackend):
                 )
 
             if response.status_code >= 500:
-                # Server error - retry with backoff
-                await self._circuit_breaker.record_failure()
-                if retry_count < Config.CLOUD_MAX_RETRIES:
-                    backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
-                    logger.warning(
-                        f"Server error {response.status_code}, "
-                        f"retrying in {backoff}s (attempt {retry_count + 1}/{Config.CLOUD_MAX_RETRIES})"
-                    )
-                    await asyncio.sleep(backoff)
-                    return await self._request(method, path, json, params, retry_count + 1)
-                else:
-                    raise DatabaseConnectionError(
-                        f"Graph API server error after {Config.CLOUD_MAX_RETRIES} retries: {response.status_code}"
-                    )
+                return await self._retry_or_raise(
+                    error_message=f"Graph API server error after {Config.CLOUD_MAX_RETRIES} retries: {response.status_code}",
+                    method=method, path=path, json=json, params=params,
+                    retry_count=retry_count,
+                    log_prefix=f"Server error {response.status_code}",
+                )
 
             response.raise_for_status()
-
-            # Record success with circuit breaker
             await self._circuit_breaker.record_success()
 
             if response.status_code == 204:
@@ -329,41 +341,29 @@ class CloudRESTAdapter(GraphBackend):
             return response.json()
 
         except httpx.TimeoutException:
-            await self._circuit_breaker.record_failure()
-            if retry_count < Config.CLOUD_MAX_RETRIES:
-                backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
-                logger.warning(
-                    f"Request timeout, retrying in {backoff}s "
-                    f"(attempt {retry_count + 1}/{Config.CLOUD_MAX_RETRIES})"
-                )
-                await asyncio.sleep(backoff)
-                return await self._request(method, path, json, params, retry_count + 1)
-            raise DatabaseConnectionError(
-                f"Request timeout after {Config.CLOUD_MAX_RETRIES} retries"
+            return await self._retry_or_raise(
+                error_message=f"Request timeout after {Config.CLOUD_MAX_RETRIES} retries",
+                method=method, path=path, json=json, params=params,
+                retry_count=retry_count,
+                log_prefix="Request timeout",
             )
 
         except httpx.ConnectError as e:
-            await self._circuit_breaker.record_failure()
-            if retry_count < Config.CLOUD_MAX_RETRIES:
-                backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
-                logger.warning(
-                    f"Connection error, retrying in {backoff}s "
-                    f"(attempt {retry_count + 1}/{Config.CLOUD_MAX_RETRIES})"
-                )
-                await asyncio.sleep(backoff)
-                return await self._request(method, path, json, params, retry_count + 1)
-            raise DatabaseConnectionError(
-                f"Cannot connect to Graph API at {self.api_url}: {e}"
+            return await self._retry_or_raise(
+                error_message=f"Cannot connect to Graph API at {self.api_url}: {e}",
+                method=method, path=path, json=json, params=params,
+                retry_count=retry_count,
+                log_prefix="Connection error",
             )
 
         except (AuthenticationError, UsageLimitExceeded, RateLimitExceeded, MemoryNotFoundError):
             raise
 
         except httpx.HTTPStatusError as e:
-            raise DatabaseConnectionError(f"HTTP error: {e}")
+            raise DatabaseConnectionError(f"HTTP error: {e}") from e
 
         except Exception as e:
-            raise DatabaseConnectionError(f"Unexpected error: {e}")
+            raise DatabaseConnectionError(f"Unexpected error: {e}") from e
 
     # =========================================================================
     # GraphBackend Interface Implementation
@@ -390,15 +390,13 @@ class CloudRESTAdapter(GraphBackend):
                 self._connected = True
                 logger.info("✓ Successfully connected to MemoryGraph Cloud")
                 return True
-            else:
-                raise DatabaseConnectionError(
-                    f"Health check failed: {result}"
-                )
+
+            raise DatabaseConnectionError(f"Health check failed: {result}")
 
         except AuthenticationError:
             raise
         except Exception as e:
-            raise DatabaseConnectionError(f"Failed to connect to cloud: {e}")
+            raise DatabaseConnectionError(f"Failed to connect to cloud: {e}") from e
 
     async def disconnect(self) -> None:
         """Close the connection and clean up resources."""
@@ -704,11 +702,10 @@ class CloudRESTAdapter(GraphBackend):
 
         result = await self._request("POST", "/search/advanced", json=payload)
 
-        memories = []
-        for item in result.get("memories", result.get("results", [])):
-            memory = self._api_response_to_memory(item)
-            if memory:
-                memories.append(memory)
+        memories = [
+            m for item in result.get("memories", result.get("results", []))
+            if (m := self._api_response_to_memory(item)) is not None
+        ]
 
         logger.info(f"Cloud search returned {len(memories)} memories")
         return memories
@@ -745,13 +742,10 @@ class CloudRESTAdapter(GraphBackend):
 
         result = await self._request("POST", "/search/recall", json=payload)
 
-        memories = []
-        for item in result.get("memories", result.get("results", [])):
-            memory = self._api_response_to_memory(item)
-            if memory:
-                memories.append(memory)
-
-        return memories
+        return [
+            m for item in result.get("memories", result.get("results", []))
+            if (m := self._api_response_to_memory(item)) is not None
+        ]
 
     async def get_recent_activity(
         self,
@@ -784,17 +778,14 @@ class CloudRESTAdapter(GraphBackend):
             }
 
         # Convert API response dicts to Memory objects
-        recent_memories = []
-        for item in result.get("recent_memories", []):
-            memory = self._api_response_to_memory(item)
-            if memory:
-                recent_memories.append(memory)
-
-        unresolved_problems = []
-        for item in result.get("unresolved_problems", []):
-            memory = self._api_response_to_memory(item)
-            if memory:
-                unresolved_problems.append(memory)
+        recent_memories = [
+            m for item in result.get("recent_memories", [])
+            if (m := self._api_response_to_memory(item)) is not None
+        ]
+        unresolved_problems = [
+            m for item in result.get("unresolved_problems", [])
+            if (m := self._api_response_to_memory(item)) is not None
+        ]
 
         return {
             "total_count": result.get("total_count", 0),
@@ -843,30 +834,29 @@ class CloudRESTAdapter(GraphBackend):
             payload["confidence"] = memory.confidence
 
         if memory.context:
-            context_dict = {}
-            if memory.context.project_path:
-                context_dict["project_path"] = memory.context.project_path
-            if memory.context.files_involved:
-                context_dict["files_involved"] = memory.context.files_involved
-            if memory.context.languages:
-                context_dict["languages"] = memory.context.languages
-            if memory.context.frameworks:
-                context_dict["frameworks"] = memory.context.frameworks
-            if memory.context.technologies:
-                context_dict["technologies"] = memory.context.technologies
-            if memory.context.git_commit:
-                context_dict["git_commit"] = memory.context.git_commit
-            if memory.context.git_branch:
-                context_dict["git_branch"] = memory.context.git_branch
-            if memory.context.working_directory:
-                context_dict["working_directory"] = memory.context.working_directory
-            if memory.context.additional_metadata:
-                context_dict["additional_metadata"] = memory.context.additional_metadata
-
+            context_fields = [
+                "project_path", "files_involved", "languages", "frameworks",
+                "technologies", "git_commit", "git_branch", "working_directory",
+                "additional_metadata",
+            ]
+            context_dict = {
+                field: getattr(memory.context, field)
+                for field in context_fields
+                if getattr(memory.context, field)
+            }
             if context_dict:
                 payload["context"] = context_dict
 
         return payload
+
+    @staticmethod
+    def _parse_timestamp(value: Any, fallback: Optional[datetime] = None) -> datetime:
+        """Parse an ISO timestamp string, returning fallback or now(UTC) if missing."""
+        if isinstance(value, str):
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if isinstance(value, datetime):
+            return value
+        return fallback or datetime.now(timezone.utc)
 
     def _api_response_to_memory(self, data: dict[str, Any]) -> Optional[Memory]:
         """Convert API response to Memory object."""
@@ -879,17 +869,8 @@ class CloudRESTAdapter(GraphBackend):
                 memory_type = MemoryType.GENERAL
 
             # Parse timestamps
-            created_at = data.get("created_at")
-            if isinstance(created_at, str):
-                created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-            elif created_at is None:
-                created_at = datetime.now(timezone.utc)
-
-            updated_at = data.get("updated_at")
-            if isinstance(updated_at, str):
-                updated_at = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
-            elif updated_at is None:
-                updated_at = created_at
+            created_at = self._parse_timestamp(data.get("created_at"))
+            updated_at = self._parse_timestamp(data.get("updated_at"), fallback=created_at)
 
             # Parse context
             context = None
