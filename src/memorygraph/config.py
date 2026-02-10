@@ -11,7 +11,7 @@ overrides both work correctly.
 
 import os
 from enum import Enum
-from typing import Optional, List
+from typing import List, Optional
 
 
 class BackendType(Enum):
@@ -28,39 +28,31 @@ class BackendType(Enum):
 
 # Tool profile definitions
 # Core mode: Essential tools for daily use (9 tools)
-# Extended mode: Core + advanced analytics (11 tools)
+# Extended mode: Core + advanced analytics (12 tools)
+_CORE_TOOLS = [
+    # Essential memory operations (5 tools)
+    "store_memory",
+    "get_memory",
+    "search_memories",
+    "update_memory",
+    "delete_memory",
+    # Essential relationship operations (2 tools)
+    "create_relationship",
+    "get_related_memories",
+    # Discovery and navigation (2 tools)
+    "recall_memories",  # Primary search with fuzzy matching
+    "get_recent_activity",  # Session briefing
+]
+
+_EXTENDED_EXTRA_TOOLS = [
+    "get_memory_statistics",  # Database stats
+    "search_relationships_by_context",  # Complex relationship queries
+    "contextual_search",  # Scoped search within related memories
+]
+
 TOOL_PROFILES = {
-    "core": [
-        # Essential memory operations (5 tools)
-        "store_memory",
-        "get_memory",
-        "search_memories",
-        "update_memory",
-        "delete_memory",
-        # Essential relationship operations (2 tools)
-        "create_relationship",
-        "get_related_memories",
-        # Discovery and navigation (2 tools)
-        "recall_memories",  # Primary search with fuzzy matching
-        "get_recent_activity",  # Session briefing
-    ],
-    "extended": [
-        # All Core tools (9)
-        "store_memory",
-        "get_memory",
-        "search_memories",
-        "update_memory",
-        "delete_memory",
-        "create_relationship",
-        "get_related_memories",
-        "recall_memories",
-        "get_recent_activity",
-        # Advanced analytics (2 additional)
-        "get_memory_statistics",  # Database stats
-        "search_relationships_by_context",  # Complex relationship queries
-        # Contextual search (1 additional)
-        "contextual_search",  # Scoped search within related memories
-    ],
+    "core": _CORE_TOOLS,
+    "extended": _CORE_TOOLS + _EXTENDED_EXTRA_TOOLS,
 }
 
 
@@ -291,8 +283,11 @@ class Config:
         """
         Get the list of enabled tools based on the configured profile.
 
+        Legacy profile names (lite, standard, full) are mapped to their
+        modern equivalents. Unrecognized profiles fall back to core.
+
         Returns:
-            List of tool names to enable, or None for legacy profiles (defaults to core)
+            List of tool names to enable, or None to enable all tools
         """
         profile = cls.TOOL_PROFILE.lower()
         # Map legacy profiles to new ones
