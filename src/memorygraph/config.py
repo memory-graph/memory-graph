@@ -11,11 +11,11 @@ overrides both work correctly.
 
 import os
 from enum import Enum
-from typing import List, Optional
 
 
 class BackendType(Enum):
     """Supported backend types."""
+
     NEO4J = "neo4j"
     MEMGRAPH = "memgraph"
     SQLITE = "sqlite"
@@ -166,7 +166,9 @@ class Config:
 
     BACKEND = _EnvVar("MEMORY_BACKEND", default="sqlite")
 
-    NEO4J_URI = _EnvVar("MEMORY_NEO4J_URI", "NEO4J_URI", default="bolt://localhost:7687")
+    NEO4J_URI = _EnvVar(
+        "MEMORY_NEO4J_URI", "NEO4J_URI", default="bolt://localhost:7687"
+    )
     NEO4J_USER = _EnvVar("MEMORY_NEO4J_USER", "NEO4J_USER", default="neo4j")
     NEO4J_PASSWORD = _EnvVar("MEMORY_NEO4J_PASSWORD", "NEO4J_PASSWORD", default=None)
     NEO4J_DATABASE = _EnvVar("MEMORY_NEO4J_DATABASE", default="neo4j")
@@ -182,27 +184,49 @@ class Config:
     TURSO_AUTH_TOKEN = _EnvVar("TURSO_AUTH_TOKEN", default=None)
 
     MEMORYGRAPH_API_KEY = _EnvVar("MEMORYGRAPH_API_KEY", default=None)
-    MEMORYGRAPH_API_URL = _EnvVar("MEMORYGRAPH_API_URL", default="https://graph-api.memorygraph.dev")
+    MEMORYGRAPH_API_URL = _EnvVar(
+        "MEMORYGRAPH_API_URL", default="https://graph-api.memorygraph.dev"
+    )
     MEMORYGRAPH_TIMEOUT = _EnvVar("MEMORYGRAPH_TIMEOUT", default=30, cast=int)
 
     CLOUD_MAX_RETRIES = _EnvVar("MEMORYGRAPH_MAX_RETRIES", default=3, cast=int)
-    CLOUD_RETRY_BACKOFF_BASE = _EnvVar("MEMORYGRAPH_RETRY_BACKOFF", default=1.0, cast=float)
-    CLOUD_CIRCUIT_BREAKER_THRESHOLD = _EnvVar("MEMORYGRAPH_CB_THRESHOLD", default=5, cast=int)
-    CLOUD_CIRCUIT_BREAKER_TIMEOUT = _EnvVar("MEMORYGRAPH_CB_TIMEOUT", default=60.0, cast=float)
+    CLOUD_RETRY_BACKOFF_BASE = _EnvVar(
+        "MEMORYGRAPH_RETRY_BACKOFF", default=1.0, cast=float
+    )
+    CLOUD_CIRCUIT_BREAKER_THRESHOLD = _EnvVar(
+        "MEMORYGRAPH_CB_THRESHOLD", default=5, cast=int
+    )
+    CLOUD_CIRCUIT_BREAKER_TIMEOUT = _EnvVar(
+        "MEMORYGRAPH_CB_TIMEOUT", default=60.0, cast=float
+    )
 
-    FALKORDB_HOST = _EnvVar("MEMORY_FALKORDB_HOST", "FALKORDB_HOST", default="localhost")
-    FALKORDB_PORT = _EnvVar("MEMORY_FALKORDB_PORT", "FALKORDB_PORT", default=6379, cast=int)
-    FALKORDB_PASSWORD = _EnvVar("MEMORY_FALKORDB_PASSWORD", "FALKORDB_PASSWORD", default=None)
+    FALKORDB_HOST = _EnvVar(
+        "MEMORY_FALKORDB_HOST", "FALKORDB_HOST", default="localhost"
+    )
+    FALKORDB_PORT = _EnvVar(
+        "MEMORY_FALKORDB_PORT", "FALKORDB_PORT", default=6379, cast=int
+    )
+    FALKORDB_PASSWORD = _EnvVar(
+        "MEMORY_FALKORDB_PASSWORD", "FALKORDB_PASSWORD", default=None
+    )
 
-    FALKORDBLITE_PATH = _EnvVar("MEMORY_FALKORDBLITE_PATH", "FALKORDBLITE_PATH", default=_DEFAULT_FALKORDBLITE_PATH)
+    FALKORDBLITE_PATH = _EnvVar(
+        "MEMORY_FALKORDBLITE_PATH",
+        "FALKORDBLITE_PATH",
+        default=_DEFAULT_FALKORDBLITE_PATH,
+    )
 
-    LADYBUGDB_PATH = _EnvVar("MEMORY_LADYBUGDB_PATH", "LADYBUGDB_PATH", default=_DEFAULT_LADYBUGDB_PATH)
+    LADYBUGDB_PATH = _EnvVar(
+        "MEMORY_LADYBUGDB_PATH", "LADYBUGDB_PATH", default=_DEFAULT_LADYBUGDB_PATH
+    )
 
     TOOL_PROFILE = _EnvVar("MEMORY_TOOL_PROFILE", default="core")
 
     LOG_LEVEL = _EnvVar("MEMORY_LOG_LEVEL", default="INFO")
 
-    AUTO_EXTRACT_ENTITIES = _EnvVar("MEMORY_AUTO_EXTRACT_ENTITIES", default=True, cast=bool)
+    AUTO_EXTRACT_ENTITIES = _EnvVar(
+        "MEMORY_AUTO_EXTRACT_ENTITIES", default=True, cast=bool
+    )
     SESSION_BRIEFING = _EnvVar("MEMORY_SESSION_BRIEFING", default=True, cast=bool)
     BRIEFING_VERBOSITY = _EnvVar("MEMORY_BRIEFING_VERBOSITY", default="standard")
     BRIEFING_RECENCY_DAYS = _EnvVar("MEMORY_BRIEFING_RECENCY_DAYS", default=7, cast=int)
@@ -264,18 +288,14 @@ class Config:
         return cls.DEFAULT_TENANT
 
     @classmethod
-    def get_enabled_tools(cls) -> Optional[List[str]]:
+    def get_enabled_tools(cls) -> list[str]:
         """Get the list of enabled tools based on the configured profile.
 
         Legacy profile names (lite, standard, full) are mapped to their
         modern equivalents. Unrecognized profiles fall back to core.
         """
         profile = cls.TOOL_PROFILE.lower()
-        legacy_map = {
-            "lite": "core",
-            "standard": "extended",
-            "full": "extended"
-        }
+        legacy_map = {"lite": "core", "standard": "extended", "full": "extended"}
         profile = legacy_map.get(profile, profile)
         return TOOL_PROFILES.get(profile, TOOL_PROFILES["core"])
 
@@ -288,25 +308,23 @@ class Config:
                 "uri": cls.NEO4J_URI,
                 "user": cls.NEO4J_USER,
                 "password_configured": bool(cls.NEO4J_PASSWORD),
-                "database": cls.NEO4J_DATABASE
+                "database": cls.NEO4J_DATABASE,
             },
             "memgraph": {
                 "uri": cls.MEMGRAPH_URI,
                 "user": cls.MEMGRAPH_USER,
-                "password_configured": bool(cls.MEMGRAPH_PASSWORD)
+                "password_configured": bool(cls.MEMGRAPH_PASSWORD),
             },
-            "sqlite": {
-                "path": cls.SQLITE_PATH
-            },
+            "sqlite": {"path": cls.SQLITE_PATH},
             "turso": {
                 "path": cls.TURSO_PATH,
                 "database_url": cls.TURSO_DATABASE_URL,
-                "auth_token_configured": bool(cls.TURSO_AUTH_TOKEN)
+                "auth_token_configured": bool(cls.TURSO_AUTH_TOKEN),
             },
             "cloud": {
                 "api_url": cls.MEMORYGRAPH_API_URL,
                 "api_key_configured": bool(cls.MEMORYGRAPH_API_KEY),
-                "timeout": cls.MEMORYGRAPH_TIMEOUT
+                "timeout": cls.MEMORYGRAPH_TIMEOUT,
             },
             "falkordb": {
                 "host": cls.FALKORDB_HOST,
@@ -316,29 +334,20 @@ class Config:
             "falkordblite": {
                 "path": cls.FALKORDBLITE_PATH,
             },
-            "logging": {
-                "level": cls.LOG_LEVEL
-            },
+            "logging": {"level": cls.LOG_LEVEL},
             "features": {
                 "auto_extract_entities": cls.AUTO_EXTRACT_ENTITIES,
                 "session_briefing": cls.SESSION_BRIEFING,
                 "briefing_verbosity": cls.BRIEFING_VERBOSITY,
-                "briefing_recency_days": cls.BRIEFING_RECENCY_DAYS
+                "briefing_recency_days": cls.BRIEFING_RECENCY_DAYS,
             },
-            "relationships": {
-                "allow_cycles": cls.ALLOW_RELATIONSHIP_CYCLES
-            },
+            "relationships": {"allow_cycles": cls.ALLOW_RELATIONSHIP_CYCLES},
             "multi_tenancy": {
                 "enabled": cls.MULTI_TENANT_MODE,
                 "default_tenant": cls.DEFAULT_TENANT,
                 "require_auth": cls.REQUIRE_AUTH,
                 "auth_provider": cls.AUTH_PROVIDER,
                 "jwt_secret_configured": bool(cls.JWT_SECRET),
-                "audit_log_enabled": cls.ENABLE_AUDIT_LOG
-            }
+                "audit_log_enabled": cls.ENABLE_AUDIT_LOG,
+            },
         }
-
-
-def get_config() -> Config:
-    """Get the global configuration instance."""
-    return Config

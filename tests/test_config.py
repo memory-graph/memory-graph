@@ -10,6 +10,7 @@ from unittest import mock
 
 import pytest
 
+import memorygraph.config
 from memorygraph.config import Config, _EnvVar
 from tests.conftest import patch_config
 
@@ -45,6 +46,7 @@ class TestConfigMultiTenancy:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -57,6 +59,7 @@ class TestConfigMultiTenancy:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -69,21 +72,26 @@ class TestConfigMultiTenancy:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
         assert ReloadedConfig.REQUIRE_AUTH is True
 
-    @mock.patch.dict(os.environ, {
-        "MEMORY_AUTH_PROVIDER": "jwt",
-        "MEMORY_JWT_SECRET": "test-secret-key",
-        "MEMORY_JWT_ALGORITHM": "HS512"
-    })
+    @mock.patch.dict(
+        os.environ,
+        {
+            "MEMORY_AUTH_PROVIDER": "jwt",
+            "MEMORY_JWT_SECRET": "test-secret-key",
+            "MEMORY_JWT_ALGORITHM": "HS512",
+        },
+    )
     def test_jwt_configuration(self):
         """Test JWT authentication configuration."""
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -97,6 +105,7 @@ class TestConfigMultiTenancy:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -175,6 +184,7 @@ class TestConfigValidation:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -186,6 +196,7 @@ class TestConfigValidation:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -197,6 +208,7 @@ class TestConfigValidation:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -208,6 +220,7 @@ class TestConfigValidation:
         from importlib import reload
 
         import memorygraph.config
+
         reload(memorygraph.config)
         from memorygraph.config import Config as ReloadedConfig
 
@@ -222,9 +235,13 @@ class TestEnvVarIsSet:
     def clean_env(self):
         """Remove test env vars before and after each test."""
         keys = [
-            "TEST_IS_SET_VAR", "TEST_IS_SET_ALT",
-            "MEMORY_MEMGRAPH_URI", "MEMORY_FALKORDB_HOST", "FALKORDB_HOST",
-            "MEMORY_NEO4J_PASSWORD", "NEO4J_PASSWORD",
+            "TEST_IS_SET_VAR",
+            "TEST_IS_SET_ALT",
+            "MEMORY_MEMGRAPH_URI",
+            "MEMORY_FALKORDB_HOST",
+            "FALKORDB_HOST",
+            "MEMORY_NEO4J_PASSWORD",
+            "NEO4J_PASSWORD",
         ]
         saved = {k: os.environ.pop(k, None) for k in keys}
         yield
@@ -312,11 +329,14 @@ class TestConfigIsEnvSet:
     def clean_env(self):
         """Remove test env vars before and after each test."""
         keys = [
-            "MEMORY_NEO4J_PASSWORD", "NEO4J_PASSWORD",
+            "MEMORY_NEO4J_PASSWORD",
+            "NEO4J_PASSWORD",
             "MEMORY_MEMGRAPH_URI",
-            "MEMORY_FALKORDB_HOST", "FALKORDB_HOST",
+            "MEMORY_FALKORDB_HOST",
+            "FALKORDB_HOST",
             "MEMORYGRAPH_API_KEY",
-            "TURSO_DATABASE_URL", "MEMORY_TURSO_PATH",
+            "TURSO_DATABASE_URL",
+            "MEMORY_TURSO_PATH",
         ]
         saved = {k: os.environ.pop(k, None) for k in keys}
         yield
@@ -374,11 +394,14 @@ class TestBackendAutoDetectionFix:
         """Remove backend env vars before and after each test."""
         keys = [
             "MEMORY_BACKEND",
-            "MEMORY_NEO4J_PASSWORD", "NEO4J_PASSWORD",
+            "MEMORY_NEO4J_PASSWORD",
+            "NEO4J_PASSWORD",
             "MEMORY_MEMGRAPH_URI",
-            "MEMORY_FALKORDB_HOST", "FALKORDB_HOST",
+            "MEMORY_FALKORDB_HOST",
+            "FALKORDB_HOST",
             "MEMORYGRAPH_API_KEY",
-            "TURSO_DATABASE_URL", "MEMORY_TURSO_PATH",
+            "TURSO_DATABASE_URL",
+            "MEMORY_TURSO_PATH",
         ]
         saved = {k: os.environ.pop(k, None) for k in keys}
         yield
@@ -391,59 +414,70 @@ class TestBackendAutoDetectionFix:
     def test_memgraph_not_configured_by_default(self):
         """Memgraph should NOT appear configured when only defaults are active."""
         from memorygraph.backends.factory import BackendFactory
+
         assert BackendFactory.is_backend_configured("memgraph") is False
 
     def test_memgraph_configured_when_env_set(self):
         """Memgraph should appear configured when env var is explicitly set."""
         from memorygraph.backends.factory import BackendFactory
+
         os.environ["MEMORY_MEMGRAPH_URI"] = "bolt://memgraph:7687"
         assert BackendFactory.is_backend_configured("memgraph") is True
 
     def test_falkordb_not_configured_by_default(self):
         """FalkorDB should NOT appear configured when only defaults are active."""
         from memorygraph.backends.factory import BackendFactory
+
         assert BackendFactory.is_backend_configured("falkordb") is False
 
     def test_falkordb_configured_when_env_set(self):
         """FalkorDB should appear configured when env var is explicitly set."""
         from memorygraph.backends.factory import BackendFactory
+
         os.environ["MEMORY_FALKORDB_HOST"] = "redis-host"
         assert BackendFactory.is_backend_configured("falkordb") is True
 
     def test_neo4j_not_configured_by_default(self):
         """Neo4j should NOT appear configured without password env var."""
         from memorygraph.backends.factory import BackendFactory
+
         assert BackendFactory.is_backend_configured("neo4j") is False
 
     def test_neo4j_configured_when_password_set(self):
         """Neo4j should appear configured when password env var is set."""
         from memorygraph.backends.factory import BackendFactory
+
         os.environ["MEMORY_NEO4J_PASSWORD"] = "secret"
         assert BackendFactory.is_backend_configured("neo4j") is True
 
     def test_cloud_not_configured_by_default(self):
         """Cloud should NOT appear configured without API key env var."""
         from memorygraph.backends.factory import BackendFactory
+
         assert BackendFactory.is_backend_configured("cloud") is False
 
     def test_sqlite_always_configured(self):
         """SQLite is always considered configured (embedded, zero-config)."""
         from memorygraph.backends.factory import BackendFactory
+
         assert BackendFactory.is_backend_configured("sqlite") is True
 
     def test_falkordblite_always_configured(self):
         """FalkorDBLite is always considered configured (embedded)."""
         from memorygraph.backends.factory import BackendFactory
+
         assert BackendFactory.is_backend_configured("falkordblite") is True
 
     def test_turso_not_configured_by_default(self):
         """Turso should NOT appear configured without explicit env vars."""
         from memorygraph.backends.factory import BackendFactory
+
         assert BackendFactory.is_backend_configured("turso") is False
 
     def test_turso_configured_when_url_set(self):
         """Turso should appear configured when database URL is set."""
         from memorygraph.backends.factory import BackendFactory
+
         os.environ["TURSO_DATABASE_URL"] = "libsql://test.turso.io"
         assert BackendFactory.is_backend_configured("turso") is True
 
@@ -475,7 +509,9 @@ class TestPatchConfigCleanup:
                 raise RuntimeError("boom")
         except RuntimeError:
             pass
-        assert key not in Config.__dict__, "new key should be cleaned up after exception"
+        assert key not in Config.__dict__, (
+            "new key should be cleaned up after exception"
+        )
 
     def test_patch_config_mixed_existing_and_new_keys(self):
         """patch_config handles a mix of existing and new keys correctly."""
@@ -491,3 +527,41 @@ class TestPatchConfigCleanup:
         assert Config.__dict__.get("BACKEND") is original_backend
         # New key removed
         assert new_key not in Config.__dict__
+
+
+class TestGetEnabledToolsReturnType:
+    """Tests that get_enabled_tools always returns a list (never None)."""
+
+    def test_returns_list_for_core_profile(self):
+        with patch_config(TOOL_PROFILE="core"):
+            result = Config.get_enabled_tools()
+            assert isinstance(result, list)
+            assert len(result) > 0
+
+    def test_returns_list_for_extended_profile(self):
+        with patch_config(TOOL_PROFILE="extended"):
+            result = Config.get_enabled_tools()
+            assert isinstance(result, list)
+            assert len(result) > 0
+
+    def test_returns_list_for_unknown_profile(self):
+        """Unknown profiles fall back to core — still a list, never None."""
+        with patch_config(TOOL_PROFILE="nonexistent"):
+            result = Config.get_enabled_tools()
+            assert isinstance(result, list)
+            assert result == Config.get_enabled_tools()
+
+    def test_returns_list_for_legacy_profiles(self):
+        """Legacy profile names are mapped and return lists."""
+        for legacy in ("lite", "standard", "full"):
+            with patch_config(TOOL_PROFILE=legacy):
+                result = Config.get_enabled_tools()
+                assert isinstance(result, list)
+
+
+class TestDeadCodeRemoval:
+    """Verify that removed dead code (get_config) stays removed."""
+
+    def test_get_config_not_exported(self):
+        """get_config was dead code and should not exist in the module."""
+        assert not hasattr(memorygraph.config, "get_config")
