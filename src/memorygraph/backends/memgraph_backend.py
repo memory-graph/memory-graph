@@ -1,8 +1,7 @@
 """
 Memgraph backend implementation for the Claude Code Memory Server.
 
-This module provides Memgraph-specific implementation of the GraphBackend interface.
-Memgraph uses the Bolt protocol and Cypher, so it can use the same driver as Neo4j
+Memgraph uses the Bolt protocol and Cypher via the same Neo4j driver
 with some Cypher dialect adaptations.
 """
 
@@ -28,20 +27,12 @@ class MemgraphBackend(GraphBackend):
         uri: Optional[str] = None,
         user: str = "",
         password: str = "",
-        database: str = "memgraph"
+        database: str = "memgraph",
     ):
-        """
-        Initialize Memgraph backend.
+        """Initialize Memgraph backend.
 
-        Args:
-            uri: Memgraph database URI (defaults to MEMORY_MEMGRAPH_URI env var)
-            user: Database username (Memgraph Community has no auth by default)
-            password: Database password (empty for Community Edition)
-            database: Database name (default: 'memgraph')
-
-        Note:
-            Memgraph Community Edition has no authentication by default.
-            Enterprise Edition supports authentication.
+        Note: Memgraph Community Edition has no authentication by default.
+        Enterprise Edition supports authentication.
         """
         self.uri = uri or Config.MEMGRAPH_URI
         self.user = user or Config.MEMGRAPH_USER
@@ -51,18 +42,8 @@ class MemgraphBackend(GraphBackend):
         self._connected = False
 
     async def connect(self) -> bool:
-        """
-        Establish async connection to Memgraph database.
-
-        Returns:
-            True if connection successful
-
-        Raises:
-            DatabaseConnectionError: If connection fails
-        """
+        """Establish async connection to Memgraph database."""
         try:
-            # Memgraph uses same Bolt protocol as Neo4j
-            # Community Edition: auth is typically empty tuple or ("", "")
             auth = (self.user, self.password) if self.user or self.password else None
 
             self.driver = AsyncGraphDatabase.driver(
@@ -70,10 +51,9 @@ class MemgraphBackend(GraphBackend):
                 auth=auth,
                 max_connection_lifetime=30 * 60,
                 max_connection_pool_size=50,
-                connection_acquisition_timeout=30.0
+                connection_acquisition_timeout=30.0,
             )
 
-            # Verify connectivity
             await self.driver.verify_connectivity()
             self._connected = True
             logger.info(f"Successfully connected to Memgraph at {self.uri}")
@@ -101,33 +81,19 @@ class MemgraphBackend(GraphBackend):
         self,
         query: str,
         parameters: Optional[dict[str, Any]] = None,
-        write: bool = False
+        write: bool = False,
     ) -> list[dict[str, Any]]:
-        """
-        Execute a Cypher query and return results.
-
-        Args:
-            query: The Cypher query string
-            parameters: Query parameters for parameterized queries
-            write: Whether this is a write operation (default: False)
-
-        Returns:
-            List of result records as dictionaries
-
-        Raises:
-            DatabaseConnectionError: If not connected or query fails
-        """
+        """Execute a Cypher query adapted for the Memgraph dialect."""
         if not self._connected or not self.driver:
-            raise DatabaseConnectionError("Connection failed: not connected to Memgraph (call connect() first)")
+            raise DatabaseConnectionError(
+                "Connection failed: not connected to Memgraph (call connect() first)"
+            )
 
         params = parameters or {}
-
-        # Adapt Cypher for Memgraph dialect differences
         adapted_query = self._adapt_cypher(query)
 
         try:
             async with self._session() as session:
-                # Memgraph uses execute_write for all queries (no read/write distinction)
                 return await session.execute_write(self._run_query_async, adapted_query, params)
         except Neo4jError as e:
             logger.error(f"Query execution failed: {e}")
@@ -137,7 +103,9 @@ class MemgraphBackend(GraphBackend):
     async def _session(self):
         """Async context manager for Memgraph session."""
         if not self.driver:
-            raise DatabaseConnectionError("Connection failed: not connected to Memgraph (call connect() first)")
+            raise DatabaseConnectionError(
+                "Connection failed: not connected to Memgraph (call connect() first)"
+            )
 
         session = self.driver.session()
         try:
@@ -147,130 +115,81 @@ class MemgraphBackend(GraphBackend):
 
     @staticmethod
     async def _run_query_async(tx, query: str, parameters: dict[str, Any]) -> list[dict[str, Any]]:
-        """
-        Helper method to run a query within an async transaction.
-
-        Args:
-            tx: Transaction object
-            query: Cypher query string
-            parameters: Query parameters
-
-        Returns:
-            List of result records as dictionaries
-        """
+        """Run a query within an async transaction and return records."""
         result = await tx.run(query, parameters)
-        records = await result.data()
-        return records
+        return await result.data()
 
     def _adapt_cypher(self, query: str) -> str:
+        """Adapt Cypher query for Memgraph dialect differences.
+
+        Memgraph does not support FULLTEXT INDEX syntax, so those queries
+        are replaced with a no-op. Other Cypher is passed through unchanged.
         """
-        Adapt Cypher query for Memgraph dialect differences.
-
-        Args:
-            query: Original Cypher query
-
-        Returns:
-            Adapted query for Memgraph
-
-        Note:
-            Main differences:
-            - FULLTEXT INDEX syntax is different
-            - Some constraint syntax differs
-            - CALL dbms.* procedures may not be available
-        """
-        # Memgraph uses CREATE TEXT INDEX instead of CREATE FULLTEXT INDEX
-        # But it doesn't support fulltext the same way, so we skip it
         if "CREATE FULLTEXT INDEX" in query:
-            logger.debug("Skipping fulltext index creation for Memgraph (not fully supported)")
-            return "RETURN 1"  # No-op query
+            logger.debug("Skipping fulltext index creation for Memgraph (not supported)")
+            return "RETURN 1"
 
-        # Memgraph uses different constraint syntax pre-v2.11
-        # But modern Memgraph should support standard syntax
         return query
 
     async def initialize_schema(self) -> None:
-        """
-        Initialize database schema including indexes and constraints.
-
-        Raises:
-            SchemaError: If schema initialization fails
-        """
+        """Initialize database schema including indexes and constraints."""
         logger.info("Initializing Memgraph schema for Claude Memory...")
 
-        # Create constraints (Memgraph syntax)
         constraints = [
             "CREATE CONSTRAINT ON (m:Memory) ASSERT m.id IS UNIQUE",
-            # Note: Relationship constraints may not be supported in all Memgraph versions
         ]
 
-        # Create indexes for performance
         indexes = [
             "CREATE INDEX ON :Memory(type)",
             "CREATE INDEX ON :Memory(created_at)",
             "CREATE INDEX ON :Memory(tags)",
             "CREATE INDEX ON :Memory(importance)",
             "CREATE INDEX ON :Memory(confidence)",
-            # Note: Memgraph doesn't support multi-property indexes the same way
         ]
 
-        # Conditional multi-tenant indexes (Phase 1)
         if Config.is_multi_tenant_mode():
-            multitenant_indexes = [
+            indexes.extend([
                 "CREATE INDEX ON :Memory(context_tenant_id)",
                 "CREATE INDEX ON :Memory(context_team_id)",
                 "CREATE INDEX ON :Memory(context_visibility)",
                 "CREATE INDEX ON :Memory(context_created_by)",
                 "CREATE INDEX ON :Memory(version)",
-            ]
-            indexes.extend(multitenant_indexes)
+            ])
             logger.info("Multi-tenant mode enabled, adding tenant indexes")
 
-        # Execute schema creation
-        for constraint in constraints:
-            try:
-                await self.execute_query(constraint, write=True)
-                logger.debug(f"Created constraint: {constraint}")
-            except DatabaseConnectionError as e:
-                # Memgraph may not support all constraint types
-                if "already exists" not in str(e).lower() and "not supported" not in str(e).lower():
-                    logger.warning(f"Failed to create constraint (may not be supported): {e}")
-
-        for index in indexes:
-            try:
-                await self.execute_query(index, write=True)
-                logger.debug(f"Created index: {index}")
-            except DatabaseConnectionError as e:
-                if "already exists" not in str(e).lower():
-                    logger.warning(f"Failed to create index: {e}")
+        for statement in constraints + indexes:
+            await self._execute_schema_statement(statement)
 
         logger.info("Schema initialization completed")
 
-    async def health_check(self) -> dict[str, Any]:
-        """
-        Check backend health and return status information.
+    async def _execute_schema_statement(self, statement: str) -> None:
+        """Execute a single schema statement, ignoring 'already exists' errors."""
+        try:
+            await self.execute_query(statement, write=True)
+            logger.debug(f"Executed schema statement: {statement}")
+        except DatabaseConnectionError as e:
+            error_msg = str(e).lower()
+            if "already exists" not in error_msg and "not supported" not in error_msg:
+                logger.warning(f"Failed to execute schema statement: {e}")
 
-        Returns:
-            Dictionary with health check results
-        """
+    async def health_check(self) -> dict[str, Any]:
+        """Check backend health and return status information."""
         health_info = {
             "connected": self._connected,
             "backend_type": "memgraph",
             "uri": self.uri,
-            "database": self.database
+            "database": self.database,
         }
 
         if self._connected:
             try:
-                # Get basic node count
-                count_query = "MATCH (m:Memory) RETURN count(m) as count"
-                count_result = await self.execute_query(count_query, write=False)
+                count_result = await self.execute_query(
+                    "MATCH (m:Memory) RETURN count(m) as count", write=False
+                )
                 if count_result:
                     health_info["statistics"] = {
                         "memory_count": count_result[0].get("count", 0)
                     }
-
-                # Try to get Memgraph version (if available)
-                # Note: Memgraph may not have dbms.components()
                 health_info["version"] = "unknown"
             except Exception as e:
                 logger.warning(f"Could not get detailed health info: {e}")
@@ -283,14 +202,8 @@ class MemgraphBackend(GraphBackend):
         return "memgraph"
 
     def supports_fulltext_search(self) -> bool:
-        """
-        Check if this backend supports full-text search.
-
-        Note:
-            Memgraph has limited full-text search support compared to Neo4j.
-            Text indexing is available but not full FULLTEXT INDEX functionality.
-        """
-        return False  # Limited support
+        """Memgraph does not support full FULLTEXT INDEX functionality."""
+        return False
 
     def supports_transactions(self) -> bool:
         """Check if this backend supports ACID transactions."""
@@ -306,23 +219,9 @@ class MemgraphBackend(GraphBackend):
         uri: Optional[str] = None,
         user: str = "",
         password: str = "",
-        database: str = "memgraph"
+        database: str = "memgraph",
     ) -> "MemgraphBackend":
-        """
-        Factory method to create and connect to a Memgraph backend.
-
-        Args:
-            uri: Memgraph database URI
-            user: Database username
-            password: Database password
-            database: Database name
-
-        Returns:
-            Connected MemgraphBackend instance
-
-        Raises:
-            DatabaseConnectionError: If connection fails
-        """
+        """Factory method to create and connect to a Memgraph backend."""
         backend = cls(uri, user, password, database)
         await backend.connect()
         return backend

@@ -2,7 +2,7 @@
 FalkorDB backend implementation for the Claude Code Memory Server.
 
 This module provides the FalkorDB-specific implementation of the GraphBackend interface.
-FalkorDB is a Redis-based graph database with exceptional performance (500x faster p99 than Neo4j).
+FalkorDB is a Redis-based graph database using client-server architecture.
 """
 
 import logging
@@ -27,15 +27,6 @@ class FalkorDBBackend(BaseFalkorDBBackend):
         password: Optional[str] = None,
         graph_name: str = "memorygraph",
     ):
-        """
-        Initialize FalkorDB backend.
-
-        Args:
-            host: FalkorDB host (defaults to FALKORDB_HOST env var or localhost)
-            port: FalkorDB port (defaults to FALKORDB_PORT env var or 6379)
-            password: FalkorDB password (defaults to FALKORDB_PASSWORD env var)
-            graph_name: Name of the graph database (defaults to 'memorygraph')
-        """
         self.host = host if host is not None else Config.FALKORDB_HOST
         self.port = port if port is not None else Config.FALKORDB_PORT
         self.password = password if password is not None else Config.FALKORDB_PASSWORD
@@ -45,15 +36,6 @@ class FalkorDBBackend(BaseFalkorDBBackend):
         self._connected = False
 
     async def connect(self) -> bool:
-        """
-        Establish connection to FalkorDB database.
-
-        Returns:
-            True if connection successful
-
-        Raises:
-            DatabaseConnectionError: If connection fails
-        """
         try:
             try:
                 from falkordb import FalkorDB
@@ -74,19 +56,13 @@ class FalkorDBBackend(BaseFalkorDBBackend):
             logger.info(f"Successfully connected to FalkorDB at {self.host}:{self.port}")
             return True
 
+        except DatabaseConnectionError:
+            raise
         except Exception as e:
-            if isinstance(e, DatabaseConnectionError):
-                raise
             logger.error(f"Failed to connect to FalkorDB: {e}")
             raise DatabaseConnectionError(f"Failed to connect to FalkorDB: {e}") from e
 
     async def health_check(self) -> dict[str, Any]:
-        """
-        Check backend health and return status information.
-
-        Returns:
-            Dictionary with health check results
-        """
         health_info = {
             "connected": self._connected,
             "backend_type": "falkordb",
@@ -110,7 +86,6 @@ class FalkorDBBackend(BaseFalkorDBBackend):
         return health_info
 
     def backend_name(self) -> str:
-        """Return the name of this backend implementation."""
         return "falkordb"
 
     # Backward-compatible alias for the renamed internal method.
@@ -124,21 +99,7 @@ class FalkorDBBackend(BaseFalkorDBBackend):
         password: Optional[str] = None,
         graph_name: str = "memorygraph",
     ) -> "FalkorDBBackend":
-        """
-        Factory method to create and connect to a FalkorDB backend.
-
-        Args:
-            host: FalkorDB host
-            port: FalkorDB port
-            password: FalkorDB password
-            graph_name: Name of the graph database
-
-        Returns:
-            Connected FalkorDBBackend instance
-
-        Raises:
-            DatabaseConnectionError: If connection fails
-        """
+        """Factory method to create and connect a FalkorDB backend."""
         backend = cls(host, port, password, graph_name)
         await backend.connect()
         return backend

@@ -1,9 +1,4 @@
-"""
-Neo4j backend implementation for the Claude Code Memory Server.
-
-This module provides the Neo4j-specific implementation of the GraphBackend interface,
-wrapping the existing Neo4j connection and query logic.
-"""
+"""Neo4j backend implementation for the Claude Code Memory Server."""
 
 import logging
 from contextlib import asynccontextmanager
@@ -29,18 +24,6 @@ class Neo4jBackend(GraphBackend):
         password: Optional[str] = None,
         database: str = "neo4j",
     ):
-        """
-        Initialize Neo4j backend.
-
-        Args:
-            uri: Neo4j database URI (defaults to MEMORY_NEO4J_URI or NEO4J_URI env var)
-            user: Database username (defaults to MEMORY_NEO4J_USER or NEO4J_USER env var)
-            password: Database password (defaults to MEMORY_NEO4J_PASSWORD or NEO4J_PASSWORD env var)
-            database: Database name (defaults to 'neo4j')
-
-        Raises:
-            DatabaseConnectionError: If password is not provided
-        """
         self.uri = uri or Config.NEO4J_URI
         self.user = user or Config.NEO4J_USER
         self.password = password or Config.NEO4J_PASSWORD
@@ -54,15 +37,6 @@ class Neo4jBackend(GraphBackend):
             )
 
     async def connect(self) -> bool:
-        """
-        Establish async connection to Neo4j database.
-
-        Returns:
-            True if connection successful
-
-        Raises:
-            DatabaseConnectionError: If connection fails
-        """
         try:
             self.driver = AsyncGraphDatabase.driver(
                 self.uri,
@@ -71,8 +45,6 @@ class Neo4jBackend(GraphBackend):
                 max_connection_pool_size=50,
                 connection_acquisition_timeout=30.0,
             )
-
-            # Verify connectivity
             await self.driver.verify_connectivity()
             self._connected = True
             logger.info(f"Successfully connected to Neo4j at {self.uri}")
@@ -106,20 +78,6 @@ class Neo4jBackend(GraphBackend):
         parameters: Optional[dict[str, Any]] = None,
         write: bool = False,
     ) -> list[dict[str, Any]]:
-        """
-        Execute a Cypher query and return results.
-
-        Args:
-            query: The Cypher query string
-            parameters: Query parameters for parameterized queries
-            write: Whether this is a write operation (default: False)
-
-        Returns:
-            List of result records as dictionaries
-
-        Raises:
-            DatabaseConnectionError: If not connected or query fails
-        """
         if not self._connected or not self.driver:
             raise DatabaseConnectionError(
                 "Connection failed: not connected to Neo4j (call connect() first)"
@@ -129,15 +87,8 @@ class Neo4jBackend(GraphBackend):
 
         try:
             async with self._session() as session:
-                if write:
-                    result = await session.execute_write(
-                        self._run_query_async, query, params
-                    )
-                else:
-                    result = await session.execute_read(
-                        self._run_query_async, query, params
-                    )
-                return result
+                executor = session.execute_write if write else session.execute_read
+                return await executor(self._run_query_async, query, params)
         except Neo4jError as e:
             logger.error(f"Query execution failed: {e}")
             raise DatabaseConnectionError(f"Query execution failed: {e}") from e
@@ -160,37 +111,18 @@ class Neo4jBackend(GraphBackend):
     async def _run_query_async(
         tx, query: str, parameters: dict[str, Any]
     ) -> list[dict[str, Any]]:
-        """
-        Helper method to run a query within an async transaction.
-
-        Args:
-            tx: Transaction object
-            query: Cypher query string
-            parameters: Query parameters
-
-        Returns:
-            List of result records as dictionaries
-        """
+        """Run a query within an async transaction and return records."""
         result = await tx.run(query, parameters)
-        records = await result.data()
-        return records
+        return await result.data()
 
     async def initialize_schema(self) -> None:
-        """
-        Initialize database schema including indexes and constraints.
-
-        Raises:
-            SchemaError: If schema initialization fails
-        """
         logger.info("Initializing Neo4j schema for Claude Memory...")
 
-        # Create constraints
         constraints = [
             "CREATE CONSTRAINT memory_id_unique IF NOT EXISTS FOR (m:Memory) REQUIRE m.id IS UNIQUE",
             "CREATE CONSTRAINT relationship_id_unique IF NOT EXISTS FOR (r:RELATIONSHIP) REQUIRE r.id IS UNIQUE",
         ]
 
-        # Create indexes for performance
         indexes = [
             "CREATE INDEX memory_type_index IF NOT EXISTS FOR (m:Memory) ON (m.type)",
             "CREATE INDEX memory_created_at_index IF NOT EXISTS FOR (m:Memory) ON (m.created_at)",
@@ -201,7 +133,6 @@ class Neo4jBackend(GraphBackend):
             "CREATE INDEX memory_project_path_index IF NOT EXISTS FOR (m:Memory) ON (m.context_project_path)",
         ]
 
-        # Conditional multi-tenant indexes (Phase 1)
         if Config.is_multi_tenant_mode():
             multitenant_indexes = [
                 "CREATE INDEX memory_tenant_index IF NOT EXISTS FOR (m:Memory) ON (m.context_tenant_id)",
@@ -213,7 +144,6 @@ class Neo4jBackend(GraphBackend):
             indexes.extend(multitenant_indexes)
             logger.info("Multi-tenant mode enabled, adding tenant indexes")
 
-        # Execute schema creation
         for statement in constraints + indexes:
             await self._execute_schema_statement(statement)
 
@@ -229,12 +159,6 @@ class Neo4jBackend(GraphBackend):
                 raise SchemaError(f"Failed to execute schema statement: {e}") from e
 
     async def health_check(self) -> dict[str, Any]:
-        """
-        Check backend health and return status information.
-
-        Returns:
-            Dictionary with health check results
-        """
         health_info = {
             "connected": self._connected,
             "backend_type": "neo4j",
@@ -244,7 +168,6 @@ class Neo4jBackend(GraphBackend):
 
         if self._connected:
             try:
-                # Try to get version and basic statistics
                 query = """
                 CALL dbms.components() YIELD name, versions, edition
                 RETURN name, versions[0] as version, edition
@@ -254,7 +177,6 @@ class Neo4jBackend(GraphBackend):
                     health_info["version"] = result[0].get("version", "unknown")
                     health_info["edition"] = result[0].get("edition", "unknown")
 
-                # Get basic node count
                 count_query = "MATCH (m:Memory) RETURN count(m) as count"
                 count_result = await self.execute_query(count_query, write=False)
                 if count_result:
@@ -268,19 +190,15 @@ class Neo4jBackend(GraphBackend):
         return health_info
 
     def backend_name(self) -> str:
-        """Return the name of this backend implementation."""
         return "neo4j"
 
     def supports_fulltext_search(self) -> bool:
-        """Check if this backend supports full-text search."""
         return True
 
     def supports_transactions(self) -> bool:
-        """Check if this backend supports ACID transactions."""
         return True
 
     def is_cypher_capable(self) -> bool:
-        """Neo4j supports native Cypher query execution."""
         return True
 
     @classmethod
@@ -291,21 +209,7 @@ class Neo4jBackend(GraphBackend):
         password: Optional[str] = None,
         database: str = "neo4j",
     ) -> "Neo4jBackend":
-        """
-        Factory method to create and connect to a Neo4j backend.
-
-        Args:
-            uri: Neo4j database URI
-            user: Database username
-            password: Database password
-            database: Database name
-
-        Returns:
-            Connected Neo4jBackend instance
-
-        Raises:
-            DatabaseConnectionError: If connection fails
-        """
+        """Create and return a connected Neo4jBackend instance."""
         backend = cls(uri, user, password, database)
         await backend.connect()
         return backend

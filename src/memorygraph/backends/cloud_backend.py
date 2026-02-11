@@ -39,23 +39,9 @@ def _mask_sensitive(value: str, visible_chars: int = 4) -> str:
 
 
 class CircuitBreaker:
-    """
-    Circuit breaker pattern implementation to prevent cascading failures.
-
-    States:
-    - CLOSED: Normal operation, requests proceed
-    - OPEN: Too many failures, requests fail fast
-    - HALF_OPEN: Recovery period, limited requests allowed
-    """
+    """Circuit breaker to prevent cascading failures (closed -> open -> half_open)."""
 
     def __init__(self, failure_threshold: int = 5, recovery_timeout: float = 60.0):
-        """
-        Initialize circuit breaker.
-
-        Args:
-            failure_threshold: Number of consecutive failures before opening circuit
-            recovery_timeout: Seconds to wait before attempting recovery
-        """
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.failure_count = 0
@@ -64,29 +50,21 @@ class CircuitBreaker:
         self._lock = asyncio.Lock()
 
     async def can_execute(self) -> bool:
-        """
-        Check if request should be allowed to proceed.
-
-        Returns:
-            True if request should proceed, False to fail fast
-        """
+        """Check if a request should be allowed through."""
         async with self._lock:
             if self.state == "closed":
                 return True
 
             if self.state == "open":
-                # Check if recovery timeout has passed
                 if self.last_failure_time and (time.time() - self.last_failure_time >= self.recovery_timeout):
                     logger.info("Circuit breaker entering half-open state for recovery attempt")
                     self.state = "half_open"
                     return True
                 return False
 
-            # half_open state - allow the request through
-            return True
+            return True  # half_open: allow recovery attempt
 
     async def record_success(self) -> None:
-        """Record a successful request."""
         async with self._lock:
             if self.state == "half_open":
                 logger.info("Circuit breaker closing after successful recovery")
@@ -95,17 +73,14 @@ class CircuitBreaker:
             self.state = "closed"
 
     async def record_failure(self) -> None:
-        """Record a failed request."""
         async with self._lock:
             self.failure_count += 1
             self.last_failure_time = time.time()
 
             if self.state == "half_open":
-                # Failed during recovery, reopen circuit
                 logger.warning("Circuit breaker reopening after failed recovery attempt")
                 self.state = "open"
             elif self.failure_count >= self.failure_threshold:
-                # Too many failures, open circuit
                 logger.warning(
                     f"Circuit breaker opening after {self.failure_count} consecutive failures. "
                     f"Will retry in {self.recovery_timeout} seconds"
@@ -142,26 +117,12 @@ class CircuitBreakerOpenError(CloudBackendError):
 
 
 class CloudRESTAdapter(GraphBackend):
-    """
-    Cloud REST adapter that connects to MemoryGraph Cloud API.
+    """Cloud REST adapter for MemoryGraph Cloud API (multi-device sync, collaboration).
 
-    This adapter enables:
-    - Multi-device synchronization
-    - Team collaboration and shared memories
-    - Cloud-based storage with automatic backups
-    - Usage tracking and analytics
-
-    Note: This adapter inherits from GraphBackend for compatibility but does NOT
-    support Cypher queries. It uses REST API calls instead. Use is_cypher_capable()
-    to check if a backend supports Cypher before calling execute_query().
-
-    Configuration:
-        MEMORYGRAPH_API_KEY: API key for authentication (required)
-        MEMORYGRAPH_API_URL: API base URL (default: https://graph-api.memorygraph.dev)
-        MEMORYGRAPH_TIMEOUT: Request timeout in seconds (default: 30)
+    Uses REST API calls instead of Cypher -- check ``is_cypher_capable()`` before
+    calling ``execute_query()``.
     """
 
-    # Production API URL - configurable via MEMORYGRAPH_API_URL environment variable
     DEFAULT_API_URL = "https://graph-api.memorygraph.dev"
     DEFAULT_TIMEOUT = 30
 
@@ -171,18 +132,6 @@ class CloudRESTAdapter(GraphBackend):
         api_url: Optional[str] = None,
         timeout: Optional[int] = None
     ):
-        """
-        Initialize cloud backend.
-
-        Args:
-            api_key: API key for authentication. If not provided, reads from
-                     MEMORYGRAPH_API_KEY environment variable.
-            api_url: Base URL for the Graph API. Defaults to production URL.
-            timeout: Request timeout in seconds. Defaults to 30.
-
-        Raises:
-            DatabaseConnectionError: If API key is not provided.
-        """
         self.api_key = api_key if api_key is not None else Config.MEMORYGRAPH_API_KEY
         self.api_url = (api_url if api_url is not None else (Config.MEMORYGRAPH_API_URL or self.DEFAULT_API_URL)).rstrip("/")
         self.timeout = timeout if timeout is not None else (Config.MEMORYGRAPH_TIMEOUT or self.DEFAULT_TIMEOUT)
@@ -208,7 +157,6 @@ class CloudRESTAdapter(GraphBackend):
         )
 
     def _get_headers(self) -> dict[str, str]:
-        """Get headers for API requests."""
         return {
             "X-API-Key": self.api_key,
             "Content-Type": "application/json",
@@ -216,7 +164,6 @@ class CloudRESTAdapter(GraphBackend):
         }
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create the HTTP client."""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 base_url=self.api_url,
@@ -236,11 +183,7 @@ class CloudRESTAdapter(GraphBackend):
         retry_count: int,
         log_prefix: str,
     ) -> dict[str, Any]:
-        """Record a circuit-breaker failure and either retry with backoff or raise.
-
-        Consolidates the repeated retry-with-backoff logic used for
-        server errors, timeouts, and connection failures.
-        """
+        """Record a circuit-breaker failure and either retry with backoff or raise."""
         await self._circuit_breaker.record_failure()
         if retry_count < Config.CLOUD_MAX_RETRIES:
             backoff = Config.CLOUD_RETRY_BACKOFF_BASE * (2 ** retry_count)
@@ -260,27 +203,7 @@ class CloudRESTAdapter(GraphBackend):
         params: Optional[dict] = None,
         retry_count: int = 0
     ) -> dict[str, Any]:
-        """
-        Make an HTTP request with retry logic and circuit breaker.
-
-        Args:
-            method: HTTP method (GET, POST, PUT, DELETE)
-            path: API path (e.g., "/memories")
-            json: JSON body for POST/PUT requests
-            params: Query parameters
-            retry_count: Current retry attempt
-
-        Returns:
-            Response data as dictionary
-
-        Raises:
-            AuthenticationError: If API key is invalid
-            UsageLimitExceeded: If usage limits exceeded
-            RateLimitExceeded: If rate limits exceeded
-            ValidationError: If payload is too large (HTTP 413)
-            CircuitBreakerOpenError: If circuit breaker is open
-            DatabaseConnectionError: For network or server errors
-        """
+        """Make an HTTP request with retry logic and circuit breaker."""
         if not await self._circuit_breaker.can_execute():
             raise CircuitBreakerOpenError(
                 "Circuit breaker is open due to repeated failures. "
@@ -297,7 +220,6 @@ class CloudRESTAdapter(GraphBackend):
                 params=params
             )
 
-            # Handle specific error codes
             if response.status_code == 401:
                 raise AuthenticationError(
                     "Invalid API key. Get a valid key at https://app.memorygraph.dev"
@@ -365,25 +287,12 @@ class CloudRESTAdapter(GraphBackend):
         except Exception as e:
             raise DatabaseConnectionError(f"Unexpected error: {e}") from e
 
-    # =========================================================================
-    # GraphBackend Interface Implementation
-    # =========================================================================
+    # -- GraphBackend interface --------------------------------------------------
 
     async def connect(self) -> bool:
-        """
-        Establish connection to the cloud API.
-
-        Returns:
-            True if connection successful
-
-        Raises:
-            DatabaseConnectionError: If connection fails
-            AuthenticationError: If API key is invalid
-        """
         try:
             logger.info(f"Connecting to MemoryGraph Cloud at {self.api_url}...")
 
-            # Verify connection with health check
             result = await self._request("GET", "/health")
 
             if result and result.get("status") == "healthy":
@@ -399,7 +308,6 @@ class CloudRESTAdapter(GraphBackend):
             raise DatabaseConnectionError(f"Failed to connect to cloud: {e}") from e
 
     async def disconnect(self) -> None:
-        """Close the connection and clean up resources."""
         if self._client and not self._client.is_closed:
             await self._client.aclose()
             self._client = None
@@ -412,35 +320,17 @@ class CloudRESTAdapter(GraphBackend):
         parameters: Optional[dict[str, Any]] = None,
         write: bool = False
     ) -> list[dict[str, Any]]:
-        """
-        Execute a query (not supported for cloud backend).
-
-        Cloud backend uses REST API, not Cypher queries.
-        Use the specific memory/relationship methods instead.
-
-        Raises:
-            NotImplementedError: Always, as cloud backend doesn't support raw queries
-        """
+        """Not supported -- cloud backend uses REST, not Cypher."""
         raise NotImplementedError(
             "Cloud backend does not support raw Cypher queries. "
             "Use store_memory(), search_memories(), etc. instead."
         )
 
     async def initialize_schema(self) -> None:
-        """
-        Initialize schema (no-op for cloud backend).
-
-        Schema is managed by the cloud service.
-        """
+        """No-op; schema is managed by the cloud service."""
         logger.debug("Schema initialization skipped - managed by cloud service")
 
     async def health_check(self) -> dict[str, Any]:
-        """
-        Check cloud API health and return status.
-
-        Returns:
-            Dictionary with health check results
-        """
         try:
             result = await self._request("GET", "/health")
             return {
@@ -459,45 +349,20 @@ class CloudRESTAdapter(GraphBackend):
             }
 
     def backend_name(self) -> str:
-        """Return backend name."""
         return "cloud"
 
     def supports_fulltext_search(self) -> bool:
-        """Cloud backend supports full-text search."""
         return True
 
     def supports_transactions(self) -> bool:
-        """Cloud backend handles transactions server-side."""
         return True
 
     def is_cypher_capable(self) -> bool:
-        """
-        Returns False - cloud backend uses REST API, not Cypher.
-
-        Cloud backend communicates with the MemoryGraph Cloud API via REST endpoints.
-        It does not support raw Cypher query execution. Use the specific memory
-        operations instead (store_memory, search_memories, etc.).
-        """
         return False
 
-    # =========================================================================
-    # Memory Operations
-    # =========================================================================
+    # -- Memory operations -------------------------------------------------------
 
     async def store_memory(self, memory: Memory) -> str:
-        """
-        Store a memory in the cloud.
-
-        Args:
-            memory: Memory object to store
-
-        Returns:
-            ID of the stored memory
-
-        Raises:
-            UsageLimitExceeded: If storage limits exceeded
-            DatabaseConnectionError: If storage fails
-        """
         payload = self._memory_to_api_payload(memory)
 
         result = await self._request("POST", "/memories", json=payload)
@@ -507,62 +372,22 @@ class CloudRESTAdapter(GraphBackend):
         return memory_id
 
     async def get_memory(self, memory_id: str) -> Optional[Memory]:
-        """
-        Retrieve a memory by ID.
-
-        Args:
-            memory_id: ID of the memory
-
-        Returns:
-            Memory object if found, None otherwise
-
-        Raises:
-            MemoryNotFoundError: If memory doesn't exist
-        """
         try:
             result = await self._request("GET", f"/memories/{memory_id}")
             return self._api_response_to_memory(result)
         except MemoryNotFoundError:
-            # get_memory returns None for not found (API contract)
             return None
 
     async def update_memory(self, memory_id: str, updates: dict[str, Any]) -> Optional[Memory]:
-        """
-        Update an existing memory.
-
-        Args:
-            memory_id: ID of the memory to update
-            updates: Dictionary of fields to update
-
-        Returns:
-            Updated Memory object
-
-        Raises:
-            MemoryNotFoundError: If memory doesn't exist
-        """
         result = await self._request("PUT", f"/memories/{memory_id}", json=updates)
         return self._api_response_to_memory(result)
 
     async def delete_memory(self, memory_id: str) -> bool:
-        """
-        Delete a memory.
-
-        Args:
-            memory_id: ID of the memory to delete
-
-        Returns:
-            True if deleted successfully
-
-        Raises:
-            MemoryNotFoundError: If memory doesn't exist
-        """
         await self._request("DELETE", f"/memories/{memory_id}")
         logger.info(f"Deleted memory from cloud: {memory_id}")
         return True
 
-    # =========================================================================
-    # Relationship Operations
-    # =========================================================================
+    # -- Relationship operations --------------------------------------------------
 
     async def create_relationship(
         self,
@@ -571,18 +396,6 @@ class CloudRESTAdapter(GraphBackend):
         relationship_type: RelationshipType,
         properties: Optional[RelationshipProperties] = None
     ) -> str:
-        """
-        Create a relationship between two memories.
-
-        Args:
-            from_memory_id: Source memory ID
-            to_memory_id: Target memory ID
-            relationship_type: Type of relationship
-            properties: Optional relationship properties
-
-        Returns:
-            ID of the created relationship
-        """
         payload = {
             "from_memory_id": from_memory_id,
             "to_memory_id": to_memory_id,
@@ -610,17 +423,6 @@ class CloudRESTAdapter(GraphBackend):
         relationship_types: Optional[list[RelationshipType]] = None,
         max_depth: int = 1
     ) -> list[tuple[Memory, Relationship]]:
-        """
-        Get memories related to a specific memory.
-
-        Args:
-            memory_id: ID of the memory
-            relationship_types: Filter by relationship types
-            max_depth: Maximum traversal depth
-
-        Returns:
-            List of (Memory, Relationship) tuples, empty if memory not found
-        """
         params = {"max_depth": max_depth}
 
         if relationship_types:
@@ -633,7 +435,6 @@ class CloudRESTAdapter(GraphBackend):
                 params=params
             )
         except MemoryNotFoundError:
-            # Memory doesn't exist, return empty list
             return []
 
         if not result:
@@ -663,20 +464,9 @@ class CloudRESTAdapter(GraphBackend):
 
         return related
 
-    # =========================================================================
-    # Search Operations
-    # =========================================================================
+    # -- Search operations --------------------------------------------------------
 
     async def search_memories(self, search_query: SearchQuery) -> list[Memory]:
-        """
-        Search for memories based on query parameters.
-
-        Args:
-            search_query: SearchQuery object with filter criteria
-
-        Returns:
-            List of matching Memory objects
-        """
         payload = {}
 
         if search_query.query:
@@ -717,18 +507,6 @@ class CloudRESTAdapter(GraphBackend):
         project_path: Optional[str] = None,
         limit: int = 20
     ) -> list[Memory]:
-        """
-        Recall memories using natural language query (fuzzy search).
-
-        Args:
-            query: Natural language query
-            memory_types: Optional filter by memory types
-            project_path: Optional filter by project
-            limit: Maximum results
-
-        Returns:
-            List of relevant Memory objects
-        """
         payload = {
             "query": query,
             "limit": limit
@@ -752,16 +530,6 @@ class CloudRESTAdapter(GraphBackend):
         days: int = 7,
         project: Optional[str] = None
     ) -> dict[str, Any]:
-        """
-        Get recent memory activity summary.
-
-        Args:
-            days: Number of days to look back
-            project: Optional project filter
-
-        Returns:
-            Activity summary dictionary with Memory objects
-        """
         params = {"days": days}
         if project:
             params["project"] = project
@@ -777,7 +545,6 @@ class CloudRESTAdapter(GraphBackend):
                 "project": project
             }
 
-        # Convert API response dicts to Memory objects
         recent_memories = [
             m for item in result.get("recent_memories", [])
             if (m := self._api_response_to_memory(item)) is not None
@@ -797,21 +564,12 @@ class CloudRESTAdapter(GraphBackend):
         }
 
     async def get_statistics(self) -> dict[str, Any]:
-        """
-        Get graph statistics.
-
-        Returns:
-            Statistics dictionary
-        """
         result = await self._request("GET", "/graphs/statistics")
         return result or {}
 
-    # =========================================================================
-    # Helper Methods
-    # =========================================================================
+    # -- Helpers -----------------------------------------------------------------
 
     def _memory_to_api_payload(self, memory: Memory) -> dict[str, Any]:
-        """Convert Memory object to API payload."""
         payload = {
             "type": memory.type.value,
             "title": memory.title,
@@ -859,20 +617,16 @@ class CloudRESTAdapter(GraphBackend):
         return fallback or datetime.now(timezone.utc)
 
     def _api_response_to_memory(self, data: dict[str, Any]) -> Optional[Memory]:
-        """Convert API response to Memory object."""
         try:
-            # Parse memory type
             type_str = data.get("type", "general")
             try:
                 memory_type = MemoryType(type_str)
             except ValueError:
                 memory_type = MemoryType.GENERAL
 
-            # Parse timestamps
             created_at = self._parse_timestamp(data.get("created_at"))
             updated_at = self._parse_timestamp(data.get("updated_at"), fallback=created_at)
 
-            # Parse context
             context = None
             context_data = data.get("context")
             if context_data and isinstance(context_data, dict):
@@ -907,6 +661,5 @@ class CloudRESTAdapter(GraphBackend):
             return None
 
 
-# Backwards compatibility alias (deprecated)
-# Use CloudRESTAdapter instead
+# Deprecated alias -- use CloudRESTAdapter instead
 CloudBackend = CloudRESTAdapter
