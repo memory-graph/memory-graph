@@ -24,9 +24,9 @@ class Neo4jBackend(GraphBackend):
         password: Optional[str] = None,
         database: str = "neo4j",
     ):
-        self.uri = uri or Config.NEO4J_URI
-        self.user = user or Config.NEO4J_USER
-        self.password = password or Config.NEO4J_PASSWORD
+        self.uri = uri if uri is not None else Config.NEO4J_URI
+        self.user = user if user is not None else Config.NEO4J_USER
+        self.password = password if password is not None else Config.NEO4J_PASSWORD
         self.database = database
         self.driver: Optional[AsyncDriver] = None
         self._connected = False

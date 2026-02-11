@@ -25,8 +25,8 @@ class MemgraphBackend(GraphBackend):
     def __init__(
         self,
         uri: Optional[str] = None,
-        user: str = "",
-        password: str = "",
+        user: Optional[str] = None,
+        password: Optional[str] = None,
         database: str = "memgraph",
     ):
         """Initialize Memgraph backend.
@@ -34,9 +34,9 @@ class MemgraphBackend(GraphBackend):
         Note: Memgraph Community Edition has no authentication by default.
         Enterprise Edition supports authentication.
         """
-        self.uri = uri or Config.MEMGRAPH_URI
-        self.user = user or Config.MEMGRAPH_USER
-        self.password = password or Config.MEMGRAPH_PASSWORD
+        self.uri = uri if uri is not None else Config.MEMGRAPH_URI
+        self.user = user if user is not None else Config.MEMGRAPH_USER
+        self.password = password if password is not None else Config.MEMGRAPH_PASSWORD
         self.database = database
         self.driver: Optional[AsyncDriver] = None
         self._connected = False
@@ -217,8 +217,8 @@ class MemgraphBackend(GraphBackend):
     async def create(
         cls,
         uri: Optional[str] = None,
-        user: str = "",
-        password: str = "",
+        user: Optional[str] = None,
+        password: Optional[str] = None,
         database: str = "memgraph",
     ) -> "MemgraphBackend":
         """Factory method to create and connect to a Memgraph backend."""

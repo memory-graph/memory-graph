@@ -146,7 +146,6 @@ _OS_REMOVED_MODULES = [
 # Backend modules that still legitimately use `os`
 _OS_REQUIRED_MODULES = [
     "sqlite_fallback",
-    "turso",
 ]
 
 

@@ -126,11 +126,10 @@ class TestCloudRESTAdapterInitialization:
         assert "does not start with 'mg_'" in caplog.text
 
     def test_default_api_url(self, api_key):
-        """Test default API URL is used when not provided."""
-        # Pass api_key as constructor param, rely on Config default for URL
-        with patch_config(MEMORYGRAPH_API_URL=None):
-            backend = CloudRESTAdapter(api_key=api_key)
-            assert backend.api_url == CloudRESTAdapter.DEFAULT_API_URL
+        """Test default API URL from Config is used when not provided."""
+        # Config.MEMORYGRAPH_API_URL provides the default; no class-level fallback needed
+        backend = CloudRESTAdapter(api_key=api_key)
+        assert backend.api_url == Config.MEMORYGRAPH_API_URL
 
 
 class TestCloudRESTAdapterConnection:

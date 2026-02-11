@@ -7,11 +7,10 @@ and other remote environments.
 """
 
 import asyncio
-import logging
-import os
 import json
-from typing import Any, Optional
+import logging
 from pathlib import Path
+from typing import Any, Optional
 
 try:
     import libsql_experimental as libsql
@@ -63,10 +62,9 @@ class TursoBackend(GraphBackend):
             )
 
         # Configuration
-        default_path = os.path.expanduser("~/.memorygraph/memory.db")
-        self.db_path = db_path or Config.TURSO_PATH or default_path
-        self.sync_url = sync_url or Config.TURSO_DATABASE_URL
-        self.auth_token = auth_token or Config.TURSO_AUTH_TOKEN
+        self.db_path = db_path if db_path is not None else Config.TURSO_PATH
+        self.sync_url = sync_url if sync_url is not None else Config.TURSO_DATABASE_URL
+        self.auth_token = auth_token if auth_token is not None else Config.TURSO_AUTH_TOKEN
 
         # Connection state
         self.conn = None

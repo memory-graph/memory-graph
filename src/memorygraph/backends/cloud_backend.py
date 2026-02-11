@@ -133,8 +133,8 @@ class CloudRESTAdapter(GraphBackend):
         timeout: Optional[int] = None
     ):
         self.api_key = api_key if api_key is not None else Config.MEMORYGRAPH_API_KEY
-        self.api_url = (api_url if api_url is not None else (Config.MEMORYGRAPH_API_URL or self.DEFAULT_API_URL)).rstrip("/")
-        self.timeout = timeout if timeout is not None else (Config.MEMORYGRAPH_TIMEOUT or self.DEFAULT_TIMEOUT)
+        self.api_url = (api_url if api_url is not None else Config.MEMORYGRAPH_API_URL or "").rstrip("/")
+        self.timeout = timeout if timeout is not None else Config.MEMORYGRAPH_TIMEOUT
 
         if not self.api_key:
             raise DatabaseConnectionError(

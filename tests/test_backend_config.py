@@ -584,21 +584,22 @@ class TestBackendConfigEdgeCases:
         os.environ.clear()
         os.environ.update(original_env)
 
-    def test_sqlite_backend_handles_none_config_path(self):
+    def test_sqlite_backend_uses_config_path_as_single_source(self):
         """
-        SQLiteFallbackBackend should handle None in Config.SQLITE_PATH gracefully.
+        SQLiteFallbackBackend uses Config.SQLITE_PATH as the single source of truth.
 
-        Should fall back to default path when Config value is None.
+        Config.SQLITE_PATH has default=_DEFAULT_DB_PATH, so it always provides a path.
+        When Config is not overridden, the default is used.
         """
-        with patch_config(SQLITE_PATH=None):
-            # Clear env var
-            os.environ.pop("MEMORY_SQLITE_PATH", None)
+        # Clear env var so Config uses its built-in default
+        os.environ.pop("MEMORY_SQLITE_PATH", None)
 
-            backend = SQLiteFallbackBackend()
+        backend = SQLiteFallbackBackend()
 
-            # Should have some path (default), not None
-            assert backend.db_path is not None
-            assert isinstance(backend.db_path, str)
+        # Config.SQLITE_PATH default is ~/.memorygraph/memory.db
+        assert backend.db_path is not None
+        assert isinstance(backend.db_path, str)
+        assert backend.db_path == Config.SQLITE_PATH
 
     @pytest.mark.skipif(not HAS_NEO4J, reason="neo4j package not installed")
     def test_neo4j_backend_preserves_fallback_behavior(self):
@@ -626,6 +627,131 @@ class TestBackendConfigEdgeCases:
             assert backend.user == Config.NEO4J_USER
             # Should use Config's provided password
             assert backend.password == "test-pass"
+
+
+class TestRedundantDefaultsRemoved:
+    """Tests that backends use Config as the single source of truth without redundant fallbacks.
+
+    Verifies:
+    - No triple-fallback patterns (param or Config or hardcoded_default)
+    - Proper `is not None` checks instead of `or` for parameter overrides
+    - Config defaults are sufficient — no class-level DEFAULT_* fallbacks needed
+    """
+
+    @pytest.fixture(autouse=True)
+    def save_and_restore_env(self):
+        """Save and restore environment variables."""
+        original_env = os.environ.copy()
+        yield
+        os.environ.clear()
+        os.environ.update(original_env)
+
+    def test_sqlite_no_triple_fallback(self):
+        """SQLite should use Config.SQLITE_PATH directly, not a triple fallback."""
+        custom_path = "/tmp/test-config-sqlite/memory.db"
+        with patch_config(SQLITE_PATH=custom_path):
+            backend = SQLiteFallbackBackend()
+            assert backend.db_path == custom_path
+
+    def test_sqlite_none_param_falls_through_to_config(self):
+        """Passing None as db_path should use Config, not a hardcoded default."""
+        with patch_config(SQLITE_PATH="/tmp/config-path/memory.db"):
+            backend = SQLiteFallbackBackend(db_path=None)
+            assert backend.db_path == "/tmp/config-path/memory.db"
+
+    def test_sqlite_config_default_is_sufficient(self):
+        """Config.SQLITE_PATH default should be used when no env var is set."""
+        os.environ.pop("MEMORY_SQLITE_PATH", None)
+        backend = SQLiteFallbackBackend()
+        # Config.SQLITE_PATH has default=_DEFAULT_DB_PATH (~/.memorygraph/memory.db)
+        assert backend.db_path is not None
+        assert "memorygraph" in backend.db_path
+
+    @pytest.mark.skipif(not HAS_LIBSQL, reason="libsql-experimental not installed")
+    def test_turso_no_triple_fallback(self):
+        """Turso should use Config.TURSO_PATH directly, not a triple fallback."""
+        from memorygraph.backends.turso import TursoBackend
+
+        with patch_config(
+            TURSO_PATH="/tmp/turso-config/memory.db",
+            TURSO_DATABASE_URL=None,
+            TURSO_AUTH_TOKEN=None,
+        ):
+            backend = TursoBackend()
+            assert backend.db_path == "/tmp/turso-config/memory.db"
+
+    @pytest.mark.skipif(not HAS_LIBSQL, reason="libsql-experimental not installed")
+    def test_turso_none_params_use_config(self):
+        """Passing None params to Turso should fall through to Config, not hardcoded defaults."""
+        from memorygraph.backends.turso import TursoBackend
+
+        with patch_config(
+            TURSO_PATH="/tmp/turso-path/db.sqlite",
+            TURSO_DATABASE_URL="libsql://config.turso.io",
+            TURSO_AUTH_TOKEN="config-token-abc",
+        ):
+            backend = TursoBackend(db_path=None, sync_url=None, auth_token=None)
+            assert backend.db_path == "/tmp/turso-path/db.sqlite"
+            assert backend.sync_url == "libsql://config.turso.io"
+            assert backend.auth_token == "config-token-abc"
+
+    @pytest.mark.skipif(not HAS_NEO4J, reason="neo4j package not installed")
+    def test_neo4j_uses_is_not_none_check(self):
+        """Neo4j should use `is not None` check, not `or`, for parameter overrides."""
+        from memorygraph.backends.neo4j_backend import Neo4jBackend
+
+        # Empty string should be preserved when explicitly passed, not fall through to Config
+        with patch_config(
+            NEO4J_URI="bolt://config:7687",
+            NEO4J_USER="config-user",
+            NEO4J_PASSWORD="config-password",
+        ):
+            backend = Neo4jBackend(
+                uri="bolt://explicit:7687",
+                user="explicit-user",
+                password="explicit-password",
+            )
+            assert backend.uri == "bolt://explicit:7687"
+            assert backend.user == "explicit-user"
+            assert backend.password == "explicit-password"
+
+    @pytest.mark.skipif(not HAS_NEO4J, reason="neo4j package not installed")
+    def test_neo4j_none_params_fall_through_to_config(self):
+        """None params to Neo4j should use Config values."""
+        from memorygraph.backends.neo4j_backend import Neo4jBackend
+
+        with patch_config(
+            NEO4J_URI="bolt://config:7687",
+            NEO4J_USER="config-user",
+            NEO4J_PASSWORD="config-pass",
+        ):
+            backend = Neo4jBackend(uri=None, user=None, password=None)
+            assert backend.uri == "bolt://config:7687"
+            assert backend.user == "config-user"
+
+    def test_cloud_no_redundant_default_url(self):
+        """Cloud backend should use Config.MEMORYGRAPH_API_URL, not a class-level DEFAULT_API_URL fallback."""
+        from memorygraph.backends.cloud_backend import CloudRESTAdapter
+
+        with patch_config(
+            MEMORYGRAPH_API_KEY="mg_test_key_123",
+            MEMORYGRAPH_API_URL="https://custom-api.example.com",
+            MEMORYGRAPH_TIMEOUT=45,
+        ):
+            backend = CloudRESTAdapter()
+            assert backend.api_url == "https://custom-api.example.com"
+            assert backend.timeout == 45
+
+    def test_cloud_config_default_url_is_sufficient(self):
+        """Config.MEMORYGRAPH_API_URL default should be used without needing class-level fallback."""
+        from memorygraph.backends.cloud_backend import CloudRESTAdapter
+
+        # Don't set MEMORYGRAPH_API_URL env var — Config default should suffice
+        os.environ.pop("MEMORYGRAPH_API_URL", None)
+        with patch_config(MEMORYGRAPH_API_KEY="mg_test_key_456"):
+            backend = CloudRESTAdapter()
+            assert backend.api_url == Config.MEMORYGRAPH_API_URL
+            assert backend.timeout == Config.MEMORYGRAPH_TIMEOUT
 
 
 # Tests for WP33 Phase 2 - Backend Config Refactor (TDD RED phase)

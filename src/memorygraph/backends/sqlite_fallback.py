@@ -48,9 +48,7 @@ class SQLiteFallbackBackend(GraphBackend):
                 "Install with: pip install networkx"
             )
 
-        default_path = os.path.expanduser("~/.memorygraph/memory.db")
-        resolved_path = db_path or Config.SQLITE_PATH or default_path
-        self.db_path: str = resolved_path if resolved_path else default_path
+        self.db_path: str = db_path if db_path is not None else Config.SQLITE_PATH
         self.conn: Optional[sqlite3.Connection] = None
         self.graph: Optional[nx.DiGraph] = None  # type: ignore[misc,no-any-unimported]
         self._connected = False

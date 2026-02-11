@@ -222,33 +222,25 @@ class TestCloudRESTAdapterConfig:
                 os.environ.pop("MEMORYGRAPH_TIMEOUT", None)
                 os.environ.pop("MEMORYGRAPH_API_KEY", None)
 
-    def test_cloud_uses_default_url_when_config_is_none(self):
-        """CloudRESTAdapter should use default URL when Config is None."""
-        with patch_config(MEMORYGRAPH_API_KEY="mg_key", MEMORYGRAPH_API_URL=None):
-            # Clear environment variables
-            os.environ.pop("MEMORYGRAPH_API_URL", None)
-            os.environ.pop("MEMORYGRAPH_API_KEY", None)
-
+    def test_cloud_uses_config_default_url(self):
+        """CloudRESTAdapter uses Config.MEMORYGRAPH_API_URL default (single source of truth)."""
+        # Config.MEMORYGRAPH_API_URL has default="https://graph-api.memorygraph.dev"
+        # No class-level DEFAULT_API_URL fallback needed
+        os.environ.pop("MEMORYGRAPH_API_URL", None)
+        with patch_config(MEMORYGRAPH_API_KEY="mg_key"):
             adapter = CloudRESTAdapter()
+            assert adapter.api_url == Config.MEMORYGRAPH_API_URL, \
+                f"Expected Config default URL but got '{adapter.api_url}'"
 
-            # Should use default URL
-            assert adapter.api_url == "https://graph-api.memorygraph.dev", \
-                f"Expected default URL but got '{adapter.api_url}'"
-
-    def test_cloud_uses_default_timeout_when_config_is_none(self):
-        """CloudRESTAdapter should use default timeout (30s) when Config is None."""
-        with patch_config(MEMORYGRAPH_API_KEY="mg_key", MEMORYGRAPH_TIMEOUT=None):
-            # Clear environment variables
-            os.environ.pop("MEMORYGRAPH_TIMEOUT", None)
-            os.environ.pop("MEMORYGRAPH_API_KEY", None)
-
-            # Need to handle the case where timeout is None
-            # CloudRESTAdapter should default to 30
+    def test_cloud_uses_config_default_timeout(self):
+        """CloudRESTAdapter uses Config.MEMORYGRAPH_TIMEOUT default (single source of truth)."""
+        # Config.MEMORYGRAPH_TIMEOUT has default=30, cast=int
+        # No class-level DEFAULT_TIMEOUT fallback needed
+        os.environ.pop("MEMORYGRAPH_TIMEOUT", None)
+        with patch_config(MEMORYGRAPH_API_KEY="mg_key"):
             adapter = CloudRESTAdapter()
-
-            # Should use default timeout of 30
-            assert adapter.timeout == 30, \
-                f"Expected default timeout 30 but got {adapter.timeout}"
+            assert adapter.timeout == Config.MEMORYGRAPH_TIMEOUT, \
+                f"Expected Config default timeout but got {adapter.timeout}"
 
     def test_cloud_constructor_params_override_config(self):
         """CloudRESTAdapter constructor parameters should override Config values."""
