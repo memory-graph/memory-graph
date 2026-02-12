@@ -1,174 +1,140 @@
-# MemoryGraph v0.12.0 Release Notes
+# MemoryGraph v0.12.4 Release Notes
 
-**Release Date:** December 23, 2025
+**Release Date:** February 12, 2026
 
-This is a major release featuring significant architectural improvements, enhanced type safety, and comprehensive test coverage. It also includes the tool description optimizations from v0.11.13.
+A major code health release focused on internal simplification, deduplication, and correctness. The codebase is significantly cleaner with 87 files touched, eliminating thousands of lines of redundant code while increasing test coverage from 1,578 to 2,220 tests.
 
 ---
 
 ## Highlights
 
-- **81% Test Coverage** - Up from 70%, with 1,578 tests passing
-- **Type-Safe Backend Interface** - New `MemoryOperations` Protocol
-- **Cleaner Tool Handlers** - 40% less boilerplate with `@handle_tool_errors` decorator
-- **Optimized Tool Descriptions** - Better LLM guidance for `recall_memories` vs `search_memories`
+- **2,220 Tests Passing** — Up from 1,578, with zero failures
+- **FalkorDB Shared Base Class** — 95% code deduplication between FalkorDB and FalkorDBLite backends
+- **Config as Single Source of Truth** — `_EnvVar` descriptors with `is_set()` replace scattered `os.environ` lookups
+- **Factory Dispatch Tables** — Clean dict-based dispatch replaces if/elif chains
+- **CLI Simplified** — Env-only config, no dual-writes, shared backend helper
 
 ---
 
-## New Features
+## Architecture Changes
 
-### MemoryOperations Protocol
-A new type-safe interface (`src/memorygraph/protocols.py`) that defines the common operations all backends must support. This enables better IDE support, type checking, and clearer API contracts.
+### FalkorDB Shared Base Class
 
-```python
-from memorygraph.protocols import MemoryOperations
+Extracted `_falkordb_shared.py` base class that captures all shared logic between FalkorDB and FalkorDBLite backends. Reduces combined code from ~1,250 lines to ~650 lines (95% dedup). Each concrete backend now only overrides connection-specific methods.
 
-def process_memories(backend: MemoryOperations):
-    # Type-safe operations across any backend
-    await backend.store_memory(memory)
-    await backend.search_memories(query)
+```
+Before:  falkordb_backend.py (625 lines) + falkordblite_backend.py (625 lines)
+After:   _falkordb_shared.py (659 lines) + falkordb_backend.py (~30 lines) + falkordblite_backend.py (~30 lines)
 ```
 
-### Tool Handler Registry
-New centralized registry (`src/memorygraph/tools/registry.py`) that maps tool names to handlers, replacing the previous if/elif dispatch chain. This improves maintainability and makes adding new tools easier.
+### Config `_EnvVar` Descriptors
 
-### Error Handling Decorator
-The `@handle_tool_errors` decorator (`src/memorygraph/tools/error_handling.py`) provides consistent error handling across all tool handlers, reducing boilerplate by ~40%.
+New descriptor-based configuration system in `config.py`:
+- **`_EnvVar`** class provides typed access to environment variables with defaults
+- **`is_set()`** method distinguishes "not set" from "set to default value" — critical for backend auto-detection
+- Empty string handling: `MEMORYGRAPH_BACKEND=""` correctly treated as unset
+- Config summary now includes FalkorDB/FalkorDBLite connection details
 
-```python
-@handle_tool_errors("store memory")
-async def handle_store_memory(memory_db, arguments):
-    # Just the happy path - errors handled by decorator
-    ...
-```
+### Factory Dispatch Tables
 
-### Input Validation
-New validation utilities (`src/memorygraph/utils/validation.py`) including:
-- Content size limits (50KB max)
-- Tag normalization with Pydantic field validators
-- Consistent validation across all inputs
+`factory.py` refactored from nested if/elif chains to clean dispatch table pattern:
+- Backend creation, validation, and info functions all use dict lookups
+- All 8 backends properly registered: SQLite, Neo4j, Memgraph, FalkorDB, FalkorDBLite, Cloud, Turso, LadybugDB
+- Backend auto-detection uses `Config.is_set()` instead of checking for non-default values
 
-### Backend Capability Detection
-All backends now implement `is_cypher_capable()` for runtime capability checking:
-- Graph backends (Neo4j, Memgraph, FalkorDB): Returns `True`
-- REST backends (Cloud): Returns `False`
-- SQLite: Returns `False`
+### CLI Env-Only Config
 
----
-
-## Improvements
-
-### Tool Descriptions Optimized for Retrieval (from v0.11.13)
-Updated MCP tool descriptions to guide LLMs on when to use each search tool:
-
-**`recall_memories`** - Best for:
-- Conceptual queries ("how does authentication work")
-- Fuzzy matching and natural language
-
-**`search_memories`** - Best for:
-- Acronyms (DCAD, JWT, API)
-- Proper nouns and technical terms
-- Known tags
-- Exact matching
-
-**`store_memory`** - New guidance:
-- Tag acronyms explicitly for reliable retrieval
-- Example: A memory about "DCAD - Dallas County Appraisal District" should have tags: `["dcad", "dallas-county", "property-lookup"]`
-
-### CloudBackend Refactoring
-- Renamed internally to `CloudRESTAdapter` to reflect its REST API nature
-- Backwards-compatible `CloudBackend` alias maintained
-- Documented in ADR-018
-
-### Datetime Handling
-All code now uses `datetime.now(timezone.utc)` instead of the deprecated `datetime.utcnow()`, ensuring timezone-aware datetime handling throughout.
+`cli.py` simplified to write only to `os.environ`, eliminating dual-writes to both env vars and Config object. Shared `_create_backend()` helper extracted to reduce repetition across CLI commands.
 
 ---
 
 ## Bug Fixes
 
-- **LSP Violation**: CloudBackend no longer violates Liskov Substitution Principle
-- **Timezone Safety**: Fixed naive vs aware datetime comparison issues
-- **SDK Model Sync**: SDK models now properly synchronized with server models
-- **Neo4j Optional Dependency**: Tests properly skip when neo4j package not installed
+- **Invalid Cypher in FalkorDB `delete_memory`** — Fixed `COUNT` after `DETACH DELETE` pattern that produced incorrect results. Now uses a two-query approach: match + count, then delete
+- **Backend auto-detection broken by Config defaults** — `Config.NEO4J_URI` had a default value (`bolt://localhost:7687`) that made auto-detection think Neo4j was configured. Fixed with `_EnvVar.is_set()`
+- **`_EnvVar` empty string handling** — Empty env vars (`MEMORYGRAPH_BACKEND=""`) now consistently treated as unset via `is_set()`
+- **CLI diagnostic output** — All diagnostic messages routed to stderr, emoji removed for clean piping
+- **FalkorDB result parsing** — Fixed result extraction from FalkorDB query responses
 
 ---
 
-## Testing
+## Code Simplification
 
-### Coverage Improved: 70% → 81%
+### Backend Files (net -2,141 lines)
 
-| Module | Before | After |
-|--------|--------|-------|
-| `cli.py` | 6% | 92% |
-| `backends/factory.py` | 20% | 99% |
-| `tools/activity_tools.py` | 12% | 98% |
-| `tools/error_handling.py` | - | 100% |
-| `tools/registry.py` | - | 100% |
-| `tools/validation.py` | - | 100% |
-| `analytics/advanced_queries.py` | 29% | 96% |
-| `cloud_database.py` | 44% | 100% |
-| `sqlite_database.py` | 5% | 85% |
+| File | Change |
+|------|--------|
+| `cloud_backend.py` | -489 lines — removed redundant docstrings, comments, simplified methods |
+| `falkordb_backend.py` | -641 lines — logic moved to shared base class |
+| `falkordblite_backend.py` | -591 lines — logic moved to shared base class |
+| `memgraph_backend.py` | -230 lines — removed redundant code and comments |
+| `neo4j_backend.py` | -181 lines — simplified methods, removed dead code |
+| `factory.py` | refactored — dispatch tables replace if/elif chains |
+| `config.py` | refactored — `_EnvVar` descriptors, removed dead code |
+| `cli.py` | -117 lines — shared helper, env-only config |
+
+### Redundant Default Fallbacks Removed
+
+All backends previously had their own fallback defaults for config values (e.g., `os.environ.get("NEO4J_URI", "bolt://localhost:7687")`). These redundant defaults were removed — `Config` is now the single source of truth.
+
+---
+
+## Test Improvements
 
 ### New Test Files
-- `tests/test_cli_coverage.py`
-- `tests/backends/test_factory_coverage.py`
-- `tests/tools/test_activity_tools_coverage.py`
-- `tests/tools/test_temporal_tools_coverage.py`
-- `tests/tools/test_error_handling.py`
-- `tests/tools/test_registry.py`
-- `tests/tools/test_validation.py`
-- `tests/analytics/test_advanced_queries_coverage.py`
-- `tests/test_cloud_database_coverage.py`
-- `tests/test_sqlite_database_coverage.py`
+
+| File | Purpose |
+|------|---------|
+| `tests/backends/test_falkordb_shared.py` | 540 lines — comprehensive tests for shared FalkorDB base class |
+| `tests/backends/test_backend_imports.py` | Import verification for all backend modules |
+| `tests/test_simplification.py` | Validates dispatch tables and deduplication |
+| `tests/test_backend_config.py` | Config-as-single-source-of-truth validation |
+| `tests/test_factory_config.py` | Factory dispatch table coverage |
+
+### Test Infrastructure
+
+- **Consolidated `patch_config`** fixture into `tests/conftest.py` — eliminated 19 duplicate definitions across test files
+- **Shared FalkorDB test helpers** in `tests/backends/conftest.py` — reusable fixtures for both FalkorDB and FalkorDBLite tests
+- **Fixed vacuous tests** — identified and fixed tests that passed but tested nothing meaningful
 
 ### Test Results
-- **1,578 tests passing**
-- **139 skipped** (neo4j optional dependency)
-- **3 warnings** (minor async mock warnings)
+
+| Metric | v0.12.0 | v0.12.4 |
+|--------|---------|---------|
+| Total tests | 1,578 | 2,220 |
+| Passed | 1,578 | 2,220 |
+| Skipped | 139 | 57 |
+| Failures | 0 | 0 |
+| Runtime | — | 24.27s |
+
+---
+
+## Files Changed
+
+**87 files** across source, tests, and project infrastructure:
+
+- **Source**: 20 files (+2,461 / -4,052 lines) — net reduction of 1,591 lines
+- **Tests**: 48 files (+13,551 / -8,194 lines) — net addition of 5,357 lines (new coverage)
+- **Other**: SDK lock file, experimental directory cleanup, docs
 
 ---
 
 ## Breaking Changes
 
-None. All changes are backwards compatible.
+None. All changes are internal refactoring. The public API, MCP tool interface, and backend behavior are unchanged.
 
 ---
 
 ## Migration Guide
 
-No migration required. Existing code will continue to work without changes.
-
-### Optional Improvements
-
-1. **Use the new Protocol for type hints:**
-   ```python
-   from memorygraph.protocols import MemoryOperations
-   ```
-
-2. **Check backend capabilities at runtime:**
-   ```python
-   if backend.is_cypher_capable():
-       # Use Cypher-specific features
-   ```
-
-3. **Update tag strategy for acronyms:**
-   - Add acronyms as explicit tags when storing memories
-   - Use `search_memories` with tag filters for acronym lookups
-
----
-
-## Documentation
-
-- **ADR-018**: Architecture Decision Record for CloudBackend type hierarchy
-- **WORKPLAN-24**: Detailed implementation plan for architectural fixes
+No migration required. Existing configurations, environment variables, and backend connections continue to work without changes.
 
 ---
 
 ## Contributors
 
 - Gregory Dickson
-- Claude Opus 4.5 (AI pair programmer)
+- Claude Opus 4.6 (AI pair programmer)
 
 ---
 

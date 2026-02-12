@@ -7,11 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned (v0.12+)
+### Planned (v0.13+)
 - Web visualization dashboard
 - PostgreSQL backend support (pg_graph)
 - Enhanced embedding support
 - Workflow automation templates
+
+## [0.12.4] - 2026-02-12
+
+### Added
+- **FalkorDB Shared Base Class** (`src/memorygraph/backends/_falkordb_shared.py`): Extracts all shared logic between FalkorDB and FalkorDBLite into a single base class, eliminating 95% code duplication
+- **Config `_EnvVar` Descriptors** (`src/memorygraph/config.py`): Descriptor-based configuration with `is_set()` to distinguish unset from default values
+- **Factory Dispatch Tables** (`src/memorygraph/backends/factory.py`): Dict-based dispatch replaces if/elif chains for backend creation, validation, and info
+- **Config Summary**: FalkorDB/FalkorDBLite connection details now included in `memorygraph config` output
+- **New Test Files**:
+  - `tests/backends/test_falkordb_shared.py` — shared base class coverage (540 lines)
+  - `tests/backends/test_backend_imports.py` — import verification for all backend modules
+  - `tests/test_simplification.py` — dispatch table and deduplication validation
+  - `tests/test_backend_config.py` — Config-as-single-source-of-truth tests
+  - `tests/test_factory_config.py` — factory dispatch table coverage
+
+### Changed
+- **Config is Single Source of Truth**: Removed redundant default fallbacks from all 5 backend files — backends now read exclusively from `Config`
+- **CLI Env-Only Config**: `cli.py` writes only to `os.environ`, eliminating dual-writes to Config object
+- **CLI Shared Backend Helper**: Extracted `_create_backend()` to reduce repetition across CLI commands
+- **Consolidated `patch_config` Fixture**: Single definition in `tests/conftest.py` replaces 19 duplicates across test files
+- **Shared FalkorDB Test Helpers**: Reusable fixtures in `tests/backends/conftest.py` for both FalkorDB and FalkorDBLite
+- **Backend Files Simplified**: Removed redundant docstrings, comments, and dead code across cloud, neo4j, memgraph, falkordb backends (net -2,141 source lines)
+
+### Fixed
+- **Invalid Cypher in FalkorDB `delete_memory`**: `COUNT` after `DETACH DELETE` produced incorrect results — now uses two-query approach
+- **Backend Auto-Detection Broken by Config Defaults**: `NEO4J_URI` default made auto-detection think Neo4j was configured — fixed with `_EnvVar.is_set()`
+- **`_EnvVar` Empty String Handling**: `MEMORYGRAPH_BACKEND=""` now consistently treated as unset
+- **CLI Diagnostic Output**: All diagnostic messages routed to stderr, emoji removed for clean piping
+- **FalkorDB Result Parsing**: Fixed result extraction from FalkorDB query responses
+- **Vacuous Tests**: Identified and fixed tests that passed but tested nothing meaningful
+
+### Testing
+- **Total Tests**: 1,578 → 2,220 (+642 tests)
+- **Skipped Tests**: 139 → 57 (more tests now runnable)
+- **Runtime**: 24.27s, zero failures
+- **87 files changed**: +16,012 / -12,246 lines (since v0.12.2)
+
+## [0.12.2] - 2026-02-09
+
+### Fixed
+- **Neo4j Test Compatibility**: Fixed memgraph tests to use `ClientError` and original `Neo4jError` class in CI
+
+## [0.12.1] - 2026-02-09
+
+### Fixed
+- **Neo4j Test Compatibility**: Fixed memgraph backend tests to use `ClientError`
 
 ## [0.12.0] - 2025-12-23
 
