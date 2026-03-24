@@ -649,23 +649,41 @@ class MemoryDatabase:
             # Convert properties to dict for Neo4j
             props_dict = properties.model_dump()
             props_dict['id'] = relationship_id
-            props_dict['created_at'] = props_dict['created_at'].isoformat()
-            props_dict['last_validated'] = props_dict['last_validated'].isoformat()
+
+            # Convert ALL datetime values to isoformat strings (FalkorDB patch)
+            from datetime import datetime as _dt
+            for k, v in list(props_dict.items()):
+                if isinstance(v, _dt):
+                    props_dict[k] = v.isoformat()
+
+            # FalkorDB's CYPHER preamble can't handle map parameters or
+            # param names containing reserved words like 'from'.
+            # Build individual SET clauses instead.
+            set_clauses = []
+            flat_params = {
+                "src_mem_id": from_memory_id,
+                "tgt_mem_id": to_memory_id,
+            }
+            for k, v in props_dict.items():
+                if v is not None:
+                    param_key = f"prop_{k}"
+                    set_clauses.append(f"r.{k} = ${param_key}")
+                    flat_params[param_key] = v
+
+            set_clause_str = ", ".join(set_clauses) if set_clauses else ""
+            set_line = f"SET {set_clause_str}" if set_clause_str else ""
 
             query = f"""
-            MATCH (from:Memory {{id: $from_id}})
-            MATCH (to:Memory {{id: $to_id}})
-            CREATE (from)-[r:{relationship_type.value} $properties]->(to)
+            MATCH (src:Memory {{id: $src_mem_id}})
+            MATCH (tgt:Memory {{id: $tgt_mem_id}})
+            CREATE (src)-[r:{relationship_type.value}]->(tgt)
+            {set_line}
             RETURN r.id as id
             """
 
             result = await self.connection.execute_write_query(
                 query,
-                {
-                    "from_id": from_memory_id,
-                    "to_id": to_memory_id,
-                    "properties": props_dict
-                }
+                flat_params,
             )
 
             if result:

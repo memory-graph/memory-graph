@@ -112,6 +112,13 @@ class BaseFalkorDBBackend(GraphBackend):
                     else:
                         result_list.append(row)
 
+            # Flush to disk after writes to prevent data loss on restart
+            if write and hasattr(self, 'client') and self.client is not None:
+                try:
+                    self.client.client.save()
+                except Exception as save_err:
+                    logger.warning(f"Failed to persist after write: {save_err}")
+
             return result_list
 
         except Exception as e:
@@ -453,23 +460,44 @@ class BaseFalkorDBBackend(GraphBackend):
 
             props_dict = properties.model_dump()
             props_dict["id"] = relationship_id
-            props_dict["created_at"] = props_dict["created_at"].isoformat()
-            props_dict["last_validated"] = props_dict["last_validated"].isoformat()
+            # Convert ALL datetime values to isoformat strings
+            from datetime import datetime as _dt
+            for k, v in list(props_dict.items()):
+                if isinstance(v, _dt):
+                    props_dict[k] = v.isoformat()
+
+            # FalkorDB's CYPHER preamble can't handle map parameters.
+            # Build individual SET clauses for each property instead.
+            set_clauses = []
+            flat_params = {
+                "from_id": from_memory_id,
+                "to_id": to_memory_id,
+            }
+            for k, v in props_dict.items():
+                if v is not None:
+                    param_key = f"prop_{k}"
+                    set_clauses.append(f"r.{k} = ${param_key}")
+                    flat_params[param_key] = v
+
+            set_clause_str = ", ".join(set_clauses) if set_clauses else ""
+            set_line = f"SET {set_clause_str}" if set_clause_str else ""
+
+            # Rename params to avoid CYPHER preamble conflicts with reserved words
+            # FalkorDB's preamble can't handle param names like 'from_id' (contains 'from')
+            flat_params["src_mem_id"] = flat_params.pop("from_id")
+            flat_params["tgt_mem_id"] = flat_params.pop("to_id")
 
             query = f"""
-            MATCH (from:Memory {{id: $from_id}})
-            MATCH (to:Memory {{id: $to_id}})
-            CREATE (from)-[r:{relationship_type.value} $properties]->(to)
+            MATCH (src:Memory {{id: $src_mem_id}})
+            MATCH (tgt:Memory {{id: $tgt_mem_id}})
+            CREATE (src)-[r:{relationship_type.value}]->(tgt)
+            {set_line}
             RETURN r.id as id
             """
 
             result = await self.execute_query(
                 query,
-                {
-                    "from_id": from_memory_id,
-                    "to_id": to_memory_id,
-                    "properties": props_dict,
-                },
+                flat_params,
                 write=True,
             )
 
@@ -522,13 +550,15 @@ class BaseFalkorDBBackend(GraphBackend):
                 rel_filter = f":{rel_types}"
 
             query = f"""
-            MATCH (start:Memory {{id: $memory_id}})
-            MATCH (start)-[r{rel_filter}*1..{max_depth}]-(related:Memory)
+            MATCH (start:Memory {{id: $memory_id}})-[rel{rel_filter}]-(related:Memory)
             WHERE related.id <> start.id
-            WITH DISTINCT related, r[0] as rel
             RETURN related,
                    type(rel) as rel_type,
-                   properties(rel) as rel_props
+                   rel.id as rel_id,
+                   rel.strength as rel_strength,
+                   rel.confidence as rel_confidence,
+                   rel.context as rel_context,
+                   rel.created_at as rel_created_at
             ORDER BY rel.strength DESC, related.importance DESC
             LIMIT 20
             """
@@ -540,7 +570,6 @@ class BaseFalkorDBBackend(GraphBackend):
                 memory = self._node_to_memory(record["related"])
                 if memory:
                     rel_type_str = record.get("rel_type", "RELATED_TO")
-                    rel_props = record.get("rel_props", {})
 
                     try:
                         rel_type = RelationshipType(rel_type_str)
@@ -552,10 +581,9 @@ class BaseFalkorDBBackend(GraphBackend):
                         to_memory_id=memory.id,
                         type=rel_type,
                         properties=RelationshipProperties(
-                            strength=rel_props.get("strength", 0.5),
-                            confidence=rel_props.get("confidence", 0.8),
-                            context=rel_props.get("context"),
-                            evidence_count=rel_props.get("evidence_count", 1),
+                            strength=record.get("rel_strength", 0.5),
+                            confidence=record.get("rel_confidence", 0.8),
+                            context=record.get("rel_context"),
                         ),
                     )
                     related_memories.append((memory, relationship))
