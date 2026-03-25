@@ -280,10 +280,35 @@ class BaseFalkorDBBackend(GraphBackend):
             parameters: dict[str, Any] = {}
 
             if search_query.query:
-                conditions.append(
-                    "(m.title CONTAINS $query OR m.content CONTAINS $query OR m.summary CONTAINS $query)"
-                )
-                parameters["query"] = search_query.query
+                # Split multi-word queries into individual terms for OR matching
+                # Use toLower() for case-insensitive search (FalkorDB CONTAINS is case-sensitive)
+                query_terms = [t.strip() for t in search_query.query.split() if t.strip()]
+                if len(query_terms) <= 1:
+                    # Single term: simple case-insensitive CONTAINS
+                    conditions.append(
+                        "(toLower(m.title) CONTAINS $query_lower OR toLower(m.content) CONTAINS $query_lower OR toLower(m.summary) CONTAINS $query_lower)"
+                    )
+                    parameters["query_lower"] = search_query.query.lower()
+                else:
+                    # Multi-word: OR across terms — match if ANY term appears in title/content/summary
+                    term_conditions = []
+                    for i, term in enumerate(query_terms[:5]):  # Cap at 5 terms to avoid query explosion
+                        param_key = f"qterm_{i}"
+                        term_conditions.append(
+                            f"(toLower(m.title) CONTAINS ${param_key} OR toLower(m.content) CONTAINS ${param_key} OR toLower(m.summary) CONTAINS ${param_key})"
+                        )
+                        parameters[param_key] = term.lower()
+                    conditions.append(f"({' OR '.join(term_conditions)})")
+
+                # Also search tags (exact match, case-insensitive)
+                if len(query_terms) == 1:
+                    conditions[-1] = f"({conditions[-1]} OR ANY(tag IN m.tags WHERE toLower(tag) CONTAINS $query_lower))"
+                else:
+                    tag_conds = " OR ".join(
+                        f"ANY(tag IN m.tags WHERE toLower(tag) CONTAINS $qterm_{i})"
+                        for i in range(min(len(query_terms), 5))
+                    )
+                    conditions[-1] = f"({conditions[-1]} OR {tag_conds})"
 
             if search_query.memory_types:
                 conditions.append("m.type IN $memory_types")

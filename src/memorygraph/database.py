@@ -364,9 +364,26 @@ class MemoryDatabase:
             parameters = {}
 
             # Build WHERE conditions based on search parameters
+            # FalkorDB CONTAINS is case-sensitive — use toLower() for case-insensitive search
+            # Multi-word queries are split into OR conditions (match ANY term)
             if search_query.query:
-                conditions.append("(m.title CONTAINS $query OR m.content CONTAINS $query OR m.summary CONTAINS $query)")
-                parameters["query"] = search_query.query
+                query_terms = [t.strip() for t in search_query.query.split() if t.strip()]
+                if len(query_terms) <= 1:
+                    conditions.append(
+                        "(toLower(m.title) CONTAINS $query_lower OR toLower(m.content) CONTAINS $query_lower OR toLower(m.summary) CONTAINS $query_lower "
+                        "OR ANY(tag IN m.tags WHERE toLower(tag) CONTAINS $query_lower))"
+                    )
+                    parameters["query_lower"] = search_query.query.lower()
+                else:
+                    term_conds = []
+                    for i, term in enumerate(query_terms[:5]):
+                        pk = f"qterm_{i}"
+                        term_conds.append(
+                            f"(toLower(m.title) CONTAINS ${pk} OR toLower(m.content) CONTAINS ${pk} OR toLower(m.summary) CONTAINS ${pk} "
+                            f"OR ANY(tag IN m.tags WHERE toLower(tag) CONTAINS ${pk}))"
+                        )
+                        parameters[pk] = term.lower()
+                    conditions.append(f"({' OR '.join(term_conds)})")
 
             if search_query.memory_types:
                 conditions.append("m.type IN $memory_types")
