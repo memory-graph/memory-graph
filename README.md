@@ -89,6 +89,8 @@ Do NOT wait to be asked. Memory storage is automatic.
 
 See [CLAUDE.md Examples](docs/examples/CLAUDE_MD_EXAMPLES.md) for more configuration templates.
 
+**Using multiple coding agents?** Keep this protocol in one canonical, versioned place and mirror it to each client-specific instruction file (`CLAUDE.md`, `AGENTS.md`, Cursor rules, Copilot instructions, Windsurf, Continue, etc.). The memory tools can be shared across clients, but the instructions that tell agents *when* to recall and store memories can drift if you edit each file separately. When a client cannot represent a rule exactly, prefer an explicit note over silently changing the behavior.
+
 ## Supported MCP Clients
 
 MemoryGraph works with any MCP-compliant AI coding tool:
