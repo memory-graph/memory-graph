@@ -7,11 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned (v0.13+)
+### Planned (v0.14+)
 - Web visualization dashboard
 - PostgreSQL backend support (pg_graph)
 - Enhanced embedding support
 - Workflow automation templates
+
+## [0.13.0] - 2026-07-05
+
+### Added — TypeScript Port
+
+Complete rewrite of MemoryGraph from Python MCP server to TypeScript/Bun CLI. The entire codebase was ported, bringing all features to a faster, simpler runtime.
+
+#### TypeScript CLI
+
+- **35+ CLI commands** across 8 categories: memory operations, context search, intelligence, analytics, proactive, integration, temporal, and data management
+- **`parseSimpleArgs`** custom arg parser (not `node:util:parseArgs`)
+- **`handleToolErrors`** decorator for consistent error handling across all tool handlers
+- **Library barrel exports** from `index.ts` for programmatic use
+- **Compiled binary** support via `bun build --compile`
+
+#### Backends (5 working)
+
+- **FalkorDBLite** (default, embedded) — zero-config graph database via `BaseFalkorDBBackend`
+- **SQLite** — zero-dependency fallback with simulated graph operations
+- **FalkorDB** (client-server) — extends `BaseFalkorDBBackend` with shared Cypher logic
+- **Memgraph** (client-server) — Bolt protocol via `BaseBoltBackend`
+- **Cloud** — REST API client for multi-device sync
+
+#### Intelligence Layer
+
+- **Entity extraction** — regex-based, 12 entity types (FILE, FUNCTION, CLASS, ERROR, TECHNOLOGY, CONCEPT, etc.)
+- **Pattern recognition** — find similar problems, suggest reusable patterns
+- **Context retrieval** — multi-factor relevance ranking (entities + keywords + recency)
+
+#### Analytics
+
+- Graph visualization data export (D3/vis.js compatible)
+- Solution similarity analysis (Jaccard similarity)
+- Learning path recommendations
+- Knowledge gap identification
+
+#### Proactive
+
+- Session briefings with recent activity and open issues
+- Predictive suggestions based on current context
+- Issue warning system (deprecated approaches, known errors)
+- Outcome learning with effectiveness scoring
+
+#### Integration
+
+- Context capture (task, command, error tracking)
+- Project analysis (codebase structure, framework detection)
+- Workflow tracking and optimization suggestions
+
+#### Migration
+
+- Backend-to-backend migration with verification
+- Supports all working backends as source and target
+
+#### SDK
+
+- Cloud API client for external TypeScript applications
+
+### Changed
+
+- **Runtime**: Python → TypeScript/Bun
+- **Interface**: MCP server → CLI (agents invoke shell commands directly)
+- **Default backend**: Still FalkorDBLite (was FalkorDBLite in Python v0.12.4)
+- **Config**: Static getter class reading `process.env` at call time (was `_EnvVar` descriptors)
+- **Backends**: Shared base classes (`BaseFalkorDBBackend`, `BaseBoltBackend`) replace Python `_falkordb_shared.py`
+- **Documentation**: README rewritten for TypeScript CLI, CLAUDE.md and AGENTS.md condensed for token efficiency
+
+### Removed
+
+- Python codebase (303 files, -79,580 lines)
+- MCP server protocol (replaced by direct CLI)
+- pip/pipx packaging
+- Docker Compose configurations for server deployment
+- Python-specific test infrastructure
+
+### Testing
+
+- **97 tests** across 12 test files, all passing
+- **242 expect() calls**
+- **Typecheck clean** (`tsc --noEmit`)
+- Test files: activity-tools, cli-commands, config, context-retrieval, entity-extraction, export-import, falkordb-backends, migration, models, pattern-recognition, sqlite-backend, temporal
+
+### Stats
+
+- **303 files changed**, +15,762 / -79,580 lines
+- Net reduction: 63,818 lines (Python codebase removed, TypeScript port is more concise)
 
 ## [0.12.4] - 2026-02-12
 
