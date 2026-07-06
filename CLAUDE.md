@@ -1,42 +1,50 @@
-# CLAUDE.md - Memory Graph Directives
+# CLAUDE.md
 
-`memorygraph` CLI is installed globally. Use it for persistent memory across sessions.
+MemoryGraph is a graph-based memory CLI for AI coding agents, written in TypeScript/Bun.
 
-## Session Workflow
-1. **Start**: `memorygraph recall --query "<task>" --limit 10` and `memorygraph briefing`
-2. **During**: Store on decisions, fixes, patterns. Link related memories.
-3. **End**: `memorygraph store --type conversation --title "Session: <topic>" --content "<summary>" --tags "<tags>"`
+## Build & Test
 
-## Commands
 ```bash
-memorygraph store --type <type> --title "<title>" --content "<content>" --tags "<tags>" --importance <0-1>
-memorygraph recall --query "<keywords>" --limit 10
-memorygraph search --query "<text>" --tags <tags> --limit 10
-memorygraph get <id>
-memorygraph link <from-id> <to-id> <RELATIONSHIP_TYPE> --strength <0-1>
-memorygraph related <id> --max-depth 2
-memorygraph briefing
-memorygraph stats
-memorygraph export --output backup.json
+cd ts
+bun install          # install deps
+bun test             # run tests (97 tests)
+npx tsc --noEmit     # typecheck
+bun build src/cli.ts --compile --outfile memorygraph  # compile binary
 ```
 
-## When to Store
-- Architectural decision → type: `solution`, tags: `architecture`
-- Bug fix → type: `problem` + `solution`, link with `SOLVES`
-- Project pattern → type: `code_pattern`
-- Error encountered → type: `error`
-- End of session → type: `conversation`
+## Architecture
 
-Do NOT store: trivial changes, info already in code/docs, transient debugging state.
+All source is in `ts/src/`. Entry point is `cli.ts`, library exports from `index.ts`.
 
-## Types
-`task` `code_pattern` `problem` `solution` `project` `technology` `error` `fix` `command` `file_context` `workflow` `general` `conversation`
+- **backends/**: Graph database backends. `BaseFalkorDBBackend` (shared Cypher logic for FalkorDB/FalkorDBLite), `BaseBoltBackend` (shared Bolt protocol for Memgraph/Neo4j). Factory dispatch in `factory.ts`.
+- **tools/**: CLI tool handlers wrapped with `handleToolErrors`. Each returns `{ isError, text }`.
+- **models.ts**: Zod schemas and types for Memory, Relationship, SearchQuery.
+- **config.ts**: Env-based config, all getters read `process.env` at call time.
+- **database.ts**: `IMemoryDatabase` interface, `MemoryDatabase` (local) and `CloudMemoryDatabase` (cloud).
+- **intelligence/**: Entity extraction (regex-based), pattern recognition, context retrieval. All require Cypher-capable backend.
+- **analytics/**: Graph visualization, solution similarity, learning paths, knowledge gaps.
+- **proactive/**: Session briefing, predictive suggestions, outcome learning.
+- **integration/**: Context capture, project analysis, workflow tracking.
+- **migration/**: Backend-to-backend migration with verification.
+- **sdk/**: Cloud API client for external use.
 
-## Relationships (uppercase)
-`SOLVES` `CAUSES` `BUILDS_ON` `REPLACES` `IMPROVES` `REQUIRES` `CONTRADICTS` `CONFIRMS` `RELATED_TO` `DEPENDS_ON`
+## Key Patterns
 
-## Tags
-Lowercase, hyphenated, 2-5 per memory. Include component: `auth`, `database`, `cli`.
+- Backends implement `GraphBackend` interface (`base.ts`). Cypher backends share query logic via base classes; SQLite has its own implementation.
+- Tool handlers use `handleToolErrors` decorator for consistent error handling.
+- CLI uses `parseSimpleArgs` for arg parsing (not `parseArgs` from `node:util`).
+- Config is read-only via static getters; CLI overrides by setting `process.env`.
+- Intelligence/analytics/proactive/integration modules take `GraphBackend` as first arg, not `IMemoryDatabase`.
 
-## Backend
-`MEMORY_BACKEND=falkordblite` (default) | `sqlite` | `falkordb` | `memgraph` | `cloud`
+## Backends
+
+| Backend | Status | Base class |
+|---------|--------|------------|
+| falkordblite | Working | `BaseFalkorDBBackend` |
+| sqlite | Working | own impl |
+| falkordb | Working | `BaseFalkorDBBackend` |
+| memgraph | Working | `BaseBoltBackend` |
+| cloud | Working | own impl |
+| neo4j | Stub (throws) | would use `BaseBoltBackend` |
+| turso | Stub (throws) | - |
+| ladybugdb | Stub (throws) | - |

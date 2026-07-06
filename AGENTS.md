@@ -1,54 +1,53 @@
-# AGENTS.md - CLI Reference
+# AGENTS.md
 
-## Install
+MemoryGraph is a TypeScript/Bun CLI for graph-based memory storage.
+
+## Setup
+
 ```bash
-cd ts && bun install && bun link  # global `memorygraph` command
+cd ts && bun install
 ```
 
-## Commands
+## Development
 
-| Command | Args |
-|---------|------|
-| `store` | `--type --title --content --tags --importance --summary` |
-| `get` | `<id>` |
-| `update` | `<id> --title --content --tags --importance` |
-| `delete` | `<id>` |
-| `search` | `--query --tags --types --limit --offset --min-importance` |
-| `recall` | `--query --limit` |
-| `link` | `<from-id> <to-id> <TYPE> --strength --confidence` |
-| `related` | `<id> --types --max-depth` |
-| `context-search` | `<id> --types --min-strength --context-query` |
-| `contextual-search` | `<id> --query --max-depth` |
-| `entities` | `<id> [--link]` |
-| `patterns` | `--query` |
-| `context` | `--query --project` |
-| `stats` | |
-| `activity` | `--days` |
-| `visualize` | `--center --depth --max-nodes --json` |
-| `similarity` | `<id> --top-k --min-similarity` |
-| `learning` | `--topic --max-paths` |
-| `gaps` | `--project` |
-| `briefing` | `--path --verbosity` |
-| `predict` | `--query` |
-| `warn` | `--context` |
-| `outcome` | `<id> --description --success` |
-| `capture` | `--task --goals` |
-| `analyze-project` | `--path` |
-| `workflow` | `--action track\|suggest --type --data` |
-| `as-of` | `<id> <timestamp> --types` |
-| `history` | `<id> --types` |
-| `changes` | `<timestamp>` |
-| `export` | `--format json\|markdown --output` |
-| `import` | `--input --skip-duplicates` |
-| `migrate` | `--to --to-path --to-uri --dry-run --no-verify` |
-| `health` | `--timeout --json` |
-| `config` | |
+```bash
+bun test             # 97 tests
+npx tsc --noEmit     # typecheck
+bun run src/cli.ts <command>  # run CLI directly
+```
 
-## Types
-`task` `code_pattern` `problem` `solution` `project` `technology` `error` `fix` `command` `file_context` `workflow` `general` `conversation`
+## Project Layout
 
-## Relationships
-`SOLVES` `CAUSES` `BUILDS_ON` `REPLACES` `IMPROVES` `REQUIRES` `CONTRADICTS` `CONFIRMS` `RELATED_TO` `DEPENDS_ON`
+```
+ts/src/
+  cli.ts              # CLI entry point, 35+ commands
+  index.ts            # library barrel exports
+  config.ts           # env-based config (static getters)
+  database.ts         # IMemoryDatabase interface + wrappers
+  models.ts           # Zod schemas: Memory, Relationship, SearchQuery
+  errors.ts           # error types
+  backends/           # GraphBackend implementations + factory
+  tools/              # CLI tool handlers (handleToolErrors wrapper)
+  intelligence/       # entity extraction, pattern recognition, context retrieval
+  analytics/          # graph visualization, similarity, learning paths
+  proactive/          # session briefing, predictions, outcome tracking
+  integration/        # context capture, project analysis, workflow tracking
+  migration/          # backend-to-backend migration
+  sdk/                # cloud API client
+  utils/              # export/import, validation, helpers
+ts/tests/             # test files
+```
 
-## Backend
-`MEMORY_BACKEND=falkordblite` (default) | `sqlite` | `falkordb` | `memgraph` | `cloud`
+## Dependencies
+
+- `falkordblite` - embedded graph DB (default backend)
+- `falkordb` - client-server FalkorDB driver
+- `neo4j-driver` - Bolt protocol driver (Memgraph)
+- `zod` - schema validation
+
+## Adding a New Backend
+
+1. Create `ts/src/backends/<name>.ts`
+2. Extend `BaseFalkorDBBackend` (Cypher) or `BaseBoltBackend` (Bolt) or implement `GraphBackend` directly
+3. Add to `factory.ts` dispatch and `backends/index.ts` exports
+4. Add config getters to `config.ts` if needed
