@@ -1,3 +1,9 @@
+# Node / Bun
+node_modules/
+ts/dist/
+ts/memorygraph
+*.tsbuildinfo
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
