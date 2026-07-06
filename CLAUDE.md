@@ -2,6 +2,10 @@
 
 MemoryGraph is a graph-based memory CLI for AI coding agents, written in TypeScript/Bun.
 
+## Master Plan
+
+See `master-plan.md` (repo root) for the full task list, priorities, and port completeness gaps.
+
 ## Build & Test
 
 ```bash

@@ -2,6 +2,10 @@
 
 MemoryGraph is a TypeScript/Bun CLI for graph-based memory storage.
 
+## Master Plan
+
+See `master-plan.md` (repo root) for the full task list, priorities, and port completeness gaps.
+
 ## Setup
 
 ```bash
