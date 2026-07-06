@@ -13,6 +13,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced embedding support
 - Workflow automation templates
 
+### Technical Debt — From v0.13.0 Adversarial Review
+
+Remaining findings from the three-agent adversarial review (red-team bug hunt, security review, port-completeness audit). 23 of 41 findings were fixed in the v0.13.0 review commit; the following require larger architectural work.
+
+#### High Priority
+
+- **H7: Temporal intelligence non-functional** — `intelligence/temporal.ts` traverses `[:PREVIOUS]` chains and reads `is_current`/`superseded_by` properties that backends never create. `updateMemory` does in-place `SET` with no versioning. Fix: implement versioning in `updateMemory` (create new node + `PREVIOUS` relationship, set `is_current`/`superseded_by`), or remove/disable the temporal module until infrastructure exists.
+- **M7: Intelligence/analytics/proactive commands throw on SQLite and Cloud** — `cmdEntities --link`, `cmdPatterns`, `cmdContext`, `cmdVisualize`, `cmdSimilarity`, `cmdLearning`, `cmdGaps`, `cmdBriefing`, `cmdPredict`, `cmdWarn`, `cmdOutcome` all call `executeQuery` which throws on non-Cypher backends. Fix: guard with `backend.isCypherCapable()` and return a clear message, or implement via backend CRUD methods.
+- **M1: `recall` is identical to `search`** — `handleRecallMemories` calls `db.searchMemories` instead of `backend.recallMemories`. SQLite and Cloud both implement `recallMemories` with fuzzy/recall semantics but it's never invoked. Fix: have `handleRecallMemories` call `db.backend?.recallMemories?.()` when available, falling back to `searchMemories`.
+
+#### Medium Priority
+
+- **M8: SDK and internal cloud adapter target different APIs** — SDK uses `https://api.memorygraph.dev` with `Authorization: Bearer` and paths `/api/v1/memories`. Internal `CloudRESTAdapter` uses `https://graph-api.memorygraph.dev` with `X-API-Key` and paths `/memories`. Fix: align base URL, auth header, and path scheme.
+- **M6: `getRelatedMemories` may reverse relationship direction** — Undirected traversal `(start)-[r...]-(related)` means `r[0]` could be incoming or outgoing, but reconstructed `Relationship` always sets `from_memory_id: memoryId`. Fix: determine direction from `startNode(rel)` vs `endNode(rel)`.
+- **M3: `parseSimpleArgs` cannot pass values starting with `--`** — `--query --foo` misparses. Fix: use `--` as end-of-options sentinel, or accept `--key=--value`.
+- **M12: `handleWhatChanged` does N+1 `getRelatedMemories` calls** — Fetches up to 1000 memories then calls `getRelatedMemories` per memory. Fix: single Cypher query filtering relationships by `recorded_at >= $since`.
+
+#### Low Priority
+
+- **L1-L6**: Minor issues — dead code in context-extractor, dead confidence branch in entity-extraction, brittle JSON LIKE matching in SQLite, undocumented relationship types in integration modules, `findAllCycles` stub, `getProjectFromMemories` stub.
+- **SEC-4: Secret exposure in `config` command** — URIs with embedded credentials (e.g. `bolt://user:pass@host`) printed verbatim. Fix: redact userinfo from URIs before printing.
+- **SEC-5: Sensitive data in error messages** — Backend errors include raw query text and parameter values. Fix: log full error at debug level, surface generic message.
+- **SEC-9: Weak sensitive-data filter in context capture** — Regex filter misses multi-word leaks, non-standard TLDs, base64/hex blobs, AWS keys without labels, SSH keys.
+- **SEC-10: LIKE wildcard injection in SQLite** — Tag and project_path values with `%` or `_` are interpreted as LIKE wildcards. Fix: escape LIKE wildcards.
+- **SEC-11: Relationship type not validated by SQLite backend** — Import path bypasses `isRelationshipType` check. Fix: validate in SQLite `createRelationship` and `importFromJson`.
+- **M10: CLI test is vacuous** — `cli-commands.test.ts` tests a local reimplementation of `parseSimpleArgs` and only asserts source contains `case` strings. Fix: test actual command execution.
+
+#### Port Completeness Gaps (~90% complete)
+
+- **Missing: `relationships.py` + `graph_analytics.py`** — RelationshipManager (metadata, validation, strength calc, inverse handling, contradiction detection, type suggestion) and GraphAnalyzer (path finding, clustering, bridge detection, metrics) were not ported. 7 MCP tools have no CLI equivalent: `find-memory-path`, `analyze-clusters`, `bridge-memories`, `suggest-relationship`, `reinforce-relationship`, `relationship-categories`, `graph-metrics`.
+- **Missing: neo4j / turso / ladybugdb backends** — These were full implementations in Python (215/451/238 lines). TS port reduced all three to throwing stubs. Three usable backends lost.
+- **Missing: Migration scripts** — `bitemporal_migration.py` and `multitenancy_migration.py` plus `migrate-to-multitenant` CLI command not ported. Backend-to-backend migration IS ported.
+- **Missing: `update_relationship_properties`** — No TS backend implements post-creation relationship property updates.
+- **Missing: `findAllCycles`** — Throws "not yet implemented". Only `hasCycle` is ported.
+- **Missing: SDK framework integrations** — 4 Python adapters (autogen, crewai, langchain, llamaindex) not ported. TS SDK is framework-agnostic by design.
+- **Missing: Test coverage** — 12 TS test files vs ~100 Python files. No tests for proactive, integration, analytics, SDK modules.
+- **Not wired: `predictSolutionEffectiveness` and `trackMemoryROI`** — Exported from analytics but no CLI command.
+
 ## [0.13.0] - 2026-07-05
 
 ### Added — TypeScript Port
