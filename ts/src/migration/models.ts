@@ -40,6 +40,12 @@ export function backendConfigFromEnv(): BackendConfig {
     path = Config.SQLITE_PATH;
   } else if (backendType === "falkordblite") {
     path = Config.FALKORDBLITE_PATH;
+  } else if (backendType === "cloud") {
+    return {
+      backend_type: backendType,
+      api_key: Config.MEMORYGRAPH_API_KEY,
+      api_url: Config.MEMORYGRAPH_API_URL,
+    };
   }
 
   return {

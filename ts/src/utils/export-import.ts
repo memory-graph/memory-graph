@@ -78,8 +78,11 @@ export async function importFromJson(
   const file = Bun.file(inputPath);
   const data = await file.json();
 
-  if (!data["memories"] || !data["relationships"]) {
-    throw new Error("Invalid export format: missing 'memories' or 'relationships'");
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Invalid export format: expected a JSON object");
+  }
+  if (!Array.isArray(data["memories"]) || !Array.isArray(data["relationships"])) {
+    throw new Error("Invalid export format: 'memories' and 'relationships' must be arrays");
   }
 
   const formatVersion = data["format_version"] ?? data["export_version"];
@@ -179,7 +182,8 @@ export async function exportToMarkdown(
 
   for (const memory of allMemories) {
     const safeTitle = memory.title.replace(/[^a-zA-Z0-9 _-]/g, "_").replace(/ /g, "_");
-    const filename = `${safeTitle}_${memory.id?.slice(0, 8)}.md`;
+    const safeId = (memory.id ?? "unknown").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 12);
+    const filename = `${safeTitle}_${safeId}.md`;
 
     const related = await db.getRelatedMemories(memory.id!, { maxDepth: 1 });
 

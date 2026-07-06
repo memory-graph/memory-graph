@@ -10,7 +10,7 @@
  * - Code pattern identification
  */
 
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -161,6 +161,16 @@ function safeExecSync(cmd: string, opts: { cwd: string; timeout: number }): stri
   }
 }
 
+function safeGit(args: string[], opts: { cwd: string; timeout: number }): string | null {
+  try {
+    const result = spawnSync("git", args, { stdio: "pipe", ...opts });
+    if (result.status !== 0 || !result.stdout) return null;
+    return result.stdout.toString().trim();
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -187,8 +197,8 @@ export async function detectProject(
 
   // Check for git remote
   let gitRemote: string | null = null;
-  const remoteResult = safeExecSync(
-    `git -C "${dir}" config --get remote.origin.url`,
+  const remoteResult = safeGit(
+    ["config", "--get", "remote.origin.url"],
     { cwd: dir, timeout: 5000 }
   );
   if (remoteResult) {
@@ -429,7 +439,7 @@ export async function trackFileChanges(
   const dir = resolve(repoPath.replace(/^~/, process.env["HOME"] ?? "~"));
   const changes: FileChange[] = [];
 
-  const statusOutput = safeExecSync(`git -C "${dir}" status --porcelain`, {
+  const statusOutput = safeGit(["status", "--porcelain"], {
     cwd: dir,
     timeout: 10000,
   });
@@ -456,8 +466,8 @@ export async function trackFileChanges(
     let linesRemoved = 0;
 
     if (changeType === "modified" && existsSync(join(dir, filePath))) {
-      const diffOutput = safeExecSync(
-        `git -C "${dir}" diff --numstat HEAD -- "${filePath}"`,
+      const diffOutput = safeGit(
+        ["diff", "--numstat", "HEAD", "--", filePath],
         { cwd: dir, timeout: 5000 }
       );
       if (diffOutput) {

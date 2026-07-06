@@ -212,8 +212,7 @@ export async function generateSessionBriefing(
   // Total memory count
   const totalCountQuery = `
     MATCH (m:Memory)
-    WHERE m.context IS NOT NULL
-      AND (m.context CONTAINS $project_path OR m.context CONTAINS $project_name)
+    WHERE m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name
     RETURN count(m) as total
   `;
 
@@ -234,8 +233,7 @@ export async function generateSessionBriefing(
 
   const recentQuery = `
     MATCH (m:Memory)
-    WHERE m.context IS NOT NULL
-      AND (m.context CONTAINS $project_path OR m.context CONTAINS $project_name)
+    WHERE (m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name)
       AND datetime(m.created_at) >= datetime($cutoff)
     RETURN m.id as id, m.type as type, m.title as title,
            m.summary as summary, m.created_at as created_at,
@@ -270,10 +268,9 @@ export async function generateSessionBriefing(
   // Unresolved problems
   const problemsQuery = `
     MATCH (p:Memory {type: 'problem'})
-    WHERE p.context IS NOT NULL
-      AND (p.context CONTAINS $project_path OR p.context CONTAINS $project_name)
+    WHERE (p.context_project_path = $project_path OR p.context_project_path CONTAINS $project_name)
       AND NOT EXISTS {
-        MATCH (p)-[:SOLVES|ADDRESSES]->(:Memory)
+        MATCH (p)<-[:SOLVES|ADDRESSES]-(:Memory)
       }
     OPTIONAL MATCH (p)-[r]-()
     RETURN p.id as id, p.title as title, p.content as content,
@@ -310,8 +307,7 @@ export async function generateSessionBriefing(
   // Relevant patterns
   const patternsQuery = `
     MATCH (m:Memory {type: 'code_pattern'})
-    WHERE m.context IS NOT NULL
-      AND (m.context CONTAINS $project_path OR m.context CONTAINS $project_name)
+    WHERE m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name
     RETURN m.id as id, m.title as type, m.content as description,
            m.effectiveness as effectiveness, m.usage_count as usage_count,
            m.last_accessed as last_used
@@ -354,8 +350,7 @@ export async function generateSessionBriefing(
   // Deprecation warnings
   const deprecatedQuery = `
     MATCH (old:Memory)-[r:DEPRECATED_BY]->(new:Memory)
-    WHERE old.context IS NOT NULL
-      AND (old.context CONTAINS $project_path OR old.context CONTAINS $project_name)
+    WHERE old.context_project_path = $project_path OR old.context_project_path CONTAINS $project_name
     RETURN old.id as old_id, old.title as old_title,
            new.id as new_id, new.title as new_title,
            r.context as reason

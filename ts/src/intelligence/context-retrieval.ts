@@ -358,7 +358,7 @@ export class ContextRetriever {
   }
 
   private extractKeywords(text: string): string[] {
-    const words = text.toLowerCase().match(/\b[a-z]{3,}\b/) ?? [];
+    const words = text.toLowerCase().match(/\b[a-z]{3,}\b/g) ?? [];
     const keywords = words.filter((w) => !STOP_WORDS.has(w));
     return Array.from(new Set(keywords));
   }

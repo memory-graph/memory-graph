@@ -10,6 +10,7 @@
  */
 
 import type { GraphBackend } from "../backends/index.js";
+import { randomUUID } from "node:crypto";
 
 // ---------------------------------------------------------------------------
 // Models
@@ -64,7 +65,7 @@ export async function recordOutcome(
 ): Promise<boolean> {
   console.info(`Recording outcome for memory ${memoryId}: success=${success}`);
 
-  const outcomeId = `outcome_${Date.now() / 1000}`;
+  const outcomeId = `outcome_${randomUUID()}`;
 
   const createOutcomeQuery = `
     MATCH (m:Memory {id: $memory_id})

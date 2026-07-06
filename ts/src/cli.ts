@@ -6,7 +6,6 @@
  * and managing memories via FalkorDBLite (local) or Cloud API.
  */
 
-import { parseArgs } from "node:util";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -57,7 +56,7 @@ import { captureTaskContext } from "./integration/context-capture.js";
 import { detectProject, analyzeCodebase } from "./integration/project-analysis.js";
 import { trackWorkflow, suggestWorkflow } from "./integration/workflow-tracking.js";
 
-const VERSION = "0.12.4";
+const VERSION = "0.13.0";
 
 /** Error that signals the CLI should exit with a specific code.Thrown from
  *  inside try blocks so that `finally { await close() }` runs before exit. */
@@ -412,15 +411,17 @@ function parseSimpleArgs(args: string[]): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (let i = 0; i < args.length; i++) {
     if (args[i].startsWith("--")) {
-      const key = args[i].slice(2);
-      if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
-        result[key] = args[i + 1];
+      const raw = args[i].slice(2);
+      if (raw.includes("=")) {
+        const eqIdx = raw.indexOf("=");
+        result[raw.slice(0, eqIdx)] = raw.slice(eqIdx + 1);
+      } else if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
+        result[raw] = args[i + 1];
         i++;
       } else {
-        result[key] = true;
+        result[raw] = true;
       }
     } else {
-      // Positional argument
       if (!result["_positional"]) result["_positional"] = [] as string[];
       (result["_positional"] as string[]).push(args[i]);
     }
@@ -547,7 +548,7 @@ async function cmdSearch(args: string[]): Promise<void> {
       memory_types: parseList(parsed["types"]),
       project_path: parsed["project"] ?? undefined,
       min_importance: parseFloatArg(parsed["min-importance"]),
-      limit: parseIntArg(parsed["limit"]) ?? 50,
+      limit: Math.min(Math.max(parseIntArg(parsed["limit"]) ?? 50, 1), 1000),
       offset: parseIntArg(parsed["offset"]) ?? 0,
       search_tolerance: parsed["tolerance"] ?? "normal",
       match_mode: parsed["match-mode"] ?? "any",
@@ -565,7 +566,7 @@ async function cmdRecall(args: string[]): Promise<void> {
   const parsed = parseSimpleArgs(args);
   const query = parsed["query"] ?? (parsed["_positional"] as string[])?.join(" ");
 
-  if (!query) {
+  if (!query || query === true) {
     console.error("Usage: memorygraph recall --query <natural language query> [--limit 20] [--project <path>]");
     process.exit(1);
   }
@@ -842,7 +843,9 @@ async function cmdMigrate(args: string[]): Promise<void> {
     backend_type: targetBackend as any,
     path: targetPath,
     uri: targetUri,
-    password: targetBackend === "cloud" ? Config.MEMORYGRAPH_API_KEY : undefined,
+    password: targetBackend !== "cloud" ? undefined : undefined,
+    api_key: targetBackend === "cloud" ? Config.MEMORYGRAPH_API_KEY : undefined,
+    api_url: targetBackend === "cloud" ? Config.MEMORYGRAPH_API_URL : undefined,
   };
 
   const options = createMigrationOptions({
@@ -903,7 +906,7 @@ async function cmdContextSearch(args: string[]): Promise<void> {
     };
 
     const result = await handleSearchRelationshipsByContext(db, toolArgs);
-    console.log(result);
+    console.log(result.text);
     if (result.isError) throw new ExitError(1);
   } finally {
     await close();
@@ -1033,7 +1036,7 @@ async function cmdContext(args: string[]): Promise<void> {
   const { db, close } = await createDb();
   try {
     const backend = (db as MemoryDatabase).backend;
-    const result = await getContext(backend, query ?? "", 4000, project ?? null);
+    const result = await getContext(backend, typeof query === "string" ? query : "", 4000, project ?? null);
 
     console.log("**Intelligent Context Retrieval**\n");
     if (result.source_memories && result.source_memories.length > 0) {
@@ -1225,7 +1228,7 @@ async function cmdPredict(args: string[]): Promise<void> {
   const { db, close } = await createDb();
   try {
     const backend = (db as MemoryDatabase).backend;
-    const suggestions = await predictNeeds(backend, query);
+    const suggestions = await predictNeeds(backend, typeof query === "string" ? query : "");
 
     if (suggestions.length === 0) {
       console.log("No predictions available.");
@@ -1252,7 +1255,7 @@ async function cmdWarn(args: string[]): Promise<void> {
   const { db, close } = await createDb();
   try {
     const backend = (db as MemoryDatabase).backend;
-    const warnings = await warnPotentialIssues(backend, context);
+    const warnings = await warnPotentialIssues(backend, typeof context === "string" ? context : "");
 
     if (warnings.length === 0) {
       console.log("No potential issues detected.");
@@ -1393,5 +1396,8 @@ async function cmdWorkflow(args: string[]): Promise<void> {
 // ---------------------------------------------------------------------------
 
 if (import.meta.main) {
-  main();
+  main().catch((err) => {
+    console.error(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  });
 }

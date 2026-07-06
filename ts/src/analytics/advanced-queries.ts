@@ -130,11 +130,11 @@ export async function getMemoryGraphVisualization(
     query = `
       MATCH path = (center:Memory {id: $center_id})-[*1..${depth}]-(m:Memory)
       WITH center, m, relationships(path) as rels
-      OPTIONAL MATCH (m)-[r]-(other:Memory)
-      WHERE other IN collect(center) + collect(m)
-      RETURN DISTINCT
-        collect(DISTINCT center) + collect(DISTINCT m) as memories,
-        collect(DISTINCT r) as relationships
+      UNWIND rels as rel
+      WITH center, m, collect(DISTINCT rel) as allRels
+      WITH collect(DISTINCT center) + collect(DISTINCT m) as memories,
+           collect(DISTINCT { id: id(rel), from_id: startNode(rel).id, to_id: endNode(rel).id, type: type(rel), strength: rel.strength }) as relationships
+      RETURN memories, relationships
       LIMIT 1
     `;
     params = { center_id: centerMemoryId, depth };
@@ -147,8 +147,9 @@ export async function getMemoryGraphVisualization(
       LIMIT $max_nodes
       OPTIONAL MATCH (m)-[r]-(other:Memory)
       WHERE other.id IN [m2 IN collect(m) | m2.id]
-      RETURN collect(DISTINCT m) as memories,
-             collect(DISTINCT r) as relationships
+      WITH collect(DISTINCT m) as memories,
+           collect(DISTINCT { id: id(r), from_id: startNode(r).id, to_id: endNode(r).id, type: type(r), strength: r.strength }) as relationships
+      RETURN memories, relationships
     `;
     params = { max_nodes: maxNodes };
     if (includeTypes) {

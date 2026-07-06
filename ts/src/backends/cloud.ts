@@ -365,7 +365,7 @@ export class CloudRESTAdapter implements GraphBackend {
 
   async getMemory(memoryId: string, _includeRelationships = true): Promise<Memory | null> {
     try {
-      const result = await this.request("GET", `/memories/${memoryId}`);
+      const result = await this.request("GET", `/memories/${encodeURIComponent(memoryId)}`);
       return this.apiResponseToMemory(result);
     } catch (err) {
       if (err instanceof MemoryNotFoundError) return null;
@@ -426,7 +426,7 @@ export class CloudRESTAdapter implements GraphBackend {
       if (v === null || v === undefined) delete updates[k];
     }
     try {
-      const result = await this.request("PUT", `/memories/${memory.id}`, updates);
+      const result = await this.request("PUT", `/memories/${encodeURIComponent(memory.id)}`, updates);
       return result !== null;
     } catch (err) {
       if (err instanceof MemoryNotFoundError) return false;
@@ -436,7 +436,7 @@ export class CloudRESTAdapter implements GraphBackend {
 
   async deleteMemory(memoryId: string): Promise<boolean> {
     try {
-      await this.request("DELETE", `/memories/${memoryId}`);
+      await this.request("DELETE", `/memories/${encodeURIComponent(memoryId)}`);
       console.log(`Deleted memory from cloud: ${memoryId}`);
       return true;
     } catch (err) {
@@ -479,7 +479,7 @@ export class CloudRESTAdapter implements GraphBackend {
     }
 
     try {
-      const result = await this.request("GET", `/search/memories/${memoryId}/related`, undefined, params);
+      const result = await this.request("GET", `/search/memories/${encodeURIComponent(memoryId)}/related`, undefined, params);
       if (!result) return [];
       const relatedMemories: [Memory, Relationship][] = [];
       const items = (result["related_memories"] as Record<string, unknown>[]) ?? [];
@@ -520,7 +520,7 @@ export class CloudRESTAdapter implements GraphBackend {
     }
   }
 
-  async getStatistics(): Promise<Record<string, unknown>> {
+  async getMemoryStatistics(): Promise<Record<string, unknown>> {
     const result = await this.request("GET", "/graphs/statistics");
     return result ?? {};
   }

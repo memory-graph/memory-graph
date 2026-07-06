@@ -342,8 +342,10 @@ export abstract class BaseBoltBackend implements GraphBackend {
         RETURN m
         ORDER BY m.importance DESC, m.created_at DESC
         LIMIT $limit
+        SKIP $offset
       `;
       parameters["limit"] = searchQuery.limit;
+      parameters["offset"] = searchQuery.offset ?? 0;
 
       const result = await this.executeQuery(query, parameters, false);
       const memories: Memory[] = [];
@@ -436,7 +438,8 @@ export abstract class BaseBoltBackend implements GraphBackend {
 
       const query = `
         MATCH (from:Memory {id: $from_id})
-        MATCH (to:Memory {id: $to_id})
+        MATCH (to {id: $to_id})
+        WHERE to:Memory OR to:Entity
         CREATE (from)-[r:${relationshipType} $properties]->(to)
         RETURN r.id as id
       `;

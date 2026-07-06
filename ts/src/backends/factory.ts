@@ -70,7 +70,7 @@ export class BackendFactory {
 
   static async autoSelectBackend(): Promise<GraphBackend> {
     // Try FalkorDBLite first (default local backend)
-    if (Config.isEnvSet("FALKORDB_HOST") || true) {
+    {
       try {
         console.log("Attempting to connect to FalkorDBLite...");
         const backend = await BackendFactory.createFalkorDBLite();

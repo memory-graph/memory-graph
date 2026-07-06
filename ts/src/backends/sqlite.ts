@@ -280,10 +280,11 @@ export class SQLiteBackend implements GraphBackend {
 
     const whereClause = conditions.length > 0 ? conditions.join(" AND ") : "1=1";
     params.push(searchQuery.limit);
+    params.push(searchQuery.offset ?? 0);
 
     const rows = this.db
       .query(
-        `SELECT * FROM memories WHERE ${whereClause} ORDER BY importance DESC, created_at DESC LIMIT ?`
+        `SELECT * FROM memories WHERE ${whereClause} ORDER BY importance DESC, created_at DESC LIMIT ? OFFSET ?`
       )
       .all(...(params as any[])) as Record<string, unknown>[];
 
@@ -394,7 +395,7 @@ export class SQLiteBackend implements GraphBackend {
     opts?: { relationshipTypes?: string[]; maxDepth?: number }
   ): Promise<[Memory, Relationship][]> {
     if (!this.db) throw new DatabaseConnectionError("Not connected");
-    const maxDepth = opts?.maxDepth ?? 2;
+    const maxDepth = Math.max(1, Math.min(Number(opts?.maxDepth ?? 2) || 2, 10));
     const relTypes = opts?.relationshipTypes;
 
     // For simplicity, do BFS up to maxDepth

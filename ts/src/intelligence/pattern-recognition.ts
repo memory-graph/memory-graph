@@ -62,10 +62,10 @@ export class PatternRecognizer {
 
     const query = `
       MATCH (m:Memory {type: 'problem'})
-      WHERE any(keyword IN $keywords WHERE m.content CONTAINS keyword)
+      WHERE any(keyword IN $keywords WHERE toLower(m.content) CONTAINS keyword)
       OPTIONAL MATCH (m)-[r:SOLVES|SOLVED_BY]-(solution:Memory)
       WITH m, solution, r,
-           size([keyword IN $keywords WHERE m.content CONTAINS keyword]) as match_count
+           size([keyword IN $keywords WHERE toLower(m.content) CONTAINS keyword]) as match_count
       WITH m, solution, r,
            toFloat(match_count) / toFloat(size($keywords)) as similarity
       WHERE similarity >= $threshold
@@ -283,7 +283,7 @@ export class PatternRecognizer {
    * Extract keywords from text for matching.
    */
   extractKeywords(text: string): string[] {
-    const words = text.toLowerCase().match(/\b[a-z]{3,}\b/) ?? [];
+    const words = text.toLowerCase().match(/\b[a-z]{3,}\b/g) ?? [];
     const keywords = words.filter((w) => !STOP_WORDS.has(w));
     return Array.from(new Set(keywords));
   }
