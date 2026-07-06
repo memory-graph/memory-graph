@@ -24,172 +24,69 @@
 
 ## Using with Coding Agents
 
-MemoryGraph is a CLI tool. Coding agents (Claude Code, Cursor, Windsurf, etc.) already execute shell commands, so they can use MemoryGraph directly. You just need to:
+Coding agents already execute shell commands, so they can use MemoryGraph directly. Two steps: install globally, then add instructions.
 
-1. **Install the CLI globally** (one-time setup)
-2. **Add agent instructions** to your project so the agent knows to use it
-
-### Step 1: Install Globally
+### Install
 
 ```bash
-# Option A: bun link (recommended)
-cd memory-graph/ts
-bun link
-
-# Option B: Compile a standalone binary
-cd memory-graph/ts
-bun build src/cli.ts --compile --outfile ~/.local/bin/memorygraph
-chmod +x ~/.local/bin/memorygraph
-
-# Verify it works from any directory
-memorygraph stats
+cd memory-graph/ts && bun install && bun link
+# or: bun build src/cli.ts --compile --outfile ~/.local/bin/memorygraph
+memorygraph stats  # verify
 ```
 
-After installation, `memorygraph` is available as a shell command from any project. The default FalkorDBLite backend stores data in `~/.memorygraph/` so memories persist across projects and sessions.
+`memorygraph` is now available from any directory. Data persists in `~/.memorygraph/`.
 
-### Step 2: Add Agent Instructions
+### Add Agent Instructions
 
-Pick the instruction file your agent reads and paste the template below.
-
-#### For Claude Code
-
-Add to `~/.claude/CLAUDE.md` (global) or `.claude/CLAUDE.md` in your project:
-
-```markdown
-## Memory Protocol
-
-MemoryGraph is installed. Use the `memorygraph` CLI for persistent memory across sessions.
-
-### REQUIRED: Before Starting Work
-Run `memorygraph recall --query "<task keywords>" --limit 10` to load relevant context.
-Also run `memorygraph briefing` to get a session briefing with recent activity and open issues.
-
-### REQUIRED: Automatic Storage Triggers
-Store memories on ANY of:
-- **Bug fix**: Store the problem (type: problem) and the solution (type: solution), then link with `memorygraph link <solution-id> <problem-id> SOLVES`
-- **Architecture decision**: type: solution, tags: architecture
-- **Pattern discovered**: type: code_pattern
-- **Error encountered**: type: error
-- **Session end**: type: conversation with session summary
-
-### Commands
-- Store: `memorygraph store --type <type> --title "<title>" --content "<content>" --tags "<tags>" --importance <0-1>`
-- Recall: `memorygraph recall --query "<keywords>" --limit 10`
-- Search: `memorygraph search --query "<text>" --tags <tags> --limit 10`
-- Link: `memorygraph link <from-id> <to-id> <RELATIONSHIP_TYPE> --strength <0-1>`
-- Related: `memorygraph related <id> --max-depth 2`
-- Briefing: `memorygraph briefing`
-- Stats: `memorygraph stats`
-
-### Memory Types
-solution | problem | code_pattern | fix | error | workflow | command | technology | project | file_context
-
-### Tagging
-- Lowercase, hyphenated: `api-design`, `error-handling`
-- Always include the component: `auth`, `database`, `cli`
-- 2-5 tags per memory
-
-Do NOT wait to be asked. Memory storage is automatic when triggers fire.
-```
-
-#### For Cursor / Windsurf / Other Agents
-
-Add to `.cursorrules`, `.windsurfrules`, or your agent's instruction file:
-
-```markdown
-## Memory System
-
-Use the `memorygraph` CLI for persistent memory across sessions.
-
-Before starting work: `memorygraph recall --query "<task>" --limit 10`
-On decisions/fixes: `memorygraph store --type solution --title "<title>" --content "<content>" --tags "<tags>"`
-Link memories: `memorygraph link <from-id> <to-id> SOLVES --strength 0.8`
-Session start: `memorygraph briefing`
-```
-
-#### For Any Agent with Shell Access
-
-Add this to your AGENTS.md, CLAUDE.md, or system prompt:
+Paste this into your agent's instruction file (`~/.claude/CLAUDE.md`, `.cursorrules`, `.windsurfrules`, or `AGENTS.md`):
 
 ```markdown
 ## Memory
+`memorygraph` CLI is installed. Use it for persistent memory across sessions.
 
-This project uses MemoryGraph for persistent memory. The `memorygraph` CLI is installed globally.
-
-Before work: Run `memorygraph recall --query "<keywords>" --limit 10`
-On fixes: Run `memorygraph store --type solution --title "<title>" --content "<what was done>" --tags "<component>,fix"`
-On errors: Run `memorygraph store --type error --title "<error>" --content "<details>" --tags "<component>,error"`
-Link: Run `memorygraph link <solution-id> <problem-id> SOLVES`
+Before work: `memorygraph recall --query "<task>" --limit 10` and `memorygraph briefing`
+On decisions/fixes: `memorygraph store --type solution --title "<title>" --content "<what>" --tags "<component>,fix"`
+On errors: `memorygraph store --type error --title "<error>" --content "<details>" --tags "<component>,error"`
+Link: `memorygraph link <from-id> <to-id> SOLVES --strength 0.8`
+Session end: `memorygraph store --type conversation --title "Session: <topic>" --content "<summary>" --tags "<tags>"`
+Types: solution | problem | code_pattern | fix | error | workflow | command | technology
+Tags: lowercase, hyphenated, include component (auth, database, cli), 2-5 per memory
+Do NOT wait to be asked. Store automatically on triggers.
 ```
 
-### How Agents Use It (Example Session)
+### Example Session
 
-```
-Agent starts:
-  $ memorygraph recall --query "authentication redis" --limit 10
-  Found 3 relevant memories:
-  1. Use JWT for auth (solution)
-  2. Redis connection timeout (problem)
-  3. Exponential backoff fix (solution)
+```bash
+# Start: load context
+memorygraph recall --query "authentication redis" --limit 10
+memorygraph briefing
 
-  $ memorygraph briefing
-  Session Briefing for my-app
-  - 2 unresolved problems
-  - Last activity: 3 days ago
+# Fix a bug: store problem + solution, link them
+memorygraph store --type problem --title "Auth token expiry too short" --content "Tokens expiring after 1h" --tags "auth,bug"
+# → abc-123
+memorygraph store --type solution --title "Extend token expiry to 24h" --content "Changed JWT expiry, added refresh rotation" --tags "auth,fix" --importance 0.8
+# → def-456
+memorygraph link def-456 abc-123 SOLVES --strength 0.9
 
-Agent fixes a bug:
-  $ memorygraph store --type problem --title "Auth token expiry too short" \
-    --content "Tokens expiring after 1 hour causing user logouts" --tags "auth,bug"
-  Stored memory: abc-123
-
-  $ memorygraph store --type solution --title "Extend token expiry to 24h" \
-    --content "Changed JWT expiry from 1h to 24h, added refresh token rotation" \
-    --tags "auth,fix" --importance 0.8
-  Stored memory: def-456
-
-  $ memorygraph link def-456 abc-123 SOLVES --strength 0.9
-  Created relationship: SOLVES
-
-Agent ends session:
-  $ memorygraph store --type conversation --title "Session: auth token fix" \
-    --content "Fixed token expiry, added refresh rotation" --tags "auth,session-summary"
+# End: store summary
+memorygraph store --type conversation --title "Session: auth token fix" --content "Fixed token expiry, added refresh rotation" --tags "auth,session-summary"
 ```
 
 ### Multi-Project Setup
 
-By default, all projects share the same memory database at `~/.memorygraph/falkordblite.db`. To isolate memories per project, set a project-specific path:
+All projects share `~/.memorygraph/falkordblite.db` by default. To isolate per project:
 
 ```bash
-# In your project's .env or shell profile
 export MEMORY_FALKORDBLITE_PATH=~/.memorygraph/my-project.falkor
-
-# Or use SQLite per project
-export MEMORY_BACKEND=sqlite
-export MEMORY_SQLITE_PATH=~/.memorygraph/my-project.db
+# or tag memories with project name and filter:
+memorygraph search --query "auth" --tags my-project
 ```
 
-Or tag memories with the project name so you can filter:
+### Troubleshooting
 
-```bash
-memorygraph search --query "authentication" --tags my-project --limit 10
-```
-
-### Troubleshooting Agent Integration
-
-**Agent doesn't use memory commands:**
-- Make sure the instruction file is in the right location (e.g., `~/.claude/CLAUDE.md` for Claude Code)
-- Use strong language like "REQUIRED" and "MUST" in instructions
-- Include the exact commands so the agent can copy-paste them
-
-**`memorygraph` command not found:**
-- Run `bun link` from the `ts/` directory
-- Or compile to `~/.local/bin/memorygraph` and ensure `~/.local/bin` is on PATH
-- Verify with `memorygraph health`
-
-**Memories not persisting:**
-- Check `memorygraph config` to see the database path
-- Run `memorygraph health` to verify backend connectivity
-- Ensure the `~/.memorygraph/` directory is writable
+- **Agent not using commands**: Use "REQUIRED"/"MUST" in instructions, include exact commands
+- **Command not found**: `bun link` from `ts/`, or ensure `~/.local/bin` is on PATH
+- **Memories not persisting**: `memorygraph config` to check path, `memorygraph health` to verify
 
 ---
 
