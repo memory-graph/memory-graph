@@ -22,32 +22,6 @@
 
 ---
 
-## Quick Start
-
-```bash
-# 1. Clone and install
-git clone https://github.com/gregorydickson/memory-graph.git
-cd memory-graph/ts
-bun install
-
-# 2. Store a memory
-bun run src/cli.ts store \
-  --type solution \
-  --title "Use Zod for validation" \
-  --content "All runtime validation uses Zod schemas" \
-  --tags "architecture,validation"
-
-# 3. Recall memories by natural language query
-bun run src/cli.ts recall --query "validation" --limit 10
-
-# 4. View stats
-bun run src/cli.ts stats
-```
-
-No database server required. FalkorDBLite (embedded graph DB) is used by default with zero configuration.
-
----
-
 ## Using with Coding Agents
 
 MemoryGraph is a CLI tool. Coding agents (Claude Code, Cursor, Windsurf, etc.) already execute shell commands, so they can use MemoryGraph directly. You just need to:
