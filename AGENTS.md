@@ -4,18 +4,19 @@
 
 ```bash
 cd ts && bun install
+bun link  # Makes `memorygraph` available globally
 ```
 
 ## CLI Entry Point
 
-All commands run through:
+After `bun link`, use from any directory:
 ```bash
-bun run ts/src/index.ts <command> [options]
+memorygraph <command> [options]
 ```
 
-Or after building:
+Within this repo (without linking):
 ```bash
-bun ts/dist/index.js <command> [options]
+bun run ts/src/cli.ts <command> [options]
 ```
 
 ## Available Commands
@@ -79,16 +80,19 @@ Additional env vars:
 ### Starting a Task
 ```bash
 # Recall recent memories
-bun run ts/src/index.ts recall --query "recent work" --limit 10
+memorygraph recall --query "recent work" --limit 10
+
+# Get a session briefing
+memorygraph briefing
 
 # Search for relevant context
-bun run ts/src/index.ts search --query "authentication" --limit 5
+memorygraph search --query "authentication" --limit 5
 ```
 
 ### During Work
 ```bash
 # Store a decision
-bun run ts/src/index.ts store \
+memorygraph store \
   --type solution \
   --title "Use JWT for auth" \
   --content "JWT tokens with 24h expiry, refresh token rotation" \
@@ -96,30 +100,29 @@ bun run ts/src/index.ts store \
   --importance 0.8
 
 # Link it to a prior decision
-bun run ts/src/index.ts link \
-  --from <new-id> \
-  --to <prior-id> \
-  --type BUILDS_ON \
-  --strength 0.9
+memorygraph link <new-id> <prior-id> BUILDS_ON --strength 0.9
 ```
 
 ### Ending a Session
 ```bash
 # Store session summary
-bun run ts/src/index.ts store \
+memorygraph store \
   --type conversation \
   --title "Session: auth refactor" \
   --content "Refactored auth middleware, added JWT, fixed token refresh bug" \
   --tags "auth,session-summary"
 
 # Export backup
-bun run ts/src/index.ts export --output session-backup.json
+memorygraph export --output session-backup.json
 ```
 
 ## Tips
 
 - Use `--importance` (0.0-1.0) to rank memories; higher = more important
 - Use `--tags` (comma-separated) for categorization
-- Link memories with `builds_on` to create a knowledge chain
+- Link memories with `link` to create a knowledge chain
 - Use `as-of` to understand past state when debugging
 - Run `health` to verify backend connectivity
+- Use `briefing` at the start of each session for a quick overview
+- Use `entities` to extract and link entities from a memory's content
+- Use `predict` to get predictions about what might be needed next

@@ -6,40 +6,41 @@ Memory Graph is a CLI-based memory system for coding agents. It stores, retrieve
 and links memories (decisions, patterns, bugs, context) in a local graph database
 so that knowledge persists across sessions.
 
+The `memorygraph` CLI is installed globally. Use it from any project.
+
 ## Quick Start
 
 ```bash
 # Store a memory
-bun run ts/src/index.ts store \
+memorygraph store \
   --type solution \
   --title "Use Zod for validation" \
   --content "All runtime validation uses Zod schemas" \
   --tags "architecture,validation"
 
 # Recall memories by natural language query
-bun run ts/src/index.ts recall --query "validation" --limit 10
+memorygraph recall --query "validation" --limit 10
 
 # Search by keyword
-bun run ts/src/index.ts search --query "validation" --limit 5
+memorygraph search --query "validation" --limit 5
 
 # Get a specific memory
-bun run ts/src/index.ts get --id <memory-id>
+memorygraph get <memory-id>
 
 # Link two memories
-bun run ts/src/index.ts link \
-  --from <memory-id-1> \
-  --to <memory-id-2> \
-  --type BUILDS_ON \
-  --strength 0.8
+memorygraph link <from-id> <to-id> BUILDS_ON --strength 0.8
 
 # Find related memories
-bun run ts/src/index.ts related --id <memory-id> --max-depth 2
+memorygraph related <id> --max-depth 2
 
 # View stats
-bun run ts/src/index.ts stats
+memorygraph stats
+
+# Session briefing
+memorygraph briefing
 
 # Export all memories
-bun run ts/src/index.ts export --output backup.json
+memorygraph export --output backup.json
 ```
 
 ## When to Store Memories
@@ -100,7 +101,7 @@ All relationship types are uppercase. Key ones:
 
 ## Session Workflow
 
-1. **Start of session**: Run `recall --query "recent work" --limit 5` to load recent context
+1. **Start of session**: Run `memorygraph recall --query "recent work" --limit 5` and `memorygraph briefing` to load context
 2. **During work**: Store memories as you make decisions or learn patterns
 3. **End of session**: Store a summary memory with type `conversation`
 
@@ -121,11 +122,9 @@ Additional env vars:
 
 ```bash
 # Import from JSON export
-bun run ts/src/index.ts import --input backup.json --skip-duplicates
+memorygraph import --input backup.json --skip-duplicates
 
 # Migrate between backends
-bun run ts/src/index.ts migrate \
-  --source sqlite --source-path ./local.db \
-  --target falkordblite --target-path ./graph.falkor \
-  --verify --rollback-on-failure
+memorygraph migrate --to sqlite --to-path ./local.db
+memorygraph migrate --to falkordblite --to-path ./graph.falkor
 ```
