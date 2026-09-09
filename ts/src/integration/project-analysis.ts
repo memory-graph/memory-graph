@@ -282,7 +282,7 @@ export async function detectProject(
     existing =
       results.find(
         (m) =>
-          m.title === projectName &&
+          (m.title === `Project: ${projectName}` || m.title === projectName) &&
           m.context?.additional_metadata?.["path"] === dir
       ) ?? null;
   } catch (err) {
