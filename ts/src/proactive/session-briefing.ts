@@ -209,10 +209,19 @@ export async function generateSessionBriefing(
     has_warnings: false,
   };
 
-  // Total memory count
+  // Total memory count. Project membership is matched to cover the ways a
+  // memory can belong to a project:
+  //   - `context.project_path` set at write time (flattened to
+  //     `context_project_path`) by flows that pass it explicitly;
+  //   - `context_project_path` CONTAINS the project name (path-suffix match);
+  //   - the project name present as a tag (dominant in stores like `armate`,
+  //     where memories are tagged with the project name and no
+  //     `context_project_path` property exists).
   const totalCountQuery = `
     MATCH (m:Memory)
-    WHERE m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name
+    WHERE m.context_project_path = $project_path
+       OR m.context_project_path CONTAINS $project_name
+       OR $project_name IN m.tags
     RETURN count(m) as total
   `;
 
@@ -233,7 +242,7 @@ export async function generateSessionBriefing(
 
   const recentQuery = `
     MATCH (m:Memory)
-    WHERE (m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name)
+    WHERE (m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name OR $project_name IN m.tags)
       AND m.created_at >= $cutoff
     RETURN m.id as id, m.type as type, m.title as title,
            m.summary as summary, m.created_at as created_at,
@@ -272,7 +281,7 @@ export async function generateSessionBriefing(
   // Solver membership is computed with OPTIONAL MATCH + count instead.
   const problemsQuery = `
     MATCH (p:Memory {type: 'problem'})
-    WHERE (p.context_project_path = $project_path OR p.context_project_path CONTAINS $project_name)
+    WHERE (p.context_project_path = $project_path OR p.context_project_path CONTAINS $project_name OR $project_name IN p.tags)
     OPTIONAL MATCH (p)-[r]-()
     OPTIONAL MATCH (p)<-[solved:SOLVES|ADDRESSES]-(s:Memory)
     WITH p, r, solved
@@ -312,7 +321,7 @@ export async function generateSessionBriefing(
   // Relevant patterns
   const patternsQuery = `
     MATCH (m:Memory {type: 'code_pattern'})
-    WHERE m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name
+    WHERE m.context_project_path = $project_path OR m.context_project_path CONTAINS $project_name OR $project_name IN m.tags
     RETURN m.id as id, m.title as type, m.content as description,
            m.effectiveness as effectiveness, m.usage_count as usage_count,
            m.last_accessed as last_used
@@ -355,7 +364,7 @@ export async function generateSessionBriefing(
   // Deprecation warnings
   const deprecatedQuery = `
     MATCH (old:Memory)-[r:DEPRECATED_BY]->(new:Memory)
-    WHERE old.context_project_path = $project_path OR old.context_project_path CONTAINS $project_name
+    WHERE old.context_project_path = $project_path OR old.context_project_path CONTAINS $project_name OR $project_name IN old.tags
     RETURN old.id as old_id, old.title as old_title,
            new.id as new_id, new.title as new_title,
            r.context as reason
